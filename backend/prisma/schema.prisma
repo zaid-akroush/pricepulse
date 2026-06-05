@@ -1,0 +1,59 @@
+// PricePulse Database Schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  email        String        @unique
+  password     String
+  name         String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  wishlistItems WishlistItem[]
+}
+
+model Product {
+  id            Int           @id @default(autoincrement())
+  title         String
+  url           String?
+  imageUrl      String?
+  currentPrice  Float
+  lowestPrice   Float
+  highestPrice  Float
+  currency      String        @default("USD")
+  source        String        // e.g. "google_shopping"
+  serpApiQuery  String        // the query used to track this product
+  lastChecked   DateTime      @default(now())
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  wishlistItems WishlistItem[]
+  priceHistory  PriceHistory[]
+}
+
+model WishlistItem {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  productId    Int
+  targetPrice  Float?   // notify user when price drops below this
+  notified     Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model PriceHistory {
+  id        Int      @id @default(autoincrement())
+  productId Int
+  price     Float
+  recordedAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
