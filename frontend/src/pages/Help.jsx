@@ -156,7 +156,7 @@ export default function Help() {
               <p className="text-sm">Try a different search term or browse the categories on the right.</p>
             </div>
           ) : filtered.map(cat => (
-            <div key={cat.category} className="card px-6 py-2">
+            <div key={cat.category} id={cat.category} className="card px-6 py-2 scroll-mt-6">
               <h2 className="text-xs font-bold text-brand uppercase tracking-widest py-4 border-b border-app">{cat.category}</h2>
               {cat.items.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
             </div>
@@ -173,7 +173,7 @@ export default function Help() {
                 <a
                   key={cat.category}
                   href={`#${cat.category}`}
-                  onClick={e => { e.preventDefault(); setSearch(''); }}
+                  onClick={() => setSearch('')}
                   className="block text-sm text-muted hover:text-brand font-medium py-1.5 px-3 rounded-xl hover:bg-brand-soft transition-colors"
                 >
                   {cat.category}

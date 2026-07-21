@@ -13,7 +13,7 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (form.password.length < 6) { setError('Password must be at least 6 characters.'); return; }
+    if (form.password.length < 10) { setError('Password must be at least 10 characters.'); return; }
     setLoading(true); setError(null);
     try {
       await register(form.name, form.email, form.password);
@@ -44,7 +44,7 @@ export default function Register() {
         <div>
           <label htmlFor="register-password" className="block text-sm font-medium text-muted mb-1.5">Password</label>
           <input id="register-password" type="password" required value={form.password}
-            onChange={e => setForm({...form, password: e.target.value})} className="input" placeholder="At least 6 characters" />
+            onChange={e => setForm({...form, password: e.target.value})} className="input" placeholder="At least 10 characters" />
         </div>
 
         {error && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl">{error}</p>}

@@ -41,6 +41,7 @@ router.get('/users', async (req, res) => {
         name: true,
         email: true,
         createdAt: true,
+        wishlistPublic: true,
         _count: { select: { wishlistItems: true } },
       },
     });
@@ -49,6 +50,7 @@ router.get('/users', async (req, res) => {
       name: u.name,
       email: u.email,
       createdAt: u.createdAt,
+      wishlistPublic: u.wishlistPublic,
       wishlistCount: u._count.wishlistItems,
     })));
   } catch (err) {
@@ -68,6 +70,31 @@ router.delete('/users/:id', async (req, res) => {
 
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'User deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// PATCH /api/admin/users/:id/wishlist-visibility, hide/show a user from the public leaderboard & community wishlists
+// without deleting their account. Body may include { wishlistPublic: boolean } to set it explicitly,
+// otherwise the current value is toggled.
+router.patch('/users/:id/wishlist-visibility', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid user id' });
+
+    const target = await prisma.user.findUnique({ where: { id }, select: { id: true, wishlistPublic: true } });
+    if (!target) return res.status(404).json({ error: 'User not found' });
+
+    const nextValue = typeof req.body?.wishlistPublic === 'boolean' ? req.body.wishlistPublic : !target.wishlistPublic;
+
+    const updated = await prisma.user.update({
+      where: { id },
+      data: { wishlistPublic: nextValue },
+      select: { id: true, wishlistPublic: true },
+    });
+
+    res.json(updated);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

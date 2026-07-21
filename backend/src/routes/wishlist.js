@@ -18,7 +18,7 @@ router.get('/analytics', async (req, res) => {
   try {
     const items = await prisma.wishlistItem.findMany({
       where: { userId: req.userId },
-      include: { product: true },
+      include: { product: { include: { priceHistory: { orderBy: { recordedAt: 'asc' } } } } },
     });
 
     const dealScore = (p) => {
@@ -45,6 +45,7 @@ router.get('/analytics', async (req, res) => {
         toTarget: toTarget != null ? parseFloat(toTarget.toFixed(2)) : null,
         dealScore: dealScore(p),
         targetMet: i.targetPrice != null && p.currentPrice <= i.targetPrice,
+        priceHistory: p.priceHistory.map(h => ({ price: h.price, recordedAt: h.recordedAt })),
       };
     });
 

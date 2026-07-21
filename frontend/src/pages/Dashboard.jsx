@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductImage from '../components/ProductImage';
 import PageHeader from '../components/PageHeader';
+import PriceChart from '../components/PriceChart';
 import { Stagger, StaggerItem } from '../components/motion';
 
 function StatCard({ label, value, sub, accent }) {
@@ -144,6 +145,30 @@ export default function Dashboard() {
             No savings recorded yet. They appear once prices drop from their peak.
           </p>
         )}
+      </div>
+
+      {/* Per-item price history charts */}
+      <div className="mt-6">
+        <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text)' }}>Price History</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {topSavers.map(d => (
+            <div key={d.id} className="card p-5">
+              <Link to={`/product/${d.productId}`} className="flex items-center gap-3 mb-3 group">
+                <div className="w-10 h-10 rounded-lg overflow-hidden surface-3 shrink-0">
+                  <ProductImage src={d.imageUrl} alt={d.title} className="w-full h-full object-contain" fallbackClass="w-full h-full" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold line-clamp-1 group-hover:text-brand transition-colors" style={{ color: 'var(--text)' }}>{d.title}</p>
+                  <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                    {d.currency} {d.currentPrice.toFixed(2)}
+                    {d.savedVsPeak > 0 && <span className="text-success font-semibold"> · saved {d.currency} {d.savedVsPeak.toFixed(2)} vs peak</span>}
+                  </p>
+                </div>
+              </Link>
+              <PriceChart history={d.priceHistory} currency={d.currency} />
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );

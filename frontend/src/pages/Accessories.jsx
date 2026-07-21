@@ -241,7 +241,7 @@ export default function Accessories() {
             </p>
           </div>
           <div className="flex gap-3 shrink-0 flex-wrap justify-center">
-            <button onClick={() => goSearch('phone accessories')} className="bg-[var(--on-brand)] text-brand-strong font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-lg text-sm">
+            <button onClick={() => goSearch('phone accessories')} className="bg-[var(--on-brand)] text-brand-strong font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity shadow-float text-sm">
               Start Searching →
             </button>
           </div>

@@ -58,22 +58,22 @@ describe('POST /api/auth/login', () => {
     expect(res.body.token).toBeDefined();
   });
 
-  it('rejects wrong password', async () => {
+  it('rejects wrong password with a generic error (no account-enumeration signal)', async () => {
     const res = await request(app).post('/api/auth/login').send({
       email: 'login@test.pricepulse',
       password: 'wrongpassword',
     });
     expect(res.status).toBe(401);
-    expect(res.body.code).toBe('WRONG_PASSWORD');
+    expect(res.body.code).toBe('INVALID_CREDENTIALS');
   });
 
-  it('rejects non-existent email and flags it as no account, not a wrong password', async () => {
+  it('rejects non-existent email with the same generic error as a wrong password', async () => {
     const res = await request(app).post('/api/auth/login').send({
       email: 'nobody@test.pricepulse',
       password: 'password123',
     });
     expect(res.status).toBe(401);
-    expect(res.body.code).toBe('NO_ACCOUNT');
+    expect(res.body.code).toBe('INVALID_CREDENTIALS');
   });
 });
 

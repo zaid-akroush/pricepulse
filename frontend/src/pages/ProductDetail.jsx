@@ -6,6 +6,7 @@ import PriceChart from '../components/PriceChart';
 import ProductImage from '../components/ProductImage';
 import DealScore, { getDealScore } from '../components/DealScore';
 import PricePrediction from '../components/PricePrediction';
+import PriceCompare from '../components/PriceCompare';
 import ProductSpecs from '../components/ProductSpecs';
 import { FadeIn } from '../components/motion';
 
@@ -156,7 +157,7 @@ function RelatedProducts({ productId }) {
         {loading
           ? [...Array(4)].map((_, i) => <div key={i} className="h-20 rounded-xl animate-pulse" style={{ backgroundColor: 'var(--bg)' }} />)
           : related.map(p => (
-            <div key={p.id} className="rounded-xl p-2.5 transition-colors hover:bg-black/5" style={{ backgroundColor: 'var(--bg)' }}>
+            <div key={p.id} className="rounded-xl p-2.5 transition-colors bg-app hover:bg-app-subtle">
               <div className="flex gap-3 cursor-pointer" onClick={() => navigate(`/product/${p.id}`)}>
                 <div className="w-14 h-14 rounded-lg overflow-hidden surface shrink-0 flex items-center justify-center">
                   <ProductImage src={p.imageUrl} alt={p.title} productId={p.id} className="w-full h-full object-contain" fallbackClass="w-full h-full" />
@@ -269,6 +270,10 @@ export default function ProductDetail() {
   }
 
   async function handleRefresh() {
+    // /products/:id/refresh calls the paid price-lookup API, so it now
+    // requires being logged in (ties usage to an account instead of being
+    // fully anonymous).
+    if (!currentUser) { navigate('/login'); return; }
     setRefreshing(true); setRefreshMsg('');
     try {
       const { data } = await api.post(`/products/${id}/refresh`);
@@ -278,8 +283,8 @@ export default function ProductDetail() {
       } else {
         setRefreshMsg(data.message || 'No live price available right now.');
       }
-    } catch {
-      setRefreshMsg('Could not refresh right now.');
+    } catch (err) {
+      setRefreshMsg(err.response?.data?.error || 'Could not refresh right now.');
     } finally {
       setRefreshing(false);
       setTimeout(() => setRefreshMsg(''), 3000);
@@ -469,6 +474,9 @@ export default function ProductDetail() {
 
       {/* Price Forecast */}
       <PricePrediction productId={product.id} />
+
+      {/* Compare Prices Across Retailers */}
+      <PriceCompare productId={product.id} currentPrice={product.currentPrice} currency={product.currency} currentUrl={product.url} />
 
       {/* Comments */}
       <CommentsSection productId={product.id} />

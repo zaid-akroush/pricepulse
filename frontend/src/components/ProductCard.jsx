@@ -67,7 +67,7 @@ export default function ProductCard({ product }) {
           />
         </div>
         {discount && discount > 0 && (
-          <div className="absolute top-2.5 left-2.5 badge badge-solid shadow-sm">-{discount}%</div>
+          <div className="absolute top-2.5 left-2.5 badge badge-solid shadow-[var(--shadow-sm)]">-{discount}%</div>
         )}
         {product.source && (
           <div className="absolute top-2.5 right-2.5 badge bg-black/70 text-white text-[10px]">{product.source}</div>

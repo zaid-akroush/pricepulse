@@ -46,7 +46,7 @@ export default function PushToggle() {
         aria-pressed={on}
         title={on ? 'Disable push' : 'Enable push'}
       >
-        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow transition-all ${on ? 'left-6' : 'left-1'}`} />
+        <span className={`absolute top-1 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-all ${on ? 'left-6' : 'left-1'}`} />
       </button>
     </div>
   );

@@ -9,7 +9,7 @@ const prisma = new PrismaClient();
 router.get('/wishlists', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      where: { wishlistItems: { some: {} } },
+      where: { wishlistItems: { some: {} }, wishlistPublic: true },
       select: {
         id: true,
         name: true,
@@ -45,7 +45,7 @@ router.get('/wishlists', async (req, res) => {
 router.get('/leaderboard', async (req, res) => {
   try {
     const users = await prisma.user.findMany({
-      where: { wishlistItems: { some: {} } },
+      where: { wishlistItems: { some: {} }, wishlistPublic: true },
       select: {
         id: true,
         name: true,

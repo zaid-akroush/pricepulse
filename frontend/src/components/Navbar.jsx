@@ -61,7 +61,7 @@ export default function Navbar() {
   const allLinks = [...LINKS, ...userLinks];
 
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'surface/90 backdrop-blur-md border-b border-app shadow-sm' : 'surface border-b border-transparent'}`}>
+    <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'surface/90 backdrop-blur-md border-b border-app shadow-[var(--shadow-sm)]' : 'surface border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 shrink-0">

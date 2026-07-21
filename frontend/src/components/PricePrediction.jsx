@@ -51,9 +51,16 @@ export default function PricePrediction({ productId }) {
     <div className="card p-6 mt-6">
       <div className="flex items-center justify-between mb-4">
         <h2 className="text-lg font-bold" style={{ color: 'var(--text)' }}>Price Forecast</h2>
-        <span className="badge surface-3 text-muted" title="How confident the model is, based on fit quality and amount of history">
-          {data.confidence}% confidence
-        </span>
+        <div className="flex items-center gap-2">
+          {data.volatilityPct > 8 && (
+            <span className="badge badge-orange text-xs" title="This product's price swings noticeably, which reduces trend confidence">
+              Volatile pricing
+            </span>
+          )}
+          <span className="badge surface-3 text-muted" title="How confident the model is, based on fit quality, recent volatility, and amount of history">
+            {data.confidence}% confidence
+          </span>
+        </div>
       </div>
 
       {/* Recommendation banner */}
@@ -111,7 +118,7 @@ export default function PricePrediction({ productId }) {
           style={{ backgroundImage: 'linear-gradient(to right, var(--success), var(--warning), var(--danger))' }}
         >
           <div
-            className="absolute -top-1 w-4 h-4 rounded-full border-2 shadow"
+            className="absolute -top-1 w-4 h-4 rounded-full border-2 shadow-[var(--shadow-sm)]"
             style={{
               left: `calc(${Math.min(100, Math.max(0, data.pricePosition))}% - 8px)`,
               backgroundColor: 'var(--surface)',

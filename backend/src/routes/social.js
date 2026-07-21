@@ -30,19 +30,21 @@ router.post('/follow/:userId', auth, asyncHandler(async (req, res) => {
   if (followingId === null) return;
   const followerId = req.userId;
   if (followerId === followingId) return res.status(400).json({ error: "Can't follow yourself" });
-  const follow = await prisma.follow.upsert({
+  const existing = await prisma.follow.findUnique({
     where: { followerId_followingId: { followerId, followingId } },
-    update: {},
-    create: { followerId, followingId },
   });
-  // Create notification for followed user
-  await prisma.notification.create({
-    data: {
-      userId: followingId,
-      type: 'new_follower',
-      message: `Someone started following you`,
-    },
-  });
+  const follow = existing || await prisma.follow.create({ data: { followerId, followingId } });
+  // Only notify the followed user the first time this relationship is created,
+  // not on every repeat/retry of the follow request.
+  if (!existing) {
+    await prisma.notification.create({
+      data: {
+        userId: followingId,
+        type: 'new_follower',
+        message: `Someone started following you`,
+      },
+    });
+  }
   res.json(follow);
 }));
 
@@ -258,10 +260,29 @@ router.post('/share-wishlist', auth, asyncHandler(async (req, res) => {
   res.json({ token: user.shareToken });
 }));
 
-// GET /api/social/shared-wishlist/:token, public, no auth
+// GET /api/social/share-wishlist, returns the current share token (if any)
+// without generating one, so the frontend can render the toggle state.
+router.get('/share-wishlist', auth, asyncHandler(async (req, res) => {
+  const user = await prisma.user.findUnique({ where: { id: req.userId }, select: { shareToken: true } });
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ token: user.shareToken || null });
+}));
+
+// DELETE /api/social/share-wishlist, revokes the current share link (existing
+// links stop working immediately; a new POST generates a fresh token).
+router.delete('/share-wishlist', auth, asyncHandler(async (req, res) => {
+  await prisma.user.update({ where: { id: req.userId }, data: { shareToken: null } });
+  res.json({ token: null });
+}));
+
+// GET /api/social/shared-wishlist/:token, public, no auth. Only exposes the
+// owner's display name and their wishlist items — no email, password hash,
+// or other account fields.
 router.get('/shared-wishlist/:token', asyncHandler(async (req, res) => {
+  const token = String(req.params.token || '');
+  if (!/^[a-f0-9]{24}$/.test(token)) return res.status(404).json({ error: 'Wishlist not found' });
   const user = await prisma.user.findUnique({
-    where: { shareToken: req.params.token },
+    where: { shareToken: token },
     select: {
       id: true, name: true, createdAt: true,
       wishlistItems: {
@@ -273,7 +294,7 @@ router.get('/shared-wishlist/:token', asyncHandler(async (req, res) => {
     },
   });
   if (!user) return res.status(404).json({ error: 'Wishlist not found' });
-  res.json(user);
+  res.json({ name: user.name, memberSince: user.createdAt, items: user.wishlistItems });
 }));
 
 
