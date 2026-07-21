@@ -25,7 +25,7 @@ An intelligent electronics price tracking and alert system. Search for products 
 | Scheduling | node-cron |
 | Security | Helmet.js, express-rate-limit, express-validator |
 | Testing | Jest, Supertest |
-| Deployment | Docker, Docker Compose, Render |
+| Deployment | Render (backend), Cloudflare Pages (frontend), Supabase (database), Docker Compose (local dev) |
 
 ## Getting Started
 
@@ -51,7 +51,7 @@ Fill in the values in `.env`:
 
 | Variable | Where to get it |
 |----------|----------------|
-| `SERP_API_KEY` | [valueserp.com](https://www.valueserp.com) |
+| `SERP_API_KEY` | [serper.dev](https://serper.dev) |
 | `RESEND_API_KEY` | [resend.com/api-keys](https://resend.com/api-keys) |
 | `JWT_SECRET` | Any long random string |
 
@@ -91,6 +91,17 @@ npm run dev
 
 Open **http://localhost:3000**.
 
+### 5. Or run both together with one command
+
+From the project root (one-time setup, then anytime after):
+
+```bash
+npm install
+npm run dev
+```
+
+This starts the backend and frontend concurrently in one terminal (requires the database already running and both `.env` files filled in as above).
+
 ## Running Tests
 
 ```bash
@@ -100,14 +111,62 @@ npm test
 
 21 integration tests covering authentication, wishlist management, and product routes.
 
-## Deployment
+## Hosting
 
-The project includes a `render.yaml` for one-click deployment on [Render](https://render.com):
+The live site deploys itself. Once the one-time setup below is done, every
+`git push` to `main` automatically rebuilds and redeploys both the frontend
+and the backend, nothing needs to be started or run on a local machine.
 
-1. Push the repository to GitHub
-2. Connect the repo on [render.com](https://render.com)
-3. Render reads `render.yaml` and provisions the backend, frontend, and PostgreSQL database automatically
-4. Set `SERP_API_KEY` and `RESEND_API_KEY` in the Render dashboard
+**Architecture:**
+
+| Piece | Host | Free tier | Auto-deploys on push? |
+|-------|------|-----------|------------------------|
+| Frontend | Cloudflare Pages | Yes, no expiry | Yes (GitHub integration) |
+| Backend API | Render | Yes, 750 hrs/month | Yes (`render.yaml` blueprint) |
+| Database | Supabase Postgres | Yes, no time-based expiry | N/A (database, not code) |
+
+### One-time setup
+
+**1. Database (Supabase)**
+
+- Create a free project at [supabase.com](https://supabase.com).
+- Go to Settings -> Database and copy the "Direct connection" connection string.
+- Save it somewhere; it becomes `DATABASE_URL` in step 2.
+
+**2. Backend (Render)**
+
+- Push this repository to GitHub.
+- In the [Render dashboard](https://dashboard.render.com): New -> Blueprint, and connect this repo.
+- Render finds `render.yaml` at the repo root and creates a `pricepulse-api` web service on the free plan.
+- Fill in the secret values it asks for: `DATABASE_URL` (from step 1), `JWT_SECRET` (any long random string), `ADMIN_EMAILS`, `SERP_API_KEY`, `RESEND_API_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CLIENT_URL` (your Cloudflare Pages URL, e.g. `https://pricepulse-cw6.pages.dev`), and `INTERNAL_PROXY_SECRET` (any long random string — must match the same value set in step 3 on Cloudflare Pages).
+- Deploy. Copy the resulting `https://pricepulse-api.onrender.com`-style URL.
+
+**3. Frontend (Cloudflare Pages)**
+
+- In the Cloudflare dashboard: Workers & Pages -> Create -> Pages -> connect this repo on GitHub.
+- Build command: `npm run build` (from `frontend/`). Output directory: `dist`.
+- Under the project's Settings -> Environment variables, add a secret named `BACKEND_URL` set to the Render URL from step 2. A Cloudflare Pages Function (`frontend/functions/api/[[path]].js`) proxies every `/api/*` request on the live site to this URL, so the frontend never calls Render directly and `BACKEND_URL` only needs to be set this one time.
+- Also add a secret named `INTERNAL_PROXY_SECRET` (any long random string, matching the value entered on Render in step 2). The Pages Function forwards it on every proxied request so the backend's rate limiter can tell a genuine Cloudflare-routed request from someone hitting the Render URL directly and spoofing the client-IP header.
+- Every future `git push` to `main` now rebuilds and redeploys the frontend automatically.
+
+**4. Keep the free backend warm (optional but recommended)**
+
+Render's free web service spins down after about 15 minutes of no traffic,
+which adds a ~1 minute delay to the next request and can cause the 6-hourly
+price-check cron to be skipped while asleep. To avoid this, add a free
+monitor at [cron-job.org](https://cron-job.org) that pings
+`https://pricepulse-api.onrender.com/api/health` every 10 minutes. This
+keeps the service (and the database connection) warm at no cost.
+
+### Local development
+
+Local development still uses Docker Compose and is unaffected by any of the above:
+
+```bash
+docker-compose up --build
+```
+
+The app will be available at **http://localhost**.
 
 ## Project Structure
 

@@ -3,3 +3,15 @@ node_modules/
 dist/
 .DS_Store
 *.log
+.wrangler/
+
+# AI assistant tooling/skill caches, not app code
+.agents/
+.claude/
+.codex/
+
+# Thesis writing material, not app code
+thesis-docs/
+
+# AI skill-manager lockfile, not app code
+skills-lock.json

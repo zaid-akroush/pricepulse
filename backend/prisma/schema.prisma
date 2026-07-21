@@ -1,7 +1,8 @@
 // PricePulse Database Schema
 
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x", "linux-musl"]
 }
 
 datasource db {
@@ -10,50 +11,138 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  email        String        @unique
-  password     String
-  name         String
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  id            Int            @id @default(autoincrement())
+  email         String         @unique
+  password      String
+  name          String
+  shareToken    String?        @unique  // public wishlist share link
+  resetToken       String?     @unique  // hashed password-reset token
+  resetTokenExpiry DateTime?            // when the reset token expires
+  tokenVersion  Int            @default(0) // bumped on password change/reset to invalidate old JWTs
+  wishlistPublic Boolean       @default(true) // whether /api/community endpoints may list this user's wishlist
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   wishlistItems WishlistItem[]
+  followers     Follow[]       @relation("Following")
+  following     Follow[]       @relation("Follower")
+  likes         ProductLike[]
+  comments      Comment[]
+  savedSearches SavedSearch[]
+  notifications Notification[]
+  pushSubscriptions PushSubscription[]
 }
 
 model Product {
-  id            Int           @id @default(autoincrement())
+  id            Int            @id @default(autoincrement())
   title         String
   url           String?
   imageUrl      String?
   currentPrice  Float
   lowestPrice   Float
   highestPrice  Float
-  currency      String        @default("USD")
-  source        String        // e.g. "google_shopping"
-  serpApiQuery  String        // the query used to track this product
-  lastChecked   DateTime      @default(now())
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  currency      String         @default("USD")
+  source        String
+  serpApiQuery  String
+  lastChecked   DateTime       @default(now())
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   wishlistItems WishlistItem[]
   priceHistory  PriceHistory[]
+  likes         ProductLike[]
+  comments      Comment[]
+  notifications Notification[]
 }
 
 model WishlistItem {
-  id           Int      @id @default(autoincrement())
-  userId       Int
-  productId    Int
-  targetPrice  Float?   // notify user when price drops below this
-  notified     Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  id                Int      @id @default(autoincrement())
+  userId            Int
+  productId         Int
+  targetPrice       Float?
+  targetDropPercent Float?   // notify when price drops X% from highest
+  notified          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId])
 }
 
 model PriceHistory {
-  id        Int      @id @default(autoincrement())
-  productId Int
-  price     Float
+  id         Int      @id @default(autoincrement())
+  productId  Int
+  price      Float
   recordedAt DateTime @default(now())
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model Follow {
+  id          Int      @id @default(autoincrement())
+  followerId  Int
+  followingId Int
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followingId])
+}
+
+model ProductLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([productId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  productId Int
+  text      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+}
+
+model SavedSearch {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  query     String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, query])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // 'price_drop', 'target_hit', 'new_follower', 'deal_alert'
+  message   String
+  productId Int?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+}
+
+model PushSubscription {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

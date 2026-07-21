@@ -1,0 +1,38 @@
+{
+  "name": "PricePulse",
+  "short_name": "PricePulse",
+  "description": "Real-time electronics price tracker. Set targets, get alerted when prices drop.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#eb6200",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["shopping", "finance", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Search Products",
+      "url": "/search",
+      "description": "Search for electronics to track"
+    },
+    {
+      "name": "My Wishlist",
+      "url": "/wishlist",
+      "description": "View your price-tracked products"
+    }
+  ]
+}
