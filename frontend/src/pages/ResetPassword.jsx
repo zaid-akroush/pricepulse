@@ -16,7 +16,7 @@ export default function ResetPassword() {
   async function handleSubmit(e) {
     e.preventDefault();
     setError(null);
-    if (form.password.length < 6) return setError('Password must be at least 6 characters.');
+    if (form.password.length < 10) return setError('Password must be at least 10 characters.');
     if (form.password !== form.confirm) return setError('Passwords do not match.');
 
     setLoading(true);

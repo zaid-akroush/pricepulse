@@ -22,6 +22,7 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [togglingId, setTogglingId] = useState(null);
 
   useEffect(() => {
     if (!user?.isAdmin) return;
@@ -49,6 +50,19 @@ export default function Admin() {
       setError(err.response?.data?.error || 'Could not delete user.');
     } finally {
       setDeletingId(null);
+    }
+  }
+
+  async function handleToggleVisibility(u) {
+    setTogglingId(u.id);
+    try {
+      const res = await api.patch(`/admin/users/${u.id}/wishlist-visibility`);
+      setUsers(prev => prev.map(x => x.id === u.id ? { ...x, wishlistPublic: res.data.wishlistPublic } : x));
+      setError(null);
+    } catch (err) {
+      setError(err.response?.data?.error || 'Could not update visibility.');
+    } finally {
+      setTogglingId(null);
     }
   }
 
@@ -82,6 +96,7 @@ export default function Admin() {
                     <th className="p-3 font-semibold">Email</th>
                     <th className="p-3 font-semibold">Joined</th>
                     <th className="p-3 font-semibold text-center">Wishlist</th>
+                    <th className="p-3 font-semibold text-center">Leaderboard</th>
                     <th className="p-3 font-semibold text-right">Actions</th>
                   </tr>
                 </thead>
@@ -92,18 +107,32 @@ export default function Admin() {
                       <td className="p-3 text-muted">{u.email}</td>
                       <td className="p-3 text-muted">{fmtDate(u.createdAt)}</td>
                       <td className="p-3 text-center text-app">{u.wishlistCount}</td>
+                      <td className="p-3 text-center">
+                        <span className={`badge ${u.wishlistPublic ? 'badge-green' : 'badge-neutral'}`}>
+                          {u.wishlistPublic ? 'On leaderboard' : 'Hidden'}
+                        </span>
+                      </td>
                       <td className="p-3 text-right">
-                        {u.id === user.id ? (
-                          <span className="text-xs text-muted">You</span>
-                        ) : (
+                        <div className="flex items-center justify-end gap-3">
                           <button
-                            onClick={() => handleDelete(u)}
-                            disabled={deletingId === u.id}
-                            className="text-xs font-semibold text-danger hover:opacity-80 disabled:opacity-50"
+                            onClick={() => handleToggleVisibility(u)}
+                            disabled={togglingId === u.id}
+                            className="text-xs font-semibold text-brand hover:opacity-80 disabled:opacity-50"
                           >
-                            {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                            {togglingId === u.id ? 'Updating…' : u.wishlistPublic ? 'Hide from leaderboard' : 'Show on leaderboard'}
                           </button>
-                        )}
+                          {u.id === user.id ? (
+                            <span className="text-xs text-muted">You</span>
+                          ) : (
+                            <button
+                              onClick={() => handleDelete(u)}
+                              disabled={deletingId === u.id}
+                              className="text-xs font-semibold text-danger hover:opacity-80 disabled:opacity-50"
+                            >
+                              {deletingId === u.id ? 'Deleting…' : 'Delete'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

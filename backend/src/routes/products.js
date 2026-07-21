@@ -140,6 +140,71 @@ router.get('/deal-of-day', async (req, res) => {
   }
 });
 
+// GET /api/products/public-stats
+// Aggregate, non-identifying counts for homepage social proof. No user
+// data, emails, or anything per-account — just totals.
+router.get('/public-stats', async (req, res) => {
+  try {
+    const [productsTracked, activeTrackers, priceChecks, priceFields] = await Promise.all([
+      prisma.product.count(),
+      prisma.user.count(),
+      prisma.priceHistory.count(),
+      prisma.product.findMany({ select: { currentPrice: true, highestPrice: true } }),
+    ]);
+    const dropsRecorded = priceFields.filter(p => p.currentPrice < p.highestPrice).length;
+    res.json({ productsTracked, activeTrackers, priceChecks, dropsRecorded });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/products/:id/compare
+// Compares this tracked product's price against other listings for the same
+// search query (i.e. other retailers Google Shopping returned for it). We
+// don't have a multi-retailer data model (one Product = one tracked
+// listing), so rather than a schema rework this re-runs the same
+// serpApiQuery the product was created from and surfaces the other results
+// side by side, without merging them into the tracked product's own history.
+// Cached in memory for a while per product since this burns paid API quota.
+const COMPARE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
+const compareCache = new Map(); // productId -> { at, listings }
+
+router.get('/:id/compare', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const product = await prisma.product.findUnique({ where: { id } });
+    if (!product) return res.status(404).json({ error: 'Not found' });
+
+    const cached = compareCache.get(id);
+    if (cached && Date.now() - cached.at < COMPARE_CACHE_TTL_MS) {
+      return res.json({ listings: cached.listings, cached: true });
+    }
+
+    let results = [];
+    try { results = await searchProducts(product.serpApiQuery); } catch (_) { /* fall through with empty */ }
+
+    // Exclude the exact listing already being tracked (same url, or same
+    // title+price already shown as "currentPrice" above), dedupe by
+    // retailer (source), and keep the cheapest result per retailer.
+    const bySource = new Map();
+    for (const r of results) {
+      if (!r.url || !r.source) continue;
+      if (product.url && r.url === product.url) continue;
+      const existing = bySource.get(r.source);
+      if (!existing || r.price < existing.price) bySource.set(r.source, r);
+    }
+    const listings = Array.from(bySource.values())
+      .sort((a, b) => a.price - b.price)
+      .slice(0, 8)
+      .map(r => ({ title: r.title, price: r.price, currency: r.currency, url: r.url, source: r.source, imageUrl: r.imageUrl, rating: r.rating }));
+
+    compareCache.set(id, { at: Date.now(), listings });
+    res.json({ listings, cached: false });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/products/:id/related
 // Returns products from same category/query
 router.get('/:id/related', async (req, res) => {
@@ -180,6 +245,11 @@ router.get('/:id/retailer-breakdown', async (req, res) => {
   }
 });
 
+function dropFromHighPct(high, current) {
+  if (!(high > 0)) return 0;
+  return Math.max(0, Math.round(((high - current) / high) * 100));
+}
+
 // GET /api/products/:id/forecast
 // Predicts the near-term price using least-squares linear regression over the
 // product's price history and returns a buy-now-vs-wait recommendation.
@@ -201,24 +271,42 @@ router.get('/:id/forecast', async (req, res) => {
     const xs = hist.map(h => (new Date(h.recordedAt).getTime() - t0) / 86400000);
     const ys = hist.map(h => h.price);
     const n = xs.length;
-    const sx = xs.reduce((a, b) => a + b, 0);
-    const sy = ys.reduce((a, b) => a + b, 0);
-    const sxx = xs.reduce((a, b) => a + b * b, 0);
-    const sxy = xs.reduce((a, b, i) => a + b * ys[i], 0);
-    const denom = n * sxx - sx * sx || 1;
-    const slope = (n * sxy - sx * sy) / denom;          // price change per day
-    const intercept = (sy - slope * sx) / n;
 
-    // R^2 (confidence in the fit)
-    const meanY = sy / n;
-    const ssTot = ys.reduce((a, y) => a + (y - meanY) ** 2, 0) || 1;
-    const ssRes = ys.reduce((a, y, i) => a + (y - (intercept + slope * xs[i])) ** 2, 0);
+    // Recency-weighted least squares: recent price movement is a much better
+    // signal of what happens next than a flat average over a product's whole
+    // history (which can span months of an old, now-irrelevant trend). Weight
+    // each point by an exponential decay from the most recent observation,
+    // half-life 14 days, so a product that was trending down 3 months ago but
+    // has been flat for the last 2 weeks correctly reads as "flat" now.
+    const lastX = xs[n - 1];
+    const HALF_LIFE_DAYS = 14;
+    const weights = xs.map(x => Math.pow(0.5, (lastX - x) / HALF_LIFE_DAYS));
+    const sw = weights.reduce((a, b) => a + b, 0);
+    const swx = weights.reduce((a, w, i) => a + w * xs[i], 0);
+    const swy = weights.reduce((a, w, i) => a + w * ys[i], 0);
+    const swxx = weights.reduce((a, w, i) => a + w * xs[i] * xs[i], 0);
+    const swxy = weights.reduce((a, w, i) => a + w * xs[i] * ys[i], 0);
+    const denom = sw * swxx - swx * swx || 1;
+    const slope = (sw * swxy - swx * swy) / denom;       // price change per day (recency-weighted)
+    const intercept = (swy - slope * swx) / sw;
+
+    // R^2 (confidence in the fit), computed weighted so it reflects fit
+    // quality of the same recency-weighted line.
+    const meanY = swy / sw;
+    const ssTot = weights.reduce((a, w, i) => a + w * (ys[i] - meanY) ** 2, 0) || 1;
+    const ssRes = weights.reduce((a, w, i) => a + w * (ys[i] - (intercept + slope * xs[i])) ** 2, 0);
     const r2 = Math.max(0, 1 - ssRes / ssTot);
+
+    // Volatility: coefficient of variation of price, used to soften the
+    // recommendation language when a product's price swings a lot day to day
+    // (a "trend" fitted through noisy data deserves less confident wording).
+    const stdDev = Math.sqrt(ys.reduce((a, y) => a + (y - (ys.reduce((s, v) => s + v, 0) / n)) ** 2, 0) / n);
+    const volatilityPct = meanY > 0 ? (stdDev / meanY) * 100 : 0;
+    const highVolatility = volatilityPct > 8;
 
     const cur = product.currentPrice;
     const lo = product.lowestPrice;
     const hi = product.highestPrice;
-    const lastX = xs[n - 1];
     // Clamp extrapolations to a believable band around the historical range so
     // long-horizon linear projections don't run off to absurd values.
     const floor = Math.max(0, lo * 0.6);
@@ -231,32 +319,43 @@ router.get('/:id/forecast', async (req, res) => {
     const position = hi > lo ? (cur - lo) / (hi - lo) : 0.5; // 0 = at lowest, 1 = at highest
     const dailyPct = cur > 0 ? (slope / cur) * 100 : 0;
 
-    // Recommendation logic
+    // Recommendation logic. Uses the recency-weighted trend above (so a stale
+    // months-old downtrend doesn't outvote a genuinely flat last two weeks),
+    // and softens wording when the price is too volatile for the trend to be
+    // read with much confidence.
+    const volatilityNote = highVolatility ? ' Price has swung noticeably recently, so treat this as a rough read.' : '';
     let action, reason, tone;
     if (cur <= lo * 1.02) {
       action = 'Buy now';
-      reason = 'Price is at or near its lowest recorded level.';
+      reason = `Price is at or near its lowest recorded level (${dropFromHighPct(hi, cur)}% below its peak).`;
       tone = 'buy';
-    } else if (Math.abs(dailyPct) < 0.15) {
-      // Near-flat price, judge purely on where it sits in the all-time range.
+    } else if (Math.abs(dailyPct) < 0.15 || highVolatility) {
+      // Near-flat recent trend, or too noisy to trust a slope at all — judge
+      // purely on where it sits in the all-time range instead.
       action = position < 0.4 ? 'Good time' : 'Fair price';
-      reason = 'Price has been stable recently with little movement expected.';
+      reason = (highVolatility
+        ? 'Price has been volatile lately, without a clear up or down trend.'
+        : 'Price has been stable recently with little movement expected.') + (position < 0.4 ? ' It also sits in the lower part of its historical range.' : '');
       tone = position < 0.4 ? 'buy' : 'neutral';
     } else if (slope < 0 && position > 0.35) {
       action = 'Wait';
-      reason = `Price is trending down (~${Math.abs(dailyPct).toFixed(1)}%/day). It may fall further.`;
+      reason = `Price has been trending down recently (~${Math.abs(dailyPct).toFixed(1)}%/day). It may fall further.${volatilityNote}`;
       tone = 'wait';
     } else if (slope > 0 && position < 0.55) {
       action = 'Buy soon';
-      reason = 'Price is low but starting to rise. A good window may be closing.';
+      reason = `Price is low but has started rising recently (~${dailyPct.toFixed(1)}%/day). A good window may be closing.${volatilityNote}`;
       tone = 'buy';
     } else {
       action = 'Wait';
-      reason = 'Current price sits above its recent average.';
+      reason = `Current price sits above its recent average and is trending up (~${dailyPct.toFixed(1)}%/day).${volatilityNote}`;
       tone = 'wait';
     }
 
-    const confidence = Math.round((0.4 + 0.6 * r2) * Math.min(1, n / 8) * 100);
+    // Confidence blends fit quality (r2), amount of history, and inverse
+    // volatility — a noisy price series should never report high confidence
+    // even if the weighted regression happens to fit those exact points well.
+    const volatilityFactor = Math.max(0.4, 1 - volatilityPct / 40);
+    const confidence = Math.round((0.4 + 0.6 * r2) * Math.min(1, n / 8) * volatilityFactor * 100);
 
     res.json({
       enoughData: true,
@@ -267,6 +366,7 @@ router.get('/:id/forecast', async (req, res) => {
       trendPerDayPct: parseFloat(dailyPct.toFixed(2)),
       pricePosition: parseFloat((position * 100).toFixed(0)), // percentile within all-time range
       r2: parseFloat(r2.toFixed(2)),
+      volatilityPct: parseFloat(volatilityPct.toFixed(1)),
       confidence,
       recommendation: { action, reason, tone },
       points: hist.length,

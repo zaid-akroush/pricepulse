@@ -27,7 +27,7 @@ export default function InstallPrompt() {
 
   return (
     <div className="fixed bottom-4 inset-x-4 md:inset-x-auto md:right-4 md:w-80 z-50">
-      <div className="card p-4 flex items-center gap-3 shadow-lg border-app">
+      <div className="card p-4 flex items-center gap-3 shadow-float border-app">
         <Logo className="w-10 h-10 shrink-0" />
         <div className="flex-1 min-w-0">
           <p className="text-sm font-bold" style={{ color: 'var(--text)' }}>Install PricePulse</p>

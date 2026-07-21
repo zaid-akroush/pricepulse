@@ -168,10 +168,15 @@ router.get('/me', authMiddleware, async (req, res) => {
 });
 
 // PATCH /api/auth/profile  (protected), update name/email
-router.patch('/profile', authMiddleware, async (req, res) => {
+router.patch('/profile',
+  body('name').trim().notEmpty().withMessage('Name is required'),
+  body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
+  async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
+
   try {
     const { name, email } = req.body;
-    if (!name || !email) return res.status(400).json({ error: 'Name and email are required' });
 
     const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
     if (existing) return res.status(409).json({ error: 'Email already in use' });

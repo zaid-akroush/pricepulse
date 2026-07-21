@@ -29,8 +29,8 @@ export default function Profile() {
     if (pwForm.newPassword !== pwForm.confirmPassword) {
       setPwMsg({ type: 'error', text: 'Passwords do not match.' }); return;
     }
-    if (pwForm.newPassword.length < 6) {
-      setPwMsg({ type: 'error', text: 'Password must be at least 6 characters.' }); return;
+    if (pwForm.newPassword.length < 10) {
+      setPwMsg({ type: 'error', text: 'Password must be at least 10 characters.' }); return;
     }
     setPwSaving(true); setPwMsg(null);
     try {

@@ -5,6 +5,86 @@ import WishlistItem from '../components/WishlistItem';
 import PageHeader from '../components/PageHeader';
 import { FadeIn, Stagger, StaggerItem } from '../components/motion';
 
+function ShareWishlist() {
+  const [token, setToken] = useState(null);
+  const [checked, setChecked] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [copyMsg, setCopyMsg] = useState('');
+
+  useEffect(() => {
+    api.get('/social/share-wishlist')
+      .then(res => setToken(res.data.token))
+      .catch(() => {})
+      .finally(() => setChecked(true));
+  }, []);
+
+  const shareUrl = token ? `${window.location.origin}/shared/${token}` : null;
+
+  async function enable() {
+    setLoading(true);
+    try {
+      const res = await api.post('/social/share-wishlist');
+      setToken(res.data.token);
+    } finally { setLoading(false); }
+  }
+
+  async function revoke() {
+    if (!confirm('Revoke this share link? Anyone with the old link will lose access.')) return;
+    setLoading(true);
+    try {
+      await api.delete('/social/share-wishlist');
+      setToken(null);
+    } finally { setLoading(false); }
+  }
+
+  async function copy() {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopyMsg('Copied!');
+    } catch {
+      setCopyMsg(shareUrl);
+    }
+    setTimeout(() => setCopyMsg(''), 3000);
+  }
+
+  if (!checked) return null;
+
+  return (
+    <div className="card p-4 mb-8 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-app">Share your wishlist</p>
+        <p className="text-xs text-muted mt-0.5">
+          {token
+            ? 'Anyone with this link can view your wishlist (read-only). No account details are shared.'
+            : 'Generate a public link so others (e.g. for a gift list) can see what you\'re tracking.'}
+        </p>
+        {token && (
+          <p className="text-xs font-data mt-2 truncate px-2 py-1.5 rounded-lg" style={{ backgroundColor: 'var(--bg)', color: 'var(--text-muted)' }}>
+            {shareUrl}
+          </p>
+        )}
+      </div>
+      <div className="flex gap-2 shrink-0">
+        {token ? (
+          <>
+            <button onClick={copy} className="btn-secondary text-sm px-4">{copyMsg || 'Copy Link'}</button>
+            <button onClick={revoke} disabled={loading}
+              className="px-3 py-2 rounded-xl text-sm font-medium border transition-colors hover:border-danger hover:text-danger disabled:opacity-50"
+              style={{ borderColor: 'var(--border)', color: 'var(--text-muted)', backgroundColor: 'var(--surface)' }}>
+              Revoke
+            </button>
+          </>
+        ) : (
+          <button onClick={enable} disabled={loading} className="btn-primary text-sm px-4 disabled:opacity-50">
+            {loading ? '…' : 'Get Share Link'}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Wishlist() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +144,9 @@ export default function Wishlist() {
           subtitle={items.length === 0 ? 'No products tracked yet' : `${items.length} product${items.length !== 1 ? 's' : ''} tracked`}
           className="mb-8"
         />
+
+        {/* Share link */}
+        {items.length > 0 && <ShareWishlist />}
 
         {/* Stats */}
         {items.length > 0 && (

@@ -8,21 +8,19 @@ export default function Login() {
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState(null);
-  const [noAccount, setNoAccount] = useState(false);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true); setError(null); setNoAccount(false);
+    setLoading(true); setError(null);
     try {
       await login(form.email, form.password);
       navigate('/wishlist');
     } catch (err) {
-      if (err.response?.data?.code === 'NO_ACCOUNT') {
-        setNoAccount(true);
-      } else {
-        setError(err.response?.data?.error || 'Login failed. Check your credentials.');
-      }
+      // The backend intentionally returns one generic message for both a
+      // wrong password and a non-existent email, so a login attempt can't
+      // be used to enumerate which addresses are registered.
+      setError(err.response?.data?.error || 'Login failed. Check your credentials.');
     } finally { setLoading(false); }
   }
 
@@ -49,18 +47,6 @@ export default function Login() {
         </div>
 
         {error && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl">{error}</p>}
-
-        {noAccount && (
-          <div className="text-sm bg-brand-soft text-brand p-3 rounded-xl flex flex-wrap items-center gap-1.5">
-            <span>No account found for this email.</span>
-            <Link
-              to={`/register${form.email ? `?email=${encodeURIComponent(form.email)}` : ''}`}
-              className="font-semibold underline underline-offset-2"
-            >
-              Sign up free &rarr;
-            </Link>
-          </div>
-        )}
 
         <button type="submit" disabled={loading} className="btn-primary py-3 w-full disabled:opacity-50">
           {loading ? 'Logging in…' : 'Log In'}

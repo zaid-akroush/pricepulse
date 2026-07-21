@@ -261,7 +261,7 @@ export default function CommunityWishlists() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {bestValue.map(product => (
                         <Link key={product.id} to={`/product/${product.id}`}
-                          className="card p-4 flex gap-3 hover:shadow-md hover:-translate-y-0.5 transition-all">
+                          className="card card-hover p-4 flex gap-3">
                           <div className="w-16 h-16 rounded-xl surface-2 shrink-0 overflow-hidden flex items-center justify-center p-1">
                             <ProductImage src={product.imageUrl} alt={product.title} className="w-full h-full object-contain" fallbackClass="w-full h-full" />
                           </div>

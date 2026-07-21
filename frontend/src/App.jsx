@@ -13,6 +13,7 @@ import ResetPassword from './pages/ResetPassword';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
 import CommunityWishlists from './pages/CommunityWishlists';
+import SharedWishlist from './pages/SharedWishlist';
 import Help from './pages/Help';
 import Accessories from './pages/Accessories';
 import Notifications from './pages/Notifications';
@@ -54,6 +55,7 @@ export default function App() {
           <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
           <Route path="/community" element={<CommunityWishlists />} />
+          <Route path="/shared/:token" element={<SharedWishlist />} />
           <Route path="/events" element={<Events />} />
           <Route path="/help" element={<Help />} />
           <Route path="/accessories" element={<Accessories />} />

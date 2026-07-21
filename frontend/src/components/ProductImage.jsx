@@ -8,7 +8,7 @@ function ImageFallback({ label = '', className = '' }) {
     <div
       className={`flex flex-col items-center justify-center gap-2 p-3 text-center surface-3 ${className}`}
     >
-      <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-sm shrink-0">
+      <div className="w-10 h-10 rounded-xl bg-brand flex items-center justify-center shadow-[var(--shadow-sm)] shrink-0">
         <svg className="w-5 h-5 text-on-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9-4 9 4-9 4-9-4zm0 0v10l9 4 9-4V7" />
         </svg>

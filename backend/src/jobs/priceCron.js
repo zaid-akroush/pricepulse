@@ -50,8 +50,14 @@ async function checkPrices() {
           ? ((product.currentPrice - newPrice) / product.currentPrice) * 100
           : 0;
         const significantDrop = dropPct >= 3;
+        // Per-item custom alert: notify when price drops X% from the
+        // all-time high (independent of the flat 3% default above).
+        const dropFromPeakPct = product.highestPrice > 0
+          ? ((product.highestPrice - newPrice) / product.highestPrice) * 100
+          : 0;
+        const customDropMet = item.targetDropPercent != null && dropFromPeakPct >= item.targetDropPercent;
 
-        if ((targetMet || significantDrop) && !item.notified) {
+        if ((targetMet || significantDrop || customDropMet) && !item.notified) {
           await sendPriceDropEmail(item.user.email, {
             title: product.title,
             currentPrice: newPrice,

@@ -188,6 +188,9 @@ const SEED_USERS = [
 
 async function main() {
   console.log('Seeding community users and wishlists...');
+  // NOTE: every seed account below shares this one weak, publicly-known
+  // password. This file is dev-only fixture data for local/demo databases —
+  // it must NEVER be run against the production database.
   const password = await bcrypt.hash('password123', 10);
 
   for (const userData of SEED_USERS) {
