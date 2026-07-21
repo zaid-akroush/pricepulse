@@ -63,7 +63,7 @@ describe('POST /api/wishlist', () => {
       .post('/api/wishlist')
       .set('Authorization', `Bearer ${token}`)
       .send(testProduct);
-    expect(res.status).toBe(201); // upsert — no error
+    expect(res.status).toBe(201); // upsert, no error
     const list = await request(app)
       .get('/api/wishlist')
       .set('Authorization', `Bearer ${token}`);

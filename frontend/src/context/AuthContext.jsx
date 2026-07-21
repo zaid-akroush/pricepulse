@@ -9,11 +9,11 @@ export function AuthProvider({ children }) {
 
   // Restore session from token in memory on mount
   useEffect(() => {
-    const token = window.__pricepulse_token;
+    const token = localStorage.getItem('pp_token');
     if (token) {
       api.get('/auth/me')
         .then(res => setUser(res.data))
-        .catch(() => { window.__pricepulse_token = null; })
+        .catch(() => { localStorage.removeItem('pp_token'); })
         .finally(() => setLoading(false));
     } else {
       setLoading(false);
@@ -22,20 +22,20 @@ export function AuthProvider({ children }) {
 
   async function login(email, password) {
     const { data } = await api.post('/auth/login', { email, password });
-    window.__pricepulse_token = data.token;
+    localStorage.setItem('pp_token', data.token);
     setUser(data.user);
     return data.user;
   }
 
   async function register(name, email, password) {
     const { data } = await api.post('/auth/register', { name, email, password });
-    window.__pricepulse_token = data.token;
+    localStorage.setItem('pp_token', data.token);
     setUser(data.user);
     return data.user;
   }
 
   function logout() {
-    window.__pricepulse_token = null;
+    localStorage.removeItem('pp_token');
     setUser(null);
   }
 

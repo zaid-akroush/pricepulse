@@ -1,3 +1,7 @@
+# Local development only. The live site does not run through this file:
+# the frontend auto-deploys from GitHub via Cloudflare Pages and the backend
+# auto-deploys from GitHub via Render (see render.yaml and README.md).
+# Use this to run the whole stack on your machine while developing.
 version: '3.9'
 
 services:
@@ -27,15 +31,18 @@ services:
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/pricepulse
       JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAILS: ${ADMIN_EMAILS}
       SERP_API_KEY: ${SERP_API_KEY}
-      GMAIL_USER: ${GMAIL_USER}
-      GMAIL_APP_PASSWORD: ${GMAIL_APP_PASSWORD}
-      CLIENT_URL: http://localhost
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:alerts@pricepulse.app}
+      CLIENT_URL: https://pricepulse-cw6.pages.dev,https://b163b7a0.pricepulse-cw6.pages.dev,http://localhost:3000,http://localhost,http://localhost:5173,http://localhost:4173
       PORT: 5000
     ports:
-      - '5000:5000'
+      - '5050:5000'
     command: >
-      sh -c "npx prisma migrate deploy && node src/server.js"
+      sh -c "npx prisma generate && npx prisma migrate deploy && node src/server.js"
 
   frontend:
     build: ./frontend

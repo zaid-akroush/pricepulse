@@ -15,7 +15,7 @@ describe('GET /api/products/search', () => {
     expect(res.status).toBe(400);
   });
 
-  // Note: full search test requires a live SerpApi key — skipped in CI
+  // Note: full search test requires a live SerpApi key, skipped in CI
   it.skip('returns results for a valid query', async () => {
     const res = await request(app).get('/api/products/search?q=headphones');
     expect(res.status).toBe(200);

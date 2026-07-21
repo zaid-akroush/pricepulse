@@ -64,14 +64,16 @@ describe('POST /api/auth/login', () => {
       password: 'wrongpassword',
     });
     expect(res.status).toBe(401);
+    expect(res.body.code).toBe('WRONG_PASSWORD');
   });
 
-  it('rejects non-existent email', async () => {
+  it('rejects non-existent email and flags it as no account, not a wrong password', async () => {
     const res = await request(app).post('/api/auth/login').send({
       email: 'nobody@test.pricepulse',
       password: 'password123',
     });
     expect(res.status).toBe(401);
+    expect(res.body.code).toBe('NO_ACCOUNT');
   });
 });
 

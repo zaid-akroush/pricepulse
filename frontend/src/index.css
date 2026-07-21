@@ -2,8 +2,304 @@
 @tailwind components;
 @tailwind utilities;
 
-@layer base {
-  body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@keyframes pp-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up { animation: pp-fade-up 0.4s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pp-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-fade-in { animation: pp-fade-in 0.5s cubic-bezier(0.22, 1, 0.36, 1) both; }
+
+@keyframes pp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+.animate-float { animation: pp-float 5s ease-in-out infinite; }
+
+@keyframes pp-marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee { animation: pp-marquee 28s linear infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up, .animate-fade-in, .animate-float, .animate-marquee {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
   }
+}
+
+/* Design tokens — OKLCH.
+   Strategy: Committed. A vivid, saturated orange primary carries the brand
+   and doubles as the "price dropped" signal. Text sitting on the brand
+   fill is always near-black ink (not white) — a bright orange holds much
+   better contrast with dark ink than with white, so buttons/badges stay
+   both punchy and accessible. The page surface is a soft warm paper tone
+   (not stark white) with true-white cards lifted on top of it for depth.
+   No gradients, no glass/blur, no glow blobs. */
+:root {
+  --bg:            #f7f2ef;
+  --bg-subtle:     #ebe5e0;
+  --surface:       #ffffff;
+  --surface-2:     #f7f2ef;
+  --surface-3:     #e4dcd6;
+  --border:        #d4ccc6;
+  --border-strong: #aba39c;
+  --text:          #100f0e;
+  --text-muted:    #5c5753;
+  --text-faint:    #8b8580;
+
+  --ink:           #100f0e;
+  --ink-2:         #1c1a19;
+
+  --brand:         #eb6200;
+  --brand-strong:  #c22e00;
+  --brand-soft:    #ffe0c8;
+  --on-brand:      #100f0e;
+
+  --success:       #006d21;
+  --success-soft:  #d5f5d9;
+  --danger:        #c52a35;
+  --danger-soft:   #ffe3e0;
+  --warning:       #996700;
+  --warning-soft:  #fbe9c6;
+  --info:          #0f74c5;
+  --info-soft:     #ddedff;
+  --purple:        #8156c0;
+  --purple-soft:   #eee7fc;
+
+  --radius:    0.75rem;
+  --radius-lg: 0.875rem;
+  --radius-xl: 1.125rem;
+
+  --shadow-sm:    0 1px 2px rgba(16, 15, 14, 0.07);
+  --shadow-md:    0 4px 14px rgba(16, 15, 14, 0.1);
+  --shadow-lg:    0 18px 34px -14px rgba(16, 15, 14, 0.22);
+  --shadow-brand: 0 8px 18px -6px rgba(235, 98, 0, 0.4);
+}
+.dark {
+  --bg:            #0f0d0c;
+  --bg-subtle:     #0a0908;
+  --surface:       #181514;
+  --surface-2:     #221f1d;
+  --surface-3:     #2e2a28;
+  --border:        #36322f;
+  --border-strong: #4c4643;
+  --text:          #f3f1f0;
+  --text-muted:    #a8a4a1;
+  --text-faint:    #6c6866;
+
+  --ink:           #080706;
+  --ink-2:         #0f0d0c;
+
+  --brand:         #f57323;
+  --brand-strong:  #e75f00;
+  --brand-soft:    #411904;
+  --on-brand:      #100f0e;
+
+  --success:       #48b162;
+  --success-soft:  #16301d;
+  --danger:        #f36162;
+  --danger-soft:   #341413;
+  --warning:       #ddb049;
+  --warning-soft:  #2f2408;
+  --info:          #4c9deb;
+  --info-soft:     #10233a;
+  --purple:        #ad87ed;
+  --purple-soft:   #251c3a;
+
+  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-md:    0 4px 14px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 18px 34px -14px rgba(0, 0, 0, 0.65);
+  --shadow-brand: 0 8px 20px -6px rgba(245, 115, 35, 0.32);
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body {
+    background-color: var(--bg);
+    color: var(--text);
+    @apply antialiased;
+    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+  }
+  h1, h2, h3, h4 { text-wrap: balance; }
+  p { text-wrap: pretty; }
+  *:focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  ::selection { background: rgba(192, 73, 9, 0.18); }
+  .dark ::selection { background: rgba(240, 131, 78, 0.24); }
+  * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+  *::-webkit-scrollbar { width: 10px; height: 10px; }
+  *::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+}
+
+@layer components {
+  /* Buttons */
+  .btn-primary {
+    background-color: var(--brand);
+    color: var(--on-brand);
+    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-xl transition-opacity active:scale-[0.98];
+  }
+  /* Hover darkens via opacity, not a color swap — --brand-strong is tuned
+     for use as TEXT (price-tag, links) against light backgrounds, not as a
+     fill under the near-black --on-brand ink text, so swapping to it here
+     would tank the button label's contrast. */
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-secondary {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-xl border transition-colors;
+  }
+  .btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-ghost {
+    color: var(--text-muted);
+    background-color: transparent;
+    @apply inline-flex items-center justify-center gap-2 font-medium px-4 py-2 rounded-xl transition-colors;
+  }
+  .btn-ghost:hover { color: var(--brand); background-color: var(--brand-soft); }
+
+  /* Surfaces */
+  .card {
+    background-color: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+    @apply rounded-2xl border transition-shadow duration-200;
+  }
+  .card-hover {
+    @apply transition-[box-shadow,border-color,transform] duration-200;
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+    transform: translateY(-2px);
+  }
+  .card-hover:active {
+    transform: translateY(-2px) scale(0.99);
+  }
+
+  /* Inputs */
+  .input {
+    background-color: var(--surface);
+    color: var(--text);
+    border-color: var(--border-strong);
+    @apply w-full rounded-xl px-4 py-2.5 text-sm border transition-colors focus:outline-none;
+  }
+  .input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px rgba(192, 73, 9, 0.15);
+  }
+  .dark .input:focus {
+    box-shadow: 0 0 0 3px rgba(240, 131, 78, 0.18);
+  }
+  .input::placeholder { color: var(--text-faint); }
+  .input:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  /* Badges */
+  .badge { @apply inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full; }
+  .badge-green   { background: var(--success-soft); color: var(--success); }
+  .badge-red     { background: var(--danger-soft);  color: var(--danger); }
+  .badge-orange  { background: var(--brand-soft);   color: var(--brand-strong); }
+  .dark .badge-orange { color: var(--brand); }
+  .badge-blue    { background: var(--info-soft);    color: var(--info); }
+  .badge-purple  { background: var(--purple-soft);  color: var(--purple); }
+  .badge-neutral { background: var(--surface-3);    color: var(--text-muted); }
+  .badge-solid   { background-color: var(--brand); color: var(--on-brand); }
+
+  /* Chips */
+  .chip {
+    background-color: var(--surface);
+    color: var(--text-muted);
+    border-color: var(--border-strong);
+    @apply px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap border;
+  }
+  .chip:hover { color: var(--brand); border-color: var(--brand); }
+  .chip-active {
+    background-color: var(--brand);
+    color: var(--on-brand);
+    @apply border-transparent;
+  }
+
+  /* Numeric data: prices, chart axes, timestamps, table figures. Monospace
+     with tabular figures so digits line up column to column — that
+     alignment is what makes a price ledger read as accurate at a glance. */
+  .price-tag, .font-data {
+    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-variant-numeric: tabular-nums;
+  }
+  .price-tag { font-weight: 600; color: var(--brand-strong); letter-spacing: -0.01em; }
+  .dark .price-tag { color: var(--brand); }
+
+  .eyebrow { color: var(--brand-strong); @apply text-xs font-bold uppercase tracking-[0.14em]; }
+  .dark .eyebrow { color: var(--brand); }
+}
+
+@layer utilities {
+  .surface    { background-color: var(--surface); }
+  .surface-2  { background-color: var(--surface-2); }
+  .surface-3  { background-color: var(--surface-3); }
+  .bg-app     { background-color: var(--bg); }
+  .bg-app-subtle { background-color: var(--bg-subtle); }
+  .bg-ink     { background-color: var(--ink); }
+  .bg-ink-2   { background-color: var(--ink-2); }
+  .bg-brand   { background-color: var(--brand); }
+  .bg-brand-soft { background-color: var(--brand-soft); }
+  .bg-success { background-color: var(--success); }
+  .bg-danger  { background-color: var(--danger); }
+  .bg-warning { background-color: var(--warning); }
+  .bg-info    { background-color: var(--info); }
+  .text-app   { color: var(--text); }
+  .text-muted { color: var(--text-muted); }
+  .text-faint { color: var(--text-faint); }
+  .text-brand { color: var(--brand); }
+  .text-on-brand { color: var(--on-brand); }
+  .text-success { color: var(--success); }
+  .text-danger  { color: var(--danger); }
+  .text-warning { color: var(--warning); }
+  .text-info    { color: var(--info); }
+  .bg-success-soft { background-color: var(--success-soft); }
+  .bg-danger-soft  { background-color: var(--danger-soft); }
+  .bg-warning-soft { background-color: var(--warning-soft); }
+  .bg-info-soft    { background-color: var(--info-soft); }
+  .border-success  { border-color: var(--success); }
+  .border-danger   { border-color: var(--danger); }
+  .border-app { border-color: var(--border); }
+  .border-app-strong { border-color: var(--border-strong); }
+  .divide-app > * + * { border-color: var(--border); }
+  .shadow-soft { box-shadow: var(--shadow-md); }
+  .shadow-float { box-shadow: var(--shadow-lg); }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .font-data { font-feature-settings: "tnum" 1; }
+
+  /* Cursor-tracked border glow for feature/bento tiles. Set --mx/--my via
+     onMouseMove (in %) from the consuming component. */
+  .spotlight { position: relative; isolation: isolate; }
+  .spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 0%), var(--brand) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    z-index: 1;
+  }
+  .spotlight:hover::before { opacity: 0.5; }
 }
