@@ -18,6 +18,34 @@ const CATEGORIES = [
   { label: 'Smart Home',  q: 'smart home' },
 ];
 
+// Merged in from the old standalone Accessories page — accessories are just
+// another product category, so they belong in the same search flow instead
+// of a separate page with its own search box.
+const ACCESSORY_CATEGORIES = [
+  { label: 'Cases',              q: 'phone case' },
+  { label: 'Chargers',           q: 'USB-C charger fast charging' },
+  { label: 'Cables',             q: 'USB-C cable braided' },
+  { label: 'Earbuds',            q: 'wireless earbuds' },
+  { label: 'Power Banks',        q: 'power bank portable charger' },
+  { label: 'Screen Protectors',  q: 'screen protector tempered glass' },
+  { label: 'MagSafe',            q: 'MagSafe accessories' },
+  { label: 'Keyboards',          q: 'bluetooth keyboard compact' },
+];
+
+// Desktop/PC build components — a separate chip row since these are a
+// distinct shopping intent (building/upgrading a PC) from finished devices
+// and phone accessories above.
+const PC_PART_CATEGORIES = [
+  { label: 'Graphics Cards', q: 'graphics card GPU' },
+  { label: 'Processors',     q: 'CPU processor' },
+  { label: 'Motherboards',   q: 'motherboard' },
+  { label: 'RAM',            q: 'RAM memory desktop' },
+  { label: 'SSDs',           q: 'SSD solid state drive' },
+  { label: 'Power Supplies', q: 'PSU power supply' },
+  { label: 'PC Cases',       q: 'PC case tower' },
+  { label: 'CPU Coolers',    q: 'CPU cooler' },
+];
+
 const SORTS = [
   { label: 'Relevance', value: 'default' },
   { label: 'Price: Low to High', value: 'price_asc' },
@@ -39,6 +67,19 @@ export default function Search() {
   const [maxPrice, setMaxPrice] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
+  const [bookmarks, setBookmarks] = useState([]);
+
+  // Bookmarks sidebar: reuses the existing saved-searches feature so past
+  // searches are one click away instead of retyping them.
+  useEffect(() => {
+    if (!user) { setBookmarks([]); return; }
+    api.get('/social/saved-searches').then(r => setBookmarks(r.data)).catch(() => {});
+  }, [user, savedMsg]);
+
+  async function removeBookmark(id) {
+    setBookmarks(prev => prev.filter(b => b.id !== id));
+    try { await api.delete(`/social/saved-searches/${id}`); } catch {}
+  }
 
   async function saveSearch() {
     if (!user) { navigate('/login'); return; }
@@ -125,7 +166,7 @@ export default function Search() {
       </form>
 
       {/* Category chips */}
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide">
         {CATEGORIES.map(cat => (
           <button key={cat.label} onClick={() => handleCategory(cat)}
             className={`chip shrink-0 ${activeCategory === cat.q ? 'chip-active' : ''}`}>
@@ -133,10 +174,32 @@ export default function Search() {
           </button>
         ))}
       </div>
+      {/* Accessory chips (merged in from the old standalone Accessories page) */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-2 scrollbar-hide">
+        <span className="text-[11px] font-bold text-faint uppercase tracking-widest shrink-0">Accessories</span>
+        {ACCESSORY_CATEGORIES.map(cat => (
+          <button key={cat.label} onClick={() => handleCategory(cat)}
+            className={`chip shrink-0 !py-1.5 !px-3 text-xs ${activeCategory === cat.q ? 'chip-active' : ''}`}>
+            {cat.label}
+          </button>
+        ))}
+      </div>
+      {/* PC parts chips */}
+      <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+        <span className="text-[11px] font-bold text-faint uppercase tracking-widest shrink-0">PC Parts</span>
+        {PC_PART_CATEGORIES.map(cat => (
+          <button key={cat.label} onClick={() => handleCategory(cat)}
+            className={`chip shrink-0 !py-1.5 !px-3 text-xs ${activeCategory === cat.q ? 'chip-active' : ''}`}>
+            {cat.label}
+          </button>
+        ))}
+      </div>
 
-      {/* Filters row */}
+      {/* Filters row — bookmarks now live here as a popout instead of a full
+          side column, so the results grid gets the full page width and one
+          more column of products fits per row. */}
       {searched && results.length > 0 && (
-        <div className="flex flex-wrap gap-3 items-center mb-6 card p-3">
+        <div className="flex flex-wrap gap-3 items-center mb-6 card p-2.5">
           <span className="text-xs font-semibold text-muted uppercase tracking-wide">Filter & Sort</span>
           <select value={sort} onChange={e => setSort(e.target.value)}
             className="input py-1.5 text-xs w-auto">
@@ -153,60 +216,130 @@ export default function Search() {
             <button onClick={() => { setSort('default'); setMinPrice(''); setMaxPrice(''); }}
               className="text-xs text-danger hover:underline">Clear filters</button>
           )}
-          <span className="ml-auto text-xs text-muted font-semibold">{filtered.length} results</span>
+          <span className="text-xs text-muted font-semibold">{filtered.length} results</span>
+          {user && (
+            <div className="ml-auto">
+              <BookmarksMenu bookmarks={bookmarks} onSelect={q => navigate(`/search?q=${encodeURIComponent(q)}`)} onRemove={removeBookmark} />
+            </div>
+          )}
         </div>
       )}
 
       {/* Error */}
       {error && <p className="text-danger text-sm mb-6 bg-danger-soft p-3 rounded-xl">{error}</p>}
 
-      {/* Empty state */}
-      {searched && !loading && filtered.length === 0 && !error && (
-        <div className="text-center py-16 text-muted">
-          <div className="w-14 h-14 rounded-2xl bg-app-subtle flex items-center justify-center mx-auto mb-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-faint">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
+      {!loading && filtered.length > 0 && filtered.some(p => p.stale) && (
+        <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">
+          Live search is temporarily unavailable, showing last-known prices from products already tracked on PricePulse.
+        </p>
+      )}
+
+      <div>
+        <div className="flex-1 min-w-0">
+          {/* Empty state */}
+          {searched && !loading && filtered.length === 0 && !error && (
+            <div className="text-center py-16 text-muted">
+              <div className="w-14 h-14 rounded-2xl bg-app-subtle flex items-center justify-center mx-auto mb-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6 text-faint">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+              </div>
+              <p className="font-semibold text-app">No results found for "{query}"</p>
+              <p className="text-sm mt-1">Try a different search term or category.</p>
+            </div>
+          )}
+
+          {/* Loading skeleton */}
+          {loading && (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+              {Array(10).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
+            </div>
+          )}
+
+          {/* Results */}
+          {!loading && filtered.length > 0 && (
+            <Stagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" stagger={0.04}>
+              {filtered.map((product, i) => (
+                // Always fold the array index into the key, even when product.url
+                // exists — Google Shopping frequently returns multiple listings
+                // that resolve to the same retailer URL, and a shared key made
+                // React silently drop the render for every duplicate but the
+                // first, leaving that grid cell blank.
+                <StaggerItem key={`${product.url || product.title || 'item'}-${i}`}>
+                  <ProductCard product={product} />
+                </StaggerItem>
+              ))}
+            </Stagger>
+          )}
+
+          {/* Hint if not searched yet */}
+          {!searched && !loading && (
+            <div className="text-center py-20 text-muted">
+              <div className="w-16 h-16 rounded-2xl bg-app-subtle flex items-center justify-center mx-auto mb-3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 text-faint">
+                  <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
+                </svg>
+              </div>
+              <p className="text-lg font-semibold text-app">Search for any electronics product</p>
+              <p className="text-sm mt-1">Powered by Google Shopping, results from all major retailers</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* Compact popout version of the bookmarks list — lives inline in the
+   Filter & Sort bar instead of taking up a whole side column, so the
+   results grid gets the full page width. */
+function BookmarksMenu({ bookmarks, onSelect, onRemove }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="text-xs font-semibold text-muted hover:text-brand flex items-center gap-1.5 px-2 py-1"
+        aria-expanded={open}
+      >
+        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" />
+        </svg>
+        Bookmarks{bookmarks.length > 0 ? ` (${bookmarks.length})` : ''}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-9 z-50 w-64 card p-2 shadow-float">
+            {bookmarks.length === 0 ? (
+              <p className="text-xs text-muted p-2.5">
+                Save a search with the "Save search" button above to bookmark it here.
+              </p>
+            ) : (
+              <div className="space-y-1 max-h-64 overflow-y-auto">
+                {bookmarks.map(b => (
+                  <div key={b.id} className="group flex items-center gap-1.5">
+                    <button
+                      onClick={() => { onSelect(b.query); setOpen(false); }}
+                      className="flex-1 min-w-0 text-left text-sm text-muted hover:text-brand hover:bg-brand-soft font-medium py-1.5 px-2.5 rounded-xl transition-colors truncate"
+                      title={b.query}
+                    >
+                      {b.query}
+                    </button>
+                    <button
+                      onClick={() => onRemove(b.id)}
+                      className="opacity-0 group-hover:opacity-100 text-faint hover:text-danger text-xs px-1.5 shrink-0 transition-opacity"
+                      title="Remove bookmark"
+                      aria-label="Remove bookmark"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          <p className="font-semibold text-app">No results found for "{query}"</p>
-          <p className="text-sm mt-1">Try a different search term or category.</p>
-        </div>
-      )}
-
-      {/* Loading skeleton */}
-      {loading && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {Array(10).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
-        </div>
-      )}
-
-      {/* Results */}
-      {!loading && filtered.length > 0 && (
-        <Stagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" stagger={0.04}>
-          {filtered.map((product, i) => (
-            // Always fold the array index into the key, even when product.url
-            // exists — Google Shopping frequently returns multiple listings
-            // that resolve to the same retailer URL, and a shared key made
-            // React silently drop the render for every duplicate but the
-            // first, leaving that grid cell blank.
-            <StaggerItem key={`${product.url || product.title || 'item'}-${i}`}>
-              <ProductCard product={product} />
-            </StaggerItem>
-          ))}
-        </Stagger>
-      )}
-
-      {/* Hint if not searched yet */}
-      {!searched && !loading && (
-        <div className="text-center py-20 text-muted">
-          <div className="w-16 h-16 rounded-2xl bg-app-subtle flex items-center justify-center mx-auto mb-3">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 text-faint">
-              <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-            </svg>
-          </div>
-          <p className="text-lg font-semibold text-app">Search for any electronics product</p>
-          <p className="text-sm mt-1">Powered by Google Shopping, results from all major retailers</p>
-        </div>
+        </>
       )}
     </div>
   );

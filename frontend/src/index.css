@@ -86,16 +86,16 @@
   --shadow-brand: 0 8px 18px -6px rgba(235, 98, 0, 0.4);
 }
 .dark {
-  --bg:            #0f0d0c;
-  --bg-subtle:     #0a0908;
-  --surface:       #181514;
-  --surface-2:     #221f1d;
-  --surface-3:     #2e2a28;
-  --border:        #36322f;
-  --border-strong: #4c4643;
-  --text:          #f3f1f0;
-  --text-muted:    #a8a4a1;
-  --text-faint:    #6c6866;
+  --bg:            #1e1d1c;
+  --bg-subtle:     #191817;
+  --surface:       #2a2827;
+  --surface-2:     #322f2d;
+  --surface-3:     #3d3937;
+  --border:        #4a4543;
+  --border-strong: #5c5653;
+  --text:          #faf9f8;
+  --text-muted:    #bcb8b5;
+  --text-faint:    #8b8783;
 
   --ink:           #080706;
   --ink-2:         #0f0d0c;
@@ -121,9 +121,25 @@
   --shadow-lg:    0 18px 34px -14px rgba(0, 0, 0, 0.65);
   --shadow-brand: 0 8px 20px -6px rgba(245, 115, 35, 0.32);
 }
+/* AMOLED: true-black variant of dark mode, for users who find the default
+   charcoal ('grey') too dark to be actually black, or who want max battery
+   savings on OLED screens. Only backgrounds/surfaces shift toward pure
+   black — text, brand, and status colors stay the same as 'grey' since
+   those already have enough contrast against black. */
+.amoled {
+  --bg:            #000000;
+  --bg-subtle:     #000000;
+  --surface:       #0a0a0a;
+  --surface-2:     #121212;
+  --surface-3:     #1c1c1c;
+  --border:        #262626;
+  --border-strong: #3a3a3a;
+}
 
 @layer base {
-  html { scroll-behavior: smooth; }
+  /* Bumped from the browser default (16px) so all rem-based Tailwind text
+     sizes scale up uniformly, per user feedback that text felt too small. */
+  html { scroll-behavior: smooth; font-size: 18px; }
   body {
     background-color: var(--bg);
     color: var(--text);
@@ -222,7 +238,11 @@
     background-color: var(--surface);
     color: var(--text-muted);
     border-color: var(--border-strong);
-    @apply px-4 py-2 rounded-full text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap border;
+    /* Slightly tighter than the base Tailwind spacing scale: the global
+       18px root font size (see html rule above) makes text-sm chips run
+       noticeably wider than they were designed for, so padding is trimmed
+       here to keep chip rows from wrapping awkwardly on narrower cards. */
+    @apply px-3.5 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap border;
   }
   .chip:hover { color: var(--brand); border-color: var(--brand); }
   .chip-active {

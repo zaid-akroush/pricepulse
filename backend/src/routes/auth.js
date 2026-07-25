@@ -159,7 +159,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, name: true, email: true, createdAt: true },
+      select: { id: true, name: true, email: true, createdAt: true, wishlistPublic: true },
     });
     res.json({ ...user, isAdmin: isAdminEmail(user.email) });
   } catch (err) {
@@ -177,15 +177,21 @@ router.patch('/profile',
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
   try {
-    const { name, email } = req.body;
+    const { name, email, wishlistPublic } = req.body;
 
     const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
     if (existing) return res.status(409).json({ error: 'Email already in use' });
 
     const updated = await prisma.user.update({
       where: { id: req.userId },
-      data: { name, email },
-      select: { id: true, name: true, email: true },
+      data: {
+        name,
+        email,
+        // Optional: lets a user hide their wishlist from Community browsing
+        // and the Follow-by-name search without touching name/email.
+        ...(typeof wishlistPublic === 'boolean' ? { wishlistPublic } : {}),
+      },
+      select: { id: true, name: true, email: true, wishlistPublic: true },
     });
     res.json(updated);
   } catch (err) {

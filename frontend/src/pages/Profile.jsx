@@ -12,6 +12,10 @@ export default function Profile() {
   const [pwSaving, setPwSaving] = useState(false);
   const [msg, setMsg] = useState(null);
   const [pwMsg, setPwMsg] = useState(null);
+  // Defaults true (matches the backend default) until /auth/me confirms it,
+  // so this doesn't flash the wrong state on load.
+  const [wishlistPublic, setWishlistPublic] = useState(user?.wishlistPublic ?? true);
+  const [privacySaving, setPrivacySaving] = useState(false);
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -22,6 +26,17 @@ export default function Profile() {
     } catch (err) {
       setMsg({ type: 'error', text: err.response?.data?.error || 'Failed to update profile.' });
     } finally { setSaving(false); }
+  }
+
+  async function togglePrivacy() {
+    const next = !wishlistPublic;
+    setWishlistPublic(next); // optimistic
+    setPrivacySaving(true);
+    try {
+      await api.patch('/auth/profile', { name: form.name, email: form.email, wishlistPublic: next });
+    } catch {
+      setWishlistPublic(!next); // revert on failure
+    } finally { setPrivacySaving(false); }
   }
 
   async function handleChangePassword(e) {
@@ -80,6 +95,29 @@ export default function Profile() {
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </form>
+      </div>
+
+      {/* Privacy */}
+      <div className="card p-6 mb-6">
+        <h2 className="font-bold text-app mb-1">Privacy</h2>
+        <p className="text-sm text-muted mb-4">Control whether others can find and follow your wishlist.</p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-app">Show my wishlist to others</p>
+            <p className="text-xs text-muted mt-0.5">
+              When off, your profile won't show up in Wishlist &rarr; Following search, and no one can follow you.
+            </p>
+          </div>
+          <button
+            onClick={togglePrivacy}
+            disabled={privacySaving}
+            role="switch"
+            aria-checked={wishlistPublic}
+            className={`shrink-0 w-11 h-6 rounded-full relative transition-colors disabled:opacity-50 ${wishlistPublic ? 'bg-brand' : 'surface-3'}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-transform ${wishlistPublic ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
       </div>
 
       {/* Password form */}

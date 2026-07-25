@@ -115,10 +115,10 @@ export default function Events() {
                 </div>
               </div>
               {bf.daysUntil > 0 && (
-                <div className="text-center bg-black/10 rounded-2xl px-8 py-5 border border-current/20 shrink-0">
-                  <p className="text-4xl font-bold font-data">{bf.daysUntil}</p>
-                  <p className="text-sm font-medium opacity-70">days away</p>
-                  <p className="text-xs mt-1 opacity-50">{bf.date}</p>
+                <div className="text-center bg-black/10 rounded-2xl px-6 py-4 border border-current/20 shrink-0">
+                  <p className="text-2xl font-bold font-data">{bf.daysUntil}</p>
+                  <p className="text-xs font-medium opacity-70">days away</p>
+                  <p className="text-[11px] mt-1 opacity-50">{bf.date}</p>
                 </div>
               )}
             </div>

@@ -3,6 +3,7 @@ import { useAuth } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import InstallPrompt from './components/InstallPrompt';
+import TutorialModal from './components/TutorialModal';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Wishlist from './pages/Wishlist';
@@ -12,14 +13,11 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import ProductDetail from './pages/ProductDetail';
 import Profile from './pages/Profile';
-import CommunityWishlists from './pages/CommunityWishlists';
 import SharedWishlist from './pages/SharedWishlist';
 import Help from './pages/Help';
-import Accessories from './pages/Accessories';
 import Notifications from './pages/Notifications';
 import SavedSearches from './pages/SavedSearches';
 import Events from './pages/Events';
-import Dashboard from './pages/Dashboard';
 import Admin from './pages/Admin';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
@@ -52,19 +50,22 @@ export default function App() {
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
           <Route path="/saved-searches" element={<PrivateRoute><SavedSearches /></PrivateRoute>} />
-          <Route path="/dashboard" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+          {/* Analytics and Community are now tabs inside /wishlist — these
+              redirects keep any old bookmarks/links working. */}
+          <Route path="/dashboard" element={<Navigate to="/wishlist?tab=analytics" replace />} />
+          <Route path="/community" element={<Navigate to="/wishlist?tab=following" replace />} />
+          <Route path="/accessories" element={<Navigate to="/search" replace />} />
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
-          <Route path="/community" element={<CommunityWishlists />} />
           <Route path="/shared/:token" element={<SharedWishlist />} />
           <Route path="/events" element={<Events />} />
           <Route path="/help" element={<Help />} />
-          <Route path="/accessories" element={<Accessories />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
       <Footer />
       <InstallPrompt />
+      <TutorialModal />
     </div>
   );
 }
