@@ -246,6 +246,8 @@
 }
 
 @layer utilities {
+  .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
   .surface    { background-color: var(--surface); }
   .surface-2  { background-color: var(--surface-2); }
   .surface-3  { background-color: var(--surface-3); }
