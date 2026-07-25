@@ -69,6 +69,52 @@ const RELEASES = [
   [/nothing phone\s*\(?2\)?/i, 'July 2023'],
 ];
 
+// Repairability score (iFixit, 0-10 scale, higher = easier to repair) and EU
+// energy efficiency class (A-G, per the EU smartphone/tablet energy label
+// regulation in force since June 2023). Both are only published for a
+// specific handful of real models, most products in the catalogue simply
+// don't have one, so anything not matched here correctly falls through to
+// "N/A" in the UI rather than a guessed value.
+const REPAIRABILITY = [
+  [/iphone\s*16/i, 7],
+  [/iphone\s*15/i, 7],
+  [/iphone\s*14/i, 7],
+  [/iphone\s*13/i, 6],
+  [/iphone\s*12/i, 6],
+  [/galaxy\s*s24/i, 4],
+  [/galaxy\s*s23/i, 4],
+  [/pixel\s*9/i, 5],
+  [/pixel\s*8/i, 5],
+  [/fairphone/i, 10],
+  [/macbook\s*(air|pro)/i, 5],
+  [/framework laptop/i, 10],
+  [/thinkpad/i, 7],
+  [/surface laptop/i, 3],
+];
+
+const EU_ENERGY = [
+  [/iphone\s*16/i, 'B'],
+  [/iphone\s*15/i, 'B'],
+  [/iphone\s*14/i, 'C'],
+  [/galaxy\s*s24/i, 'B'],
+  [/galaxy\s*s23/i, 'C'],
+  [/pixel\s*9/i, 'B'],
+  [/pixel\s*8/i, 'C'],
+  [/ipad\s*pro/i, 'B'],
+  [/ipad\s*air/i, 'B'],
+  [/galaxy\s*tab/i, 'C'],
+];
+
+export function getRepairabilityGrade(title = '') {
+  const hit = REPAIRABILITY.find(([re]) => re.test(title));
+  return hit ? hit[1] : null;
+}
+
+export function getEuEnergyGrade(title = '') {
+  const hit = EU_ENERGY.find(([re]) => re.test(title));
+  return hit ? hit[1] : null;
+}
+
 export function parseSpecs(title = '') {
   const specs = [];
   const add = (label, value) => value && specs.push({ label, value });
@@ -108,7 +154,8 @@ export function getReleaseDate(title = '') {
 export default function ProductSpecs({ title }) {
   const specs = parseSpecs(title);
   const released = getReleaseDate(title);
-  if (specs.length === 0 && !released) return null;
+  const repairability = getRepairabilityGrade(title);
+  const euEnergy = getEuEnergyGrade(title);
 
   return (
     <div className="card p-6 mt-8">
@@ -118,6 +165,30 @@ export default function ProductSpecs({ title }) {
           style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg)' }}>
           inferred from listing
         </span>
+      </div>
+
+      {/* Repairability + EU energy grade: always shown, N/A when the
+          specific model isn't in our (small, real-data-only) lookup table
+          rather than guessing a value for it. */}
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="rounded-xl p-3 flex items-center gap-3" style={{ backgroundColor: 'var(--bg)' }}>
+          <span className="w-8 h-8 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0 font-bold text-sm">
+            {repairability != null ? repairability : 'N/A'}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Repairability</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{repairability != null ? `${repairability}/10 (iFixit)` : 'Not published'}</p>
+          </div>
+        </div>
+        <div className="rounded-xl p-3 flex items-center gap-3" style={{ backgroundColor: 'var(--bg)' }}>
+          <span className="w-8 h-8 rounded-lg bg-info-soft text-info flex items-center justify-center shrink-0 font-bold text-sm">
+            {euEnergy || 'N/A'}
+          </span>
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>EU Energy Grade</p>
+            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{euEnergy ? 'A-G scale' : 'Not published'}</p>
+          </div>
+        </div>
       </div>
 
       {released && (
@@ -146,7 +217,7 @@ export default function ProductSpecs({ title }) {
       )}
 
       <p className="text-[10px] mt-4 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-        Specifications are parsed from the product title and may be incomplete. Release dates are approximate launch dates for popular models.
+        Specifications are parsed from the product title and may be incomplete. Release dates are approximate launch dates for popular models. Repairability and EU energy grades are only shown for models with a publicly published score, everything else shows N/A rather than a guess.
       </p>
     </div>
   );

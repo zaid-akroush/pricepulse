@@ -51,6 +51,11 @@ export function detectBrand(title) {
   return null;
 }
 
-export function brandLogoUrl(slug) {
-  return `https://cdn.simpleicons.org/${slug}`;
+// Simple Icons renders in solid black by default. Passing /<slug>/<hexColor>
+// recolors it — without this, a brand tile with a dark background (like
+// Sony below) renders a black-on-near-black logo that's effectively
+// invisible, which is exactly what was happening here.
+export function brandLogoUrl(slug, color) {
+  const hex = color ? String(color).replace('#', '') : null;
+  return hex ? `https://cdn.simpleicons.org/${slug}/${hex}` : `https://cdn.simpleicons.org/${slug}`;
 }

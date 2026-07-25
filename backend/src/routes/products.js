@@ -24,6 +24,38 @@ router.get('/search', async (req, res) => {
     res.json(results);
   } catch (err) {
     if (err instanceof SerpApiError) {
+      // The live search provider is down (bad key, no credits, rate limited).
+      // Rather than a bare error page, fall back to already-tracked products
+      // in our own database whose title matches the query, so the search
+      // still returns something useful. These are marked `stale: true` so
+      // the frontend can label them as cached/last-known prices.
+      let fallback = [];
+      try {
+        const words = q.split(' ').filter(w => w.length > 2).slice(0, 4);
+        const rows = await prisma.product.findMany({
+          where: words.length
+            ? { OR: words.map(w => ({ title: { contains: w, mode: 'insensitive' } })) }
+            : {},
+          take: 20,
+        });
+        fallback = rows.map(p => ({
+          title: p.title,
+          price: p.currentPrice,
+          currency: p.currency,
+          originalPrice: null,
+          url: p.url,
+          imageUrl: p.imageUrl,
+          source: p.source,
+          serpApiQuery: p.serpApiQuery,
+          rating: null,
+          reviews: null,
+          stale: true,
+        }));
+      } catch (_) { /* DB fallback is best-effort; fall through to the 503 below if it fails too */ }
+
+      if (fallback.length > 0) {
+        return res.json(fallback);
+      }
       // 4xx from the upstream provider (bad key, out of credits, rate limit)
       // is a service outage from our users' perspective, not a client error.
       // Surface it as 503 with a clean message instead of the raw axios text.
@@ -42,7 +74,7 @@ router.get('/most-wishlisted', async (req, res) => {
         _count: { select: { wishlistItems: true } },
       },
       orderBy: { wishlistItems: { _count: 'desc' } },
-      take: 8,
+      take: 24, // more than the homepage's PER_PAGE=4 shows at once, so there's actually something to page through
       where: { wishlistItems: { some: {} } },
     });
     res.json(products.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })));
@@ -57,7 +89,7 @@ router.get('/newest', async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
-      take: 8,
+      take: 24,
     });
     res.json(products);
   } catch (err) {
@@ -81,7 +113,7 @@ router.get('/best-value', async (req, res) => {
       }))
       .filter(p => p.discountPercent > 0)
       .sort((a, b) => b.discountPercent - a.discountPercent)
-      .slice(0, 8);
+      .slice(0, 24);
     res.json(withDiscount);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -106,7 +138,7 @@ router.get('/top-drops', async (req, res) => {
       }))
       .filter(p => p.dropPercent > 0)
       .sort((a, b) => b.dropPercent - a.dropPercent)
-      .slice(0, 8);
+      .slice(0, 24);
 
     res.json(withDrops);
   } catch (err) {

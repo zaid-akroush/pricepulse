@@ -118,6 +118,14 @@ const icons = {
       <rect x="16" y="24" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
     </svg>
   ),
+  'PC Parts': (
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="9" y="9" width="22" height="22" rx="2.5" stroke="currentColor" strokeWidth="2.2" fill="none"/>
+      <rect x="15" y="15" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+      <path d="M16 3v6M24 3v6M16 31v6M24 31v6M3 16h6M3 24h6M31 16h6M31 24h6"
+        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+    </svg>
+  ),
 };
 
 /* Each icon above fills a different fraction of its 40x40 viewBox (the TV
@@ -133,6 +141,7 @@ const ICON_SCALE = {
   Tablets: 1,
   TVs: 0.85,
   'Smart Home': 1,
+  'PC Parts': 0.95,
 };
 
 const CATEGORIES = [
@@ -144,6 +153,7 @@ const CATEGORIES = [
   { label: 'Tablets',     q: 'tablet',              note: 'For work, school & streaming' },
   { label: 'TVs',         q: '4K TV',               note: '4K, OLED & smart TVs' },
   { label: 'Smart Home',  q: 'smart home device',   note: 'Speakers, cameras & automation' },
+  { label: 'PC Parts',    q: 'graphics card GPU',   note: 'GPUs, CPUs & everything to build a PC' },
 ];
 
 /* Rotating hero banner slides */
@@ -240,11 +250,15 @@ const HERO_ART = {
    from Simple Icons first; if that request ever fails (blocked network,
    ad blocker, offline), BrandTile falls back to a styled text wordmark
    instead of rendering a blank tile. */
+// `color`/`bg` style the text-wordmark FALLBACK badge only (shown if the
+// logo image fails to load) — the card itself always has a plain white
+// background, so `logoColor` is a separate value chosen to actually be
+// visible against white, used to recolor the real logo image itself.
 const TOP_BRANDS = [
-  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', tag: 'Up to 40% off' },
-  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', tag: 'Up to 35% off' },
-  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', tag: 'Up to 30% off' },
-  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', tag: 'Up to 50% off' },
+  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', logoColor: '000000', tag: 'Up to 40% off' },
+  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', logoColor: '1428a0', tag: 'Up to 35% off' },
+  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', logoColor: '000000', tag: 'Up to 30% off' },
+  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', logoColor: 'ff6900', tag: 'Up to 50% off' },
 ];
 
 function BrandTile({ brand, onClick }) {
@@ -254,7 +268,7 @@ function BrandTile({ brand, onClick }) {
       {!imgFailed ? (
         <span className="w-14 h-10 flex items-center justify-center">
           <img
-            src={brandLogoUrl(brand.slug)}
+            src={brandLogoUrl(brand.slug, brand.logoColor)}
             alt={brand.name}
             className="max-w-9 max-h-9 object-contain"
             loading="lazy"
@@ -424,7 +438,7 @@ function HeroCarousel() {
   const slide = HERO_SLIDES[idx];
 
   return (
-    <div className="relative bg-ink-2 rounded-2xl overflow-hidden px-8 md:px-14 py-10 md:py-14 min-h-[300px] flex items-center">
+    <div className="relative bg-ink-2 rounded-2xl overflow-hidden px-8 md:px-14 py-7 md:py-10 min-h-[220px] flex items-center">
       {/* Photo fills the whole right side of the banner, full height, with a
           left-edge fade so it bleeds into the dark background instead of
           sitting in a hard-edged box. */}
@@ -587,7 +601,7 @@ export default function Home() {
             <p className="text-sm text-muted mt-0.5">Jump straight into what you're looking for, or a top brand below</p>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-4 sm:grid-cols-8 gap-y-6 mb-8" stagger={0.05}>
+        <Stagger className="grid grid-cols-4 sm:grid-cols-9 gap-x-3 gap-y-6 mb-8" stagger={0.05}>
           {CATEGORIES.map(cat => (
             <StaggerItem key={cat.label}>
               <button
@@ -687,8 +701,8 @@ export default function Home() {
           title="Most wishlisted"
           subtitle="Products most users are tracking right now"
           action={
-            <Link to="/community" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
-              Community <span>&rarr;</span>
+            <Link to="/wishlist?tab=following" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
+              Following <span>&rarr;</span>
             </Link>
           }
         >
@@ -883,8 +897,12 @@ export default function Home() {
               </div>
               <div className="flex gap-1.5">
                 {[0, 1, 2].map(i => (
-                  <div key={i} className="flex-1 aspect-square rounded-lg surface border border-app flex items-center justify-center">
-                    <span className="w-4 h-4 rounded-sm bg-brand-soft" />
+                  <div key={i} className="flex-1 aspect-square rounded-lg bg-brand-soft text-brand border border-app flex items-center justify-center">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
                   </div>
                 ))}
               </div>

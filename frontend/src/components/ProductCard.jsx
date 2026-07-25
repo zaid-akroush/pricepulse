@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductImage from './ProductImage';
 import { detectBrand, brandLogoUrl } from '../utils/brand';
+import { getRepairabilityGrade, getEuEnergyGrade } from './ProductSpecs';
 
 export default function ProductCard({ product }) {
   const { user } = useAuth();
@@ -51,6 +52,8 @@ export default function ProductCard({ product }) {
     : null;
 
   const brand = detectBrand(product.title);
+  const repairability = getRepairabilityGrade(product.title);
+  const euEnergy = getEuEnergyGrade(product.title);
 
   return (
     <div className="card card-hover flex flex-col overflow-hidden group cursor-pointer relative" onClick={openDetail}>
@@ -71,6 +74,9 @@ export default function ProductCard({ product }) {
         </div>
         {discount && discount > 0 && (
           <div className="absolute top-2.5 left-2.5 badge badge-solid shadow-[var(--shadow-sm)]">-{discount}%</div>
+        )}
+        {product.stale && (
+          <div className="absolute bottom-2.5 left-2.5 badge bg-black/70 text-white text-[10px]">Cached price</div>
         )}
         {product.source && (
           <div className="absolute top-2.5 right-2.5 badge bg-black/70 text-white text-[10px]">{product.source}</div>
@@ -96,7 +102,20 @@ export default function ProductCard({ product }) {
           <span className="text-xl price-tag">
             {product.currency} {product.price?.toFixed(2) ?? 'N/A'}
           </span>
-          {product.rating && <span className="text-xs text-warning font-semibold">★ {product.rating}</span>}
+          {product.rating && (
+            <span className="text-xs text-warning font-semibold">
+              ★ {product.rating}{product.reviews ? <span className="text-faint font-normal"> ({product.reviews.toLocaleString()})</span> : null}
+            </span>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="badge badge-neutral !text-[10px]" title="Repairability score (iFixit, 0-10)">
+            Repair: {repairability != null ? `${repairability}/10` : 'N/A'}
+          </span>
+          <span className="badge badge-neutral !text-[10px]" title="EU energy efficiency class (A-G)">
+            EU Energy: {euEnergy || 'N/A'}
+          </span>
         </div>
 
         {!added ? (

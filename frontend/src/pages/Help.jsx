@@ -63,15 +63,15 @@ const FAQS = [
     ],
   },
   {
-    category: 'Community',
+    category: 'Following',
     items: [
       {
-        q: 'What is the Community page?',
-        a: 'The Community page lets you browse what other users are tracking. You can see their wishlists, explore the "Most Expensive Wishlists" leaderboard, and find the best-value deals on currently tracked products.',
+        q: 'What is the Following tab?',
+        a: 'Inside Wishlist, the Following tab lets you look up a specific person by name, follow them, and see what they\'re tracking. It\'s not an open feed, you only see wishlists of people you\'ve chosen to follow.',
       },
       {
-        q: 'Is my wishlist public?',
-        a: 'Your wishlist items and name are visible on the Community page so others can discover deals. Your email address and target prices are always kept private.',
+        q: 'Is my wishlist visible to others?',
+        a: 'By default, yes, your name and wishlist items can be found by others searching by name so they can follow you. You can turn this off any time in Profile → Privacy. Your email address and target prices are always kept private regardless.',
       },
     ],
   },
@@ -146,25 +146,25 @@ export default function Help() {
         </FadeIn>
       </div>
 
-      <div className="max-w-5xl mx-auto px-4 py-12 flex gap-8 items-start">
+      <div className="max-w-5xl mx-auto px-4 py-12 flex flex-col lg:flex-row gap-8 items-start">
 
         {/* ── FAQ ───────────────────────────────────────────────────── */}
-        <div className="flex-1 min-w-0 space-y-6">
+        <div className="flex-1 min-w-0 w-full space-y-6">
           {filtered.length === 0 ? (
             <div className="card p-12 text-center text-faint">
               <p className="font-semibold mb-1">No results for "{search}"</p>
-              <p className="text-sm">Try a different search term or browse the categories on the right.</p>
+              <p className="text-sm">Try a different search term or browse the categories below.</p>
             </div>
           ) : filtered.map(cat => (
-            <div key={cat.category} id={cat.category} className="card px-6 py-2 scroll-mt-6">
-              <h2 className="text-xs font-bold text-brand uppercase tracking-widest py-4 border-b border-app">{cat.category}</h2>
+            <div key={cat.category} id={cat.category} className="card px-6 py-4 scroll-mt-6">
+              <h2 className="text-xs font-bold text-brand uppercase tracking-widest pb-4 mb-2 border-b border-app">{cat.category}</h2>
               {cat.items.map(item => <FaqItem key={item.q} q={item.q} a={item.a} />)}
             </div>
           ))}
         </div>
 
         {/* ── Sidebar ───────────────────────────────────────────────── */}
-        <aside className="hidden lg:flex flex-col gap-4 w-64 shrink-0">
+        <aside className="flex flex-col gap-4 w-full lg:w-64 shrink-0">
           {/* Jump to section */}
           <div className="card p-5">
             <h3 className="text-xs font-bold text-faint uppercase tracking-widest mb-4">Jump to Section</h3>
