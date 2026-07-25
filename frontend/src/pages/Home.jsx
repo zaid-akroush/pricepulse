@@ -7,6 +7,7 @@ import { ProductCardSkeleton } from '../components/Skeleton';
 import ProductImage from '../components/ProductImage';
 import DealScore from '../components/DealScore';
 import { FadeIn, Stagger, StaggerItem, spring } from '../components/motion';
+import { brandLogoUrl } from '../utils/brand';
 
 /* Small inline icon set used in place of emoji throughout this page. */
 const Icon = {
@@ -117,6 +118,28 @@ const icons = {
       <rect x="16" y="24" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
     </svg>
   ),
+  Wearables: (
+    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="12" y="11" width="16" height="18" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none"/>
+      <path d="M16 11V6h8v5M16 29v5h8v-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+      <circle cx="20" cy="20" r="1.4" fill="currentColor"/>
+    </svg>
+  ),
+};
+
+/* Each icon above fills a different fraction of its 40x40 viewBox (the TV
+   glyph spans nearly the full box, Headphones only the middle), so at an
+   identical 28px render size they read as visibly different weights. This
+   nudges each one back toward a consistent visual size inside its tile. */
+const ICON_SCALE = {
+  Smartphones: 1,
+  Laptops: 0.9,
+  Headphones: 1.05,
+  Gaming: 0.95,
+  Cameras: 0.95,
+  Tablets: 1,
+  TVs: 0.85,
+  'Smart Home': 1,
 };
 
 const CATEGORIES = [
@@ -132,21 +155,167 @@ const CATEGORIES = [
 
 /* Rotating hero banner slides */
 const HERO_SLIDES = [
-  { eyebrow: 'Best deal online on wearables', title: 'SMART\nWEARABLES.', sub: 'Up to 60% off', q: 'smartwatch' },
-  { eyebrow: 'Best deal online on smartphones', title: 'FLAGSHIP\nPHONES.', sub: 'Up to 40% off', q: 'smartphone' },
-  { eyebrow: 'Best deal online on audio', title: 'WIRELESS\nAUDIO.', sub: 'Up to 50% off', q: 'headphones' },
+  {
+    eyebrow: 'Best deal online on wearables', title: 'SMART\nWEARABLES.', sub: 'Up to 60% off', q: 'smartwatch', art: 'watch', category: 'Smartphones',
+    photo: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on smartphones', title: 'FLAGSHIP\nPHONES.', sub: 'Up to 40% off', q: 'smartphone', art: 'phone', category: 'Smartphones',
+    photo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on audio', title: 'WIRELESS\nAUDIO.', sub: 'Up to 50% off', q: 'headphones', art: 'headphones', category: 'Headphones',
+    photo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on laptops', title: 'POWER\nLAPTOPS.', sub: 'Up to 35% off', q: 'laptop', category: 'Laptops',
+    photo: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on gaming gear', title: 'LEVEL UP\nGAMING.', sub: 'Up to 45% off', q: 'gaming console', category: 'Gaming',
+    photo: 'https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on cameras', title: 'CAPTURE\nMORE.', sub: 'Up to 30% off', q: 'digital camera', category: 'Cameras',
+    photo: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on smart TVs', title: 'BIGGER\nSCREENS.', sub: 'Up to 40% off', q: '4K TV', category: 'TVs',
+    photo: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1400&q=85',
+  },
+  {
+    eyebrow: 'Best deal online on smart home', title: 'SMARTER\nHOME.', sub: 'Up to 50% off', q: 'smart home device', category: 'Smart Home',
+    photo: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=85',
+  },
 ];
 
-/* Curated brand row for "Top electronics brands". Rendered as a text
-   wordmark (not the external cdn.simpleicons.org logo image used elsewhere)
-   because ad blockers commonly block any URL containing "logo", which made
-   this row silently render empty tiles for some users. */
+/* Shaded product illustrations for the hero banner (not line-art icons) —
+   self-contained SVGs so the banner shows an actual device instead of
+   depending on an external product photo. */
+const HERO_ART = {
+  watch: (
+    <svg viewBox="0 0 160 160" className="w-full h-full">
+      <rect x="55" y="8" width="50" height="20" rx="6" fill="#3a3a3a" />
+      <rect x="55" y="132" width="50" height="20" rx="6" fill="#3a3a3a" />
+      <rect x="34" y="34" width="92" height="92" rx="26" fill="#1c1c1c" />
+      <rect x="42" y="42" width="76" height="76" rx="20" fill="#0a0a0a" />
+      <rect x="50" y="50" width="60" height="60" rx="14" fill="url(#watchScreen)" />
+      <circle cx="80" cy="80" r="20" fill="none" stroke="#eb6200" strokeWidth="3" strokeDasharray="8 6" />
+      <circle cx="80" cy="80" r="4" fill="#eb6200" />
+      <defs>
+        <linearGradient id="watchScreen" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2a2a3d" />
+          <stop offset="1" stopColor="#151520" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
+  phone: (
+    <svg viewBox="0 0 160 160" className="w-full h-full">
+      <rect x="42" y="10" width="76" height="140" rx="16" fill="#1c1c1c" />
+      <rect x="48" y="18" width="64" height="124" rx="10" fill="url(#phoneScreen)" />
+      <rect x="70" y="24" width="20" height="5" rx="2.5" fill="#0a0a0a" />
+      <circle cx="80" cy="90" r="14" fill="none" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="2" />
+      <defs>
+        <linearGradient id="phoneScreen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#eb6200" />
+          <stop offset="1" stopColor="#1e293b" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
+  headphones: (
+    <svg viewBox="0 0 160 160" className="w-full h-full">
+      <path d="M30 88v-8a50 50 0 0 1 100 0v8" fill="none" stroke="#e5e5e5" strokeWidth="8" strokeLinecap="round" />
+      <rect x="16" y="80" width="26" height="48" rx="13" fill="url(#earL)" />
+      <rect x="118" y="80" width="26" height="48" rx="13" fill="url(#earR)" />
+      <circle cx="29" cy="104" r="6" fill="#eb6200" />
+      <circle cx="131" cy="104" r="6" fill="#eb6200" />
+      <defs>
+        <linearGradient id="earL" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2a2a2a" /><stop offset="1" stopColor="#0a0a0a" />
+        </linearGradient>
+        <linearGradient id="earR" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#2a2a2a" /><stop offset="1" stopColor="#0a0a0a" />
+        </linearGradient>
+      </defs>
+    </svg>
+  ),
+};
+
+/* Curated brand row for "Top electronics brands". Tries the real logo glyph
+   from Simple Icons first; if that request ever fails (blocked network,
+   ad blocker, offline), BrandTile falls back to a styled text wordmark
+   instead of rendering a blank tile. */
 const TOP_BRANDS = [
-  { name: 'Apple',   bg: '#111111', color: '#ffffff', tag: 'Up to 40% off' },
-  { name: 'Samsung', bg: '#eef2ff', color: '#3730a3', tag: 'Up to 35% off' },
-  { name: 'Sony',    bg: '#0f172a', color: '#ffffff', tag: 'Up to 30% off' },
-  { name: 'Xiaomi',  bg: '#fff2e5', color: '#eb6200', tag: 'Up to 50% off' },
+  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', tag: 'Up to 40% off' },
+  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', tag: 'Up to 35% off' },
+  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', tag: 'Up to 30% off' },
+  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', tag: 'Up to 50% off' },
 ];
+
+function BrandTile({ brand, onClick }) {
+  const [imgFailed, setImgFailed] = useState(false);
+  return (
+    <button onClick={onClick} className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center">
+      {!imgFailed ? (
+        <span className="w-14 h-10 flex items-center justify-center">
+          <img
+            src={brandLogoUrl(brand.slug)}
+            alt={brand.name}
+            className="max-w-9 max-h-9 object-contain"
+            loading="lazy"
+            onError={() => setImgFailed(true)}
+          />
+        </span>
+      ) : (
+        <span
+          className="w-14 h-10 rounded-lg flex items-center justify-center font-bold text-sm tracking-tight"
+          style={{ backgroundColor: brand.bg, color: brand.color }}
+        >
+          {brand.name}
+        </span>
+      )}
+      <span className="badge badge-orange text-[11px]">{brand.tag}</span>
+    </button>
+  );
+}
+
+/* Page-number controls for a product grid section. Hidden entirely when
+   everything fits on one page. */
+function Pagination({ page, totalPages, onChange }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-center gap-2 mt-6">
+      <button
+        onClick={() => onChange(Math.max(0, page - 1))}
+        disabled={page === 0}
+        aria-label="Previous page"
+        className="w-8 h-8 rounded-full surface-2 disabled:opacity-40 flex items-center justify-center text-muted hover:text-brand transition-colors"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+      {Array.from({ length: totalPages }).map((_, i) => (
+        <button
+          key={i}
+          onClick={() => onChange(i)}
+          aria-label={`Page ${i + 1}`}
+          className={`w-8 h-8 rounded-full text-xs font-semibold transition-colors ${i === page ? 'bg-brand text-on-brand' : 'surface-2 text-muted hover:text-brand'}`}
+        >
+          {i + 1}
+        </button>
+      ))}
+      <button
+        onClick={() => onChange(Math.min(totalPages - 1, page + 1))}
+        disabled={page === totalPages - 1}
+        aria-label="Next page"
+        className="w-8 h-8 rounded-full surface-2 disabled:opacity-40 flex items-center justify-center text-muted hover:text-brand transition-colors"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
+    </div>
+  );
+}
 
 /* Empty state for a product grid section */
 function EmptyGrid({ icon, message, cta }) {
@@ -212,6 +381,40 @@ function ProductCard({ product, badge, badgeClass }) {
   );
 }
 
+/* Real product photo for a hero slide, with a graceful fallback to the
+   vector illustration (HERO_ART) if the Unsplash image fails to load. The
+   left edge fades to transparent via a mask so the banner's dark background
+   bleeds into the photo instead of a hard rectangle edge. */
+function HeroPhoto({ slide }) {
+  const [failed, setFailed] = useState(false);
+  const fadeStyle = {
+    maskImage: 'linear-gradient(to right, transparent 0%, black 45%)',
+    WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 45%)',
+  };
+  if (failed) {
+    // Slides with dedicated shaded art (HERO_ART) use that; the rest fall
+    // back to their category's outline icon, scaled way up, so every slide
+    // still shows something device-shaped instead of a blank panel.
+    return (
+      <div className="w-full h-full flex items-center justify-center text-white/80" style={fadeStyle}>
+        <span className="w-24 h-24 [&_svg]:w-full [&_svg]:h-full">
+          {HERO_ART[slide.art] || icons[slide.category]}
+        </span>
+      </div>
+    );
+  }
+  return (
+    <img
+      src={slide.photo}
+      alt={slide.title.replace('\n', ' ')}
+      className="w-full h-full object-cover"
+      style={fadeStyle}
+      loading="lazy"
+      onError={() => setFailed(true)}
+    />
+  );
+}
+
 /* Compact rotating banner (auto-advances every 5s), replaces the old full
    split-screen hero: a dark strip with a headline, a "shop now" CTA, and
    prev/next + dot controls, closer to a typical marketplace homepage. */
@@ -228,7 +431,23 @@ function HeroCarousel() {
   const slide = HERO_SLIDES[idx];
 
   return (
-    <div className="relative bg-ink-2 rounded-2xl overflow-hidden px-8 md:px-14 py-10 md:py-14 min-h-[220px] flex items-center">
+    <div className="relative bg-ink-2 rounded-2xl overflow-hidden px-8 md:px-14 py-10 md:py-14 min-h-[300px] flex items-center">
+      {/* Photo fills the whole right side of the banner, full height, with a
+          left-edge fade so it bleeds into the dark background instead of
+          sitting in a hard-edged box. */}
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, scale: 1.05 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 1.05 }}
+          transition={spring}
+          className="hidden md:block absolute inset-y-0 right-0 w-[58%] z-0"
+        >
+          <HeroPhoto slide={slide} />
+        </motion.div>
+      </AnimatePresence>
+
       <button
         onClick={() => go(-1)}
         aria-label="Previous slide"
@@ -237,28 +456,30 @@ function HeroCarousel() {
         <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
       </button>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={idx}
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -20 }}
-          transition={spring}
-          className="relative z-10 max-w-md mx-auto md:mx-0"
-        >
-          <p className="text-white/70 text-sm mb-2">{slide.eyebrow}</p>
-          <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight whitespace-pre-line mb-3 tracking-tight">
-            {slide.title}
-          </h2>
-          <p className="text-brand font-bold text-lg mb-6">{slide.sub}</p>
-          <button
-            onClick={() => navigate(`/search?q=${encodeURIComponent(slide.q)}`)}
-            className="bg-on-brand text-brand font-semibold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]"
+      <div className="relative z-10 w-full">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={idx}
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            transition={spring}
+            className="max-w-md mx-auto md:mx-0"
           >
-            Shop now
-          </button>
-        </motion.div>
-      </AnimatePresence>
+            <p className="text-white/70 text-sm mb-2">{slide.eyebrow}</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight whitespace-pre-line mb-3 tracking-tight">
+              {slide.title}
+            </h2>
+            <p className="text-brand font-bold text-lg mb-6">{slide.sub}</p>
+            <button
+              onClick={() => navigate(`/search?q=${encodeURIComponent(slide.q)}`)}
+              className="bg-on-brand text-brand font-semibold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]"
+            >
+              Shop now
+            </button>
+          </motion.div>
+        </AnimatePresence>
+      </div>
 
       <button
         onClick={() => go(1)}
@@ -322,6 +543,10 @@ export default function Home() {
   const [loadingNewest, setLoadingNewest] = useState(true);
   const [loadingDeal, setLoadingDeal] = useState(true);
   const [stats, setStats] = useState(null);
+  const PER_PAGE = 4;
+  const [wishlistPage, setWishlistPage] = useState(0);
+  const [dropsPage, setDropsPage] = useState(0);
+  const [newestPage, setNewestPage] = useState(0);
 
   useEffect(() => {
     api.get('/products/top-drops').then(r => setTopDrops(r.data)).catch(() => {}).finally(() => setLoadingDrops(false));
@@ -338,34 +563,20 @@ export default function Home() {
 
   return (
     <div className="bg-app overflow-hidden">
-      {/* Slim top bar: quick category chips + search, sits above the carousel
-          the way a marketplace's category/search strip usually does. */}
+      {/* Top search bar, sits above the carousel */}
       <section className="max-w-7xl mx-auto px-4 pt-6">
-        <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 min-w-0">
-            {CATEGORIES.slice(0, 6).map(cat => (
-              <button
-                key={cat.label}
-                onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className="shrink-0 text-xs font-semibold text-muted hover:text-brand transition-colors px-3 py-1.5 rounded-full surface-2 whitespace-nowrap"
-              >
-                {cat.label}
-              </button>
-            ))}
-          </div>
-          <form onSubmit={handleSearch} className="relative w-full md:w-72 shrink-0">
-            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
-            </svg>
-            <input
-              type="text"
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              placeholder="Search products"
-              className="input pl-10 py-2.5 text-sm"
-            />
-          </form>
-        </div>
+        <form onSubmit={handleSearch} className="relative w-full">
+          <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+          </svg>
+          <input
+            type="text"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Search products"
+            className="input pl-10 py-2.5 text-sm"
+          />
+        </form>
       </section>
 
       {/* Hero: compact rotating deal banner */}
@@ -373,23 +584,27 @@ export default function Home() {
         <HeroCarousel />
       </section>
 
-      {/* Categories: circular icon row ("Shop from top categories") */}
-      <section className="max-w-7xl mx-auto px-4 pb-12">
+      {/* Categories (square tiles, "Shop from top categories") + top brands
+          stacked underneath in the same section, rather than two separate
+          full headers back to back. */}
+      <section className="max-w-7xl mx-auto px-4 pb-14">
         <FadeIn className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
-            <p className="text-sm text-muted mt-0.5">Jump straight into what you're looking for</p>
+            <p className="text-sm text-muted mt-0.5">Jump straight into what you're looking for, or a top brand below</p>
           </div>
         </FadeIn>
-        <Stagger className="flex gap-5 overflow-x-auto no-scrollbar pb-1" stagger={0.05}>
+        <Stagger className="grid grid-cols-4 sm:grid-cols-8 gap-y-6 mb-8" stagger={0.05}>
           {CATEGORIES.map(cat => (
-            <StaggerItem key={cat.label} className="shrink-0">
+            <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className="flex flex-col items-center gap-2.5 group w-20"
+                className="flex flex-col items-center gap-2.5 group w-full"
               >
-                <span className="w-16 h-16 rounded-full bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                  {icons[cat.label]}
+                <span className="w-16 h-16 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+                  <span className="flex items-center justify-center" style={{ transform: `scale(${ICON_SCALE[cat.label] ?? 1})` }}>
+                    {icons[cat.label]}
+                  </span>
                 </span>
                 <span className="text-xs font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
                   {cat.label}
@@ -398,31 +613,11 @@ export default function Home() {
             </StaggerItem>
           ))}
         </Stagger>
-      </section>
 
-      {/* Top electronics brands: a row of brand tiles with a headline deal tag */}
-      <section className="max-w-7xl mx-auto px-4 pb-14">
-        <FadeIn className="flex items-end justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-app tracking-tight">Top electronics brands</h2>
-            <p className="text-sm text-muted mt-0.5">Deals from the manufacturers people track most</p>
-          </div>
-        </FadeIn>
         <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4" stagger={0.05}>
           {TOP_BRANDS.map(brand => (
             <StaggerItem key={brand.name}>
-              <button
-                onClick={() => navigate(`/search?q=${encodeURIComponent(brand.name)}`)}
-                className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center"
-              >
-                <span
-                  className="w-14 h-10 rounded-lg flex items-center justify-center font-bold text-sm tracking-tight"
-                  style={{ backgroundColor: brand.bg, color: brand.color }}
-                >
-                  {brand.name}
-                </span>
-                <span className="badge badge-orange text-[11px]">{brand.tag}</span>
-              </button>
+              <BrandTile brand={brand} onClick={() => navigate(`/search?q=${encodeURIComponent(brand.name)}`)} />
             </StaggerItem>
           ))}
         </Stagger>
@@ -515,18 +710,28 @@ export default function Home() {
               cta={<Link to="/search" className="text-sm text-brand font-semibold">Find something to track &rarr;</Link>}
             />
           ) : (
-            <Stagger className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {mostWishlisted.slice(0, 4).map((product, idx) => (
-                <StaggerItem key={product.id} className="relative">
-                  {idx < 3 && (
-                    <div className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-brand shadow-[var(--shadow-sm)] flex items-center justify-center text-on-brand text-[10px] font-bold">
-                      #{idx + 1}
-                    </div>
-                  )}
-                  <ProductCard product={product} badge={`${product.wishlistCount} tracking`} badgeClass="badge-purple" />
-                </StaggerItem>
-              ))}
-            </Stagger>
+            <>
+              <Stagger key={wishlistPage} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {mostWishlisted.slice(wishlistPage * PER_PAGE, wishlistPage * PER_PAGE + PER_PAGE).map((product, i) => {
+                  const idx = wishlistPage * PER_PAGE + i;
+                  return (
+                    <StaggerItem key={product.id} className="relative">
+                      {idx < 3 && (
+                        <div className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-brand shadow-[var(--shadow-sm)] flex items-center justify-center text-on-brand text-[10px] font-bold">
+                          #{idx + 1}
+                        </div>
+                      )}
+                      <ProductCard product={product} badge={`${product.wishlistCount} tracking`} badgeClass="badge-purple" />
+                    </StaggerItem>
+                  );
+                })}
+              </Stagger>
+              <Pagination
+                page={wishlistPage}
+                totalPages={Math.ceil(mostWishlisted.length / PER_PAGE)}
+                onChange={setWishlistPage}
+              />
+            </>
           )}
         </Section>
       </div>
@@ -553,13 +758,16 @@ export default function Home() {
             cta={<Link to="/search" className="text-sm text-brand font-semibold">Search products &rarr;</Link>}
           />
         ) : (
-          <Stagger className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {topDrops.slice(0, 4).map(product => (
-              <StaggerItem key={product.id}>
-                <ProductCard product={product} badge={`${product.dropPercent}% off peak`} badgeClass="badge-red" />
-              </StaggerItem>
-            ))}
-          </Stagger>
+          <>
+            <Stagger key={dropsPage} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {topDrops.slice(dropsPage * PER_PAGE, dropsPage * PER_PAGE + PER_PAGE).map(product => (
+                <StaggerItem key={product.id}>
+                  <ProductCard product={product} badge={`${product.dropPercent}% off peak`} badgeClass="badge-red" />
+                </StaggerItem>
+              ))}
+            </Stagger>
+            <Pagination page={dropsPage} totalPages={Math.ceil(topDrops.length / PER_PAGE)} onChange={setDropsPage} />
+          </>
         )}
       </Section>
 
@@ -576,13 +784,16 @@ export default function Home() {
             cta={<Link to="/search" className="text-sm text-brand font-semibold">Search products &rarr;</Link>}
           />
         ) : (
-          <Stagger className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {newest.slice(0, 4).map(product => (
-              <StaggerItem key={product.id}>
-                <ProductCard product={product} badge="New" badgeClass="badge-blue" />
-              </StaggerItem>
-            ))}
-          </Stagger>
+          <>
+            <Stagger key={newestPage} className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {newest.slice(newestPage * PER_PAGE, newestPage * PER_PAGE + PER_PAGE).map(product => (
+                <StaggerItem key={product.id}>
+                  <ProductCard product={product} badge="New" badgeClass="badge-blue" />
+                </StaggerItem>
+              ))}
+            </Stagger>
+            <Pagination page={newestPage} totalPages={Math.ceil(newest.length / PER_PAGE)} onChange={setNewestPage} />
+          </>
         )}
       </Section>
 

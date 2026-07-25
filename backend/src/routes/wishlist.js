@@ -7,6 +7,7 @@ const { validateExternalUrl } = require('../utils/urlSafety');
 const router = express.Router();
 const prisma = new PrismaClient();
 const MAX_TITLE_LENGTH = 300;
+const MAX_WISHLIST_ITEMS = 20; // per-user cap on tracked products
 
 // All wishlist routes require authentication
 router.use(authMiddleware);
@@ -137,6 +138,22 @@ router.post('/', async (req, res) => {
       await prisma.priceHistory.create({
         data: { productId: product.id, price: currentPrice },
       });
+    }
+
+    // Enforce a per-user wishlist cap. Only blocks genuinely NEW items —
+    // re-adding/updating the target price on a product already tracked by
+    // this user doesn't count against the limit, since it isn't growing
+    // their list.
+    const alreadyTracked = await prisma.wishlistItem.findUnique({
+      where: { userId_productId: { userId: req.userId, productId: product.id } },
+    });
+    if (!alreadyTracked) {
+      const trackedCount = await prisma.wishlistItem.count({ where: { userId: req.userId } });
+      if (trackedCount >= MAX_WISHLIST_ITEMS) {
+        return res.status(400).json({
+          error: `You can track up to ${MAX_WISHLIST_ITEMS} products at once. Remove something from your wishlist to add a new one.`,
+        });
+      }
     }
 
     // Create wishlist item (ignore if already exists)

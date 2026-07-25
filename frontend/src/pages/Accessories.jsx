@@ -111,6 +111,71 @@ const FEATURED = [
   { label: 'MacBook Accessories',  q: 'MacBook accessories' },
 ];
 
+/* Example accessory products with real prices/discounts, so the page shows
+   actual shoppable-looking cards rather than only category buttons and text
+   chips. Each has a self-contained shaded illustration (no external image
+   dependency) matching its icon glyph above, scaled up. */
+const FEATURED_PRODUCTS = [
+  { title: 'MagSafe Charger 15W', icon: 'MagSafe', price: 28.99, was: 39.99, q: 'MagSafe charger 15W' },
+  { title: 'Clear Shockproof Case', icon: 'Cases', price: 14.99, was: 24.99, q: 'clear shockproof phone case' },
+  { title: 'Braided USB-C Cable 6ft', icon: 'Cables', price: 9.99, was: 16.99, q: 'braided USB-C cable 6ft' },
+  { title: 'ANC Wireless Earbuds', icon: 'Earbuds', price: 49.99, was: 79.99, q: 'ANC wireless earbuds' },
+  { title: '20,000mAh Power Bank', icon: 'Power Banks', price: 34.99, was: 54.99, q: '20000mAh power bank' },
+  { title: 'Tempered Glass Screen Protector', icon: 'Screen Protectors', price: 7.99, was: 12.99, q: 'tempered glass screen protector' },
+  { title: 'Adjustable Desk Phone Stand', icon: 'Stands', price: 16.99, was: 22.99, q: 'adjustable desk phone stand' },
+  { title: 'Magnetic Car Vent Mount', icon: 'Car Mounts', price: 12.99, was: 19.99, q: 'magnetic car vent mount' },
+];
+
+/* Shaded illustration for the hero preview card — a MagSafe charger disc
+   with a cable, matching the treatment used elsewhere for product photos
+   (shading + gradient, not a flat line icon) so it reads as an actual
+   accessory instead of a generic bullseye-shaped glyph. */
+function MagSafeArt() {
+  return (
+    <svg viewBox="0 0 100 100" className="w-full h-full">
+      {/* Coiled cable, drawn as a thin curved line (not a filled shape) so it
+          reads as a cord rather than a head-and-shoulders silhouette. */}
+      <path d="M50 66 C 34 72, 30 84, 42 90 C 52 94, 58 88, 54 82" fill="none" stroke="#2a2a2a" strokeWidth="4" strokeLinecap="round" />
+      <circle cx="50" cy="38" r="30" fill="url(#magsafeRing)" />
+      <circle cx="50" cy="38" r="22" fill="#e5e5e5" />
+      <circle cx="50" cy="38" r="10" fill="none" stroke="#eb6200" strokeWidth="2.5" />
+      <circle cx="50" cy="38" r="3" fill="#eb6200" />
+      <defs>
+        <linearGradient id="magsafeRing" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#f4f4f4" />
+          <stop offset="1" stopColor="#c7c7c7" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* Simple accessory "product card" using the category icon as a stand-in
+   photo (scaled up inside a tinted tile) since these are illustrative
+   examples, not real tracked listings. */
+function AccessoryCard({ item, onClick }) {
+  const discount = Math.round((1 - item.price / item.was) * 100);
+  return (
+    <button onClick={onClick} className="w-full text-left card card-hover p-4 flex flex-col gap-3 group">
+      <div className="w-full aspect-square rounded-xl bg-brand-soft text-brand flex items-center justify-center relative group-hover:scale-[1.02] transition-transform">
+        {discount > 0 && (
+          <span className="absolute top-2 left-2 z-10 rounded-md bg-danger text-white text-[10px] font-bold px-1.5 py-1 leading-none">
+            {discount}% OFF
+          </span>
+        )}
+        <span className="w-12 h-12 [&_svg]:w-full [&_svg]:h-full">{icons[item.icon]}</span>
+      </div>
+      <div>
+        <p className="text-xs font-semibold text-app leading-snug mb-1.5 line-clamp-2 min-h-[2rem]">{item.title}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-lg price-tag">${item.price.toFixed(2)}</span>
+          {item.was > item.price && <span className="text-xs text-faint line-through">${item.was.toFixed(2)}</span>}
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export default function Accessories() {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -156,11 +221,14 @@ export default function Accessories() {
           </FadeIn>
           <FadeIn delay={0.1} className="hidden lg:flex justify-center">
             <div className="animate-float card p-5 w-56 -rotate-2">
-              <div className="w-full aspect-square surface-2 rounded-xl flex items-center justify-center mb-3">
-                {icons['MagSafe']}
+              <div className="w-full aspect-square surface-2 rounded-xl flex items-center justify-center mb-3 p-6">
+                <MagSafeArt />
               </div>
               <p className="text-xs font-semibold text-app leading-snug">MagSafe Charger 15W</p>
-              <p className="price-tag text-lg mt-1">$28.99</p>
+              <div className="flex items-baseline gap-2 mt-1">
+                <p className="price-tag text-lg">$28.99</p>
+                <p className="text-xs text-faint line-through">$39.99</p>
+              </div>
             </div>
           </FadeIn>
         </div>
@@ -182,6 +250,20 @@ export default function Accessories() {
                   <p className="font-bold text-lg leading-tight text-app">{f.label}</p>
                   <p className="text-muted text-xs mt-1 group-hover:text-brand transition-colors">Browse all &rarr;</p>
                 </button>
+              </StaggerItem>
+            ))}
+          </Stagger>
+        </section>
+
+        {/* Featured products: real shoppable-looking cards with prices and
+            discounts, so the page isn't purely category buttons and chips. */}
+        <section>
+          <h2 className="text-2xl font-bold text-app mb-2 tracking-tight">Featured Accessories</h2>
+          <p className="text-sm text-muted mb-6">Popular picks people are tracking right now</p>
+          <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4" stagger={0.05}>
+            {FEATURED_PRODUCTS.map(item => (
+              <StaggerItem key={item.title}>
+                <AccessoryCard item={item} onClick={() => goSearch(item.q)} />
               </StaggerItem>
             ))}
           </Stagger>

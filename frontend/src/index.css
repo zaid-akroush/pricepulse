@@ -230,6 +230,10 @@
     color: var(--on-brand);
     @apply border-transparent;
   }
+  /* Higher specificity than .chip:hover alone, so an already-active chip
+     (solid brand-orange background) keeps its light on-brand text on hover
+     instead of the plain hover rule's orange text disappearing into it. */
+  .chip-active:hover { color: var(--on-brand); border-color: transparent; }
 
   /* Numeric data: prices, chart axes, timestamps, table figures. Monospace
      with tabular figures so digits line up column to column — that
