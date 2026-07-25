@@ -4,7 +4,7 @@ import { useDarkMode } from '../context/DarkModeContext';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
-import Logo from './Logo';
+import Wordmark from './Wordmark';
 
 const LINKS = [
   { to: '/search', label: 'Search' },
@@ -64,11 +64,8 @@ export default function Navbar() {
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'surface/90 backdrop-blur-md border-b border-app shadow-[var(--shadow-sm)]' : 'surface border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
         {/* Logo */}
-        <Link to="/" className="flex items-center gap-2 shrink-0">
-          <Logo />
-          <span className="font-bold text-xl tracking-tight text-app">
-            Price<span className="text-brand">Pulse</span>
-          </span>
+        <Link to="/" className="flex items-center shrink-0">
+          <Wordmark />
         </Link>
 
         {/* Desktop Nav */}

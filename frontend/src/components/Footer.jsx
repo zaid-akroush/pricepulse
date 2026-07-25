@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import Logo from './Logo';
+import Wordmark from './Wordmark';
 
 const LINK_COLUMNS = [
   {
@@ -29,9 +29,8 @@ export default function Footer() {
         {/* Asymmetric layout: wide brand column, narrower link columns */}
         <div className="grid grid-cols-1 lg:grid-cols-[1.6fr_1fr_1fr] gap-10 mb-10">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Logo className="w-7 h-7" />
-              <span className="font-bold text-app text-lg tracking-tight">Price<span className="text-brand">Pulse</span></span>
+            <div className="mb-4">
+              <Wordmark textClassName="text-lg" iconClassName="h-5" />
             </div>
             <p className="text-sm leading-relaxed max-w-sm">
               Track electronics prices across the web and get notified the moment prices drop to your target. Free, no catch.
