@@ -2,6 +2,7 @@ const express = require('express');
 const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
 const adminOnly = require('../middleware/admin');
+const { checkPrices } = require('../jobs/priceCron');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -140,6 +141,19 @@ router.get('/products', async (req, res) => {
       })),
       recentAlerts,
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/check-prices, manually trigger the price-check cron job
+// right now instead of waiting for the next scheduled run (dev/testing aid).
+router.post('/check-prices', async (req, res) => {
+  try {
+    // Don't block the request on the full sweep (it can take a while and
+    // hits an external API per product) — kick it off and report started.
+    checkPrices().catch(err => console.error('[admin] manual price check failed:', err.message));
+    res.json({ message: 'Price check started. Check the server logs and your notifications shortly.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

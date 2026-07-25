@@ -127,10 +127,18 @@ router.get('/likes/:productId', asyncHandler(async (req, res) => {
     try {
       const jwt = require('jsonwebtoken');
       const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
-      const existing = await prisma.productLike.findUnique({
-        where: { userId_productId: { userId: decoded.userId, productId } },
+      // Same tokenVersion check as authMiddleware, otherwise a token left
+      // stale by a password reset would still work against this one route.
+      const tokenUser = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: { tokenVersion: true },
       });
-      liked = !!existing;
+      if (tokenUser && (decoded.tokenVersion ?? 0) === tokenUser.tokenVersion) {
+        const existing = await prisma.productLike.findUnique({
+          where: { userId_productId: { userId: decoded.userId, productId } },
+        });
+        liked = !!existing;
+      }
     } catch (_) {}
   }
   res.json({ count, liked });

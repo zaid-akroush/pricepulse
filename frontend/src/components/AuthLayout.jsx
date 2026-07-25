@@ -23,7 +23,7 @@ export default function AuthLayout({ eyebrow, title, subtitle, children, footer 
         </Link>
 
         <div className="relative z-10 max-w-sm">
-          <h2 className="text-3xl font-bold leading-tight tracking-tight mb-6">
+          <h2 className="text-4xl font-bold leading-tight tracking-tight mb-6">
             Shop smarter. Never pay peak price again.
           </h2>
           <div className="flex flex-col gap-3.5">
