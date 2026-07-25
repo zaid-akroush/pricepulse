@@ -118,13 +118,6 @@ const icons = {
       <rect x="16" y="24" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
     </svg>
   ),
-  Wearables: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="12" y="11" width="16" height="18" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <path d="M16 11V6h8v5M16 29v5h8v-5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-      <circle cx="20" cy="20" r="1.4" fill="currentColor"/>
-    </svg>
-  ),
 };
 
 /* Each icon above fills a different fraction of its 40x40 viewBox (the TV
