@@ -122,20 +122,28 @@ export default function Wishlist() {
   ].filter(s => s.items.length > 0);
 
   if (loading) return (
-    <div className="max-w-3xl mx-auto px-4 py-12 space-y-4">
+    <div className="max-w-6xl mx-auto px-4 py-12 space-y-4">
       {[1, 2, 3].map(i => <div key={i} className="h-32 rounded-2xl animate-pulse surface-3" />)}
     </div>
   );
 
   if (error) return (
-    <div className="max-w-3xl mx-auto px-4 py-20 text-center">
+    <div className="max-w-6xl mx-auto px-4 py-20 text-center">
       <p className="text-danger font-medium">{error}</p>
     </div>
   );
 
+  const biggestDropPercent = items.length
+    ? Math.max(...items.map(i =>
+        i.product.highestPrice > 0
+          ? Math.round(((i.product.highestPrice - i.product.currentPrice) / i.product.highestPrice) * 100)
+          : 0
+      ))
+    : 0;
+
   return (
     <div className="bg-app min-h-screen">
-      <div className="max-w-3xl mx-auto px-4 py-10">
+      <div className="max-w-6xl mx-auto px-4 py-10">
 
         {/* Header */}
         <PageHeader
@@ -150,7 +158,7 @@ export default function Wishlist() {
 
         {/* Stats */}
         {items.length > 0 && (
-          <div className="grid grid-cols-3 gap-3 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             <div className="card p-4">
               <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Total Value</p>
               <p className="text-xl font-bold font-data text-app">${totalValue.toFixed(2)}</p>
@@ -162,6 +170,10 @@ export default function Wishlist() {
             <div className="card p-4">
               <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Alerts Set</p>
               <p className="text-xl font-bold font-data text-brand">{trackedItems.length}</p>
+            </div>
+            <div className="card p-4">
+              <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Biggest Drop</p>
+              <p className="text-xl font-bold font-data text-danger">{biggestDropPercent}%</p>
             </div>
           </div>
         )}
@@ -190,7 +202,7 @@ export default function Wishlist() {
                     {segment.items.length}
                   </span>
                 </div>
-                <Stagger className="flex flex-col gap-4" stagger={0.06}>
+                <Stagger className="grid grid-cols-1 lg:grid-cols-2 gap-4" stagger={0.06}>
                   {segment.items.map(item => (
                     <StaggerItem key={item.id}>
                       <WishlistItem

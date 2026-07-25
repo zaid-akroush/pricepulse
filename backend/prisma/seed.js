@@ -184,7 +184,134 @@ const SEED_USERS = [
       { title: 'Logitech MX Master 3S Wireless Performance Mouse', url: 'https://www.logitech.com/', imageUrl: IMAGES.logitech, currentPrice: 99.99, lowestPrice: 79.99, highestPrice: 109.99, currency: 'USD', serpApiQuery: 'Logitech MX Master 3S wireless mouse' },
     ],
   },
+  {
+    name: 'Priya',
+    email: 'priya@example.com',
+    products: [
+      { title: 'Apple iPhone 15 Pro Max 256GB – Natural Titanium', url: 'https://www.apple.com/iphone-15-pro/', imageUrl: IMAGES.iphone, currentPrice: 1199.00, lowestPrice: 1099.00, highestPrice: 1299.00, currency: 'USD', serpApiQuery: 'iPhone 15 Pro Max' },
+      { title: 'Bose SoundLink Max Portable Bluetooth Speaker', url: 'https://www.bose.com/', imageUrl: IMAGES.bosespeaker, currentPrice: 399.00, lowestPrice: 349.00, highestPrice: 429.00, currency: 'USD', serpApiQuery: 'Bose SoundLink Max speaker' },
+      { title: 'Kindle Oasis E-reader 32GB Graphite Adjustable Warm Light', url: 'https://www.amazon.com/', imageUrl: IMAGES.kindle, currentPrice: 249.00, lowestPrice: 179.00, highestPrice: 279.00, currency: 'USD', serpApiQuery: 'Kindle Oasis 32GB e-reader' },
+    ],
+  },
+  {
+    name: 'Hassan',
+    email: 'hassan@example.com',
+    products: [
+      { title: 'Microsoft Xbox Series X 1TB Console', url: 'https://www.xbox.com/', imageUrl: IMAGES.xboxsx, currentPrice: 449.00, lowestPrice: 399.00, highestPrice: 499.00, currency: 'USD', serpApiQuery: 'Xbox Series X console' },
+      { title: 'ASUS ROG Strix NVIDIA GeForce RTX 4080 Super OC Edition', url: 'https://rog.asus.com/', imageUrl: IMAGES.rtx4080, currentPrice: 999.00, lowestPrice: 949.00, highestPrice: 1199.00, currency: 'USD', serpApiQuery: 'RTX 4080 Super GPU' },
+      { title: 'Anker 747 GaNPrime 150W Desktop Charger', url: 'https://www.anker.com/', imageUrl: IMAGES.anker, currentPrice: 89.99, lowestPrice: 69.99, highestPrice: 99.99, currency: 'USD', serpApiQuery: 'Anker GaNPrime 150W charger' },
+    ],
+  },
+  {
+    name: 'Chloe',
+    email: 'chloe@example.com',
+    products: [
+      { title: 'Apple MacBook Pro 16-inch M3 Pro – Space Black', url: 'https://www.apple.com/macbook-pro/', imageUrl: IMAGES.macbook, currentPrice: 2499.00, lowestPrice: 2299.00, highestPrice: 2699.00, currency: 'USD', serpApiQuery: 'MacBook Pro 16 M3' },
+      { title: 'Google Pixel 8 Pro 256GB Obsidian', url: 'https://store.google.com/', imageUrl: IMAGES.pixel8, currentPrice: 799.00, lowestPrice: 699.00, highestPrice: 999.00, currency: 'USD', serpApiQuery: 'Google Pixel 8 Pro 256GB' },
+      { title: 'GoPro HERO12 Black – Waterproof Action Camera', url: 'https://gopro.com/', imageUrl: IMAGES.gopro, currentPrice: 349.00, lowestPrice: 299.00, highestPrice: 399.00, currency: 'USD', serpApiQuery: 'GoPro Hero 12 Black action camera' },
+    ],
+  },
+  {
+    name: 'Diego',
+    email: 'diego@example.com',
+    products: [
+      { title: 'Sony PlayStation 5 Console (PS5) Slim Disc Edition', url: 'https://www.playstation.com/', imageUrl: IMAGES.ps5, currentPrice: 449.00, lowestPrice: 399.00, highestPrice: 499.00, currency: 'USD', serpApiQuery: 'PS5 Slim console' },
+      { title: 'Nintendo Switch OLED Model White', url: 'https://www.nintendo.com/', imageUrl: IMAGES.switcholed, currentPrice: 349.00, lowestPrice: 299.00, highestPrice: 369.00, currency: 'USD', serpApiQuery: 'Nintendo Switch OLED' },
+      { title: 'LG UltraGear 27" 4K OLED Gaming Monitor 240Hz', url: 'https://www.lg.com/', imageUrl: IMAGES.monitor, currentPrice: 799.00, lowestPrice: 749.00, highestPrice: 999.00, currency: 'USD', serpApiQuery: 'LG OLED gaming monitor 27 inch' },
+    ],
+  },
+  {
+    name: 'Fatima',
+    email: 'fatima@example.com',
+    products: [
+      { title: 'Samsung 65" Class QLED 4K Q80D Smart TV 2024', url: 'https://www.samsung.com/', imageUrl: IMAGES.samsung4k, currentPrice: 1097.00, lowestPrice: 899.00, highestPrice: 1499.00, currency: 'USD', serpApiQuery: 'Samsung 65 QLED 4K TV' },
+      { title: 'Apple Watch Series 9 45mm GPS + Cellular – Midnight Aluminum', url: 'https://www.apple.com/apple-watch-series-9/', imageUrl: IMAGES.applewatch, currentPrice: 499.00, lowestPrice: 429.00, highestPrice: 529.00, currency: 'USD', serpApiQuery: 'Apple Watch Series 9 45mm' },
+      { title: 'Dyson V15 Detect Absolute Cordless Vacuum Cleaner', url: 'https://www.dyson.com/', imageUrl: IMAGES.dyson, currentPrice: 749.00, lowestPrice: 649.00, highestPrice: 849.00, currency: 'USD', serpApiQuery: 'Dyson V15 Detect vacuum cleaner' },
+    ],
+  },
+  {
+    name: 'Noah',
+    email: 'noah@example.com',
+    products: [
+      { title: 'Dell XPS 15 Laptop Intel Core i9 RTX 4070 1TB SSD', url: 'https://www.dell.com/', imageUrl: IMAGES.dell, currentPrice: 1899.00, lowestPrice: 1699.00, highestPrice: 2199.00, currency: 'USD', serpApiQuery: 'Dell XPS 15 i9 RTX 4070' },
+      { title: 'Canon EOS R6 Mark II Mirrorless Camera Body', url: 'https://www.usa.canon.com/', imageUrl: IMAGES.canon, currentPrice: 2499.00, lowestPrice: 2299.00, highestPrice: 2799.00, currency: 'USD', serpApiQuery: 'Canon EOS R6 Mark II' },
+      { title: 'DJI Mini 4 Pro Drone with RC-N2 Controller', url: 'https://www.dji.com/', imageUrl: IMAGES.dji, currentPrice: 759.00, lowestPrice: 699.00, highestPrice: 849.00, currency: 'USD', serpApiQuery: 'DJI Mini 4 Pro drone' },
+    ],
+  },
+  {
+    name: 'Amara',
+    email: 'amara@example.com',
+    products: [
+      { title: 'Samsung Galaxy S24 Ultra 512GB – Titanium Black', url: 'https://www.samsung.com/', imageUrl: IMAGES.galaxy, currentPrice: 1299.00, lowestPrice: 1099.00, highestPrice: 1419.00, currency: 'USD', serpApiQuery: 'Samsung Galaxy S24 Ultra' },
+      { title: 'Apple AirPods Pro (2nd Generation) with MagSafe', url: 'https://www.apple.com/airpods-pro/', imageUrl: IMAGES.airpods, currentPrice: 249.00, lowestPrice: 199.00, highestPrice: 279.00, currency: 'USD', serpApiQuery: 'AirPods Pro 2nd gen' },
+      { title: 'Garmin Fenix 7X Solar Multisport GPS Smartwatch', url: 'https://www.garmin.com/', imageUrl: IMAGES.garmin, currentPrice: 699.00, lowestPrice: 599.00, highestPrice: 799.00, currency: 'USD', serpApiQuery: 'Garmin Fenix 7X Solar smartwatch' },
+    ],
+  },
+  {
+    name: 'Victor',
+    email: 'victor@example.com',
+    products: [
+      { title: 'Sony WH-1000XM5 Wireless Noise Cancelling Headphones', url: 'https://www.sony.com/en/articles/wh1000xm5', imageUrl: IMAGES.sonyxm5, currentPrice: 279.00, lowestPrice: 248.00, highestPrice: 349.00, currency: 'USD', serpApiQuery: 'Sony WH-1000XM5' },
+      { title: 'Razer Blade 16 Laptop RTX 4090 Intel i9 32GB RAM', url: 'https://www.razer.com/', imageUrl: IMAGES.razer, currentPrice: 3499.00, lowestPrice: 2999.00, highestPrice: 3999.00, currency: 'USD', serpApiQuery: 'Razer Blade 16 RTX 4090' },
+      { title: 'Apple iPad Pro 13-inch M4 Wi-Fi 256GB – Space Black', url: 'https://www.apple.com/ipad-pro/', imageUrl: IMAGES.ipadpro, currentPrice: 1299.00, lowestPrice: 1199.00, highestPrice: 1399.00, currency: 'USD', serpApiQuery: 'iPad Pro 13 M4' },
+    ],
+  },
 ];
+
+// A deduplicated pool of every product referenced above, used to generate a
+// second batch of users below without hand-authoring each one's product
+// list. Dedup key matches the same (serpApiQuery, title) upsert lookup used
+// in the seeding loop.
+const PRODUCT_POOL = Object.values(
+  SEED_USERS.reduce((acc, u) => {
+    for (const p of u.products) acc[`${p.serpApiQuery}::${p.title}`] = p;
+    return acc;
+  }, {})
+);
+
+function randInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+// Pick `count` distinct random items from an array.
+function sample(arr, count) {
+  const copy = [...arr];
+  const out = [];
+  for (let i = 0; i < count && copy.length; i++) {
+    out.push(copy.splice(randInt(0, copy.length - 1), 1)[0]);
+  }
+  return out;
+}
+
+// Programmatically generate more community accounts. Product lists get
+// filled out below (top-up pass) so this initial sample only needs to seed
+// each account with something to start from.
+const EXTRA_NAMES = [
+  'Layla', 'Mateo', 'Ines', 'Bilal', 'Sana', 'Theo', 'Aisha', 'Karim',
+  'Nadine', 'Felix', 'Rania', 'Lucas', 'Salma', 'Jonas', 'Dania', 'Ryan',
+  'Mona', 'Adam', 'Yara', 'Elias',
+];
+for (const name of EXTRA_NAMES) {
+  SEED_USERS.push({
+    name,
+    email: `${name.toLowerCase()}@example.com`,
+    products: sample(PRODUCT_POOL, randInt(2, 4)),
+  });
+}
+
+// Top-up pass: give every user (hand-authored and generated alike) a random
+// number of tracked products instead of the fixed 3 each originally had.
+// Capped at MAX_TRACKED to mirror the backend's 20-item wishlist limit
+// (backend/src/routes/wishlist.js), so seed data can never violate the
+// real cap the app enforces.
+const MAX_TRACKED = 20;
+for (const u of SEED_USERS) {
+  const target = randInt(5, Math.min(MAX_TRACKED, PRODUCT_POOL.length));
+  const have = new Set(u.products.map(p => `${p.serpApiQuery}::${p.title}`));
+  const remainingPool = PRODUCT_POOL.filter(p => !have.has(`${p.serpApiQuery}::${p.title}`));
+  const needed = Math.max(0, target - u.products.length);
+  u.products.push(...sample(remainingPool, Math.min(needed, remainingPool.length)));
+}
 
 async function main() {
   console.log('Seeding community users and wishlists...');
@@ -225,6 +352,37 @@ async function main() {
 
     console.log(`  ✓ ${userData.name}`);
   }
+
+  // Follows: each user follows a random 5-15 other users, so the
+  // community/leaderboard pages and each account's "following" count have
+  // real, varied data instead of everyone having an identical fixed count.
+  console.log('Seeding follows...');
+  const allUsers = await prisma.user.findMany({ select: { id: true }, orderBy: { id: 'asc' } });
+  const followData = [];
+  for (const u of allUsers) {
+    const others = allUsers.filter(o => o.id !== u.id).map(o => o.id);
+    const followCount = randInt(5, Math.min(15, others.length));
+    for (const targetId of sample(others, followCount)) {
+      followData.push({ followerId: u.id, followingId: targetId });
+    }
+  }
+  const followResult = await prisma.follow.createMany({ data: followData, skipDuplicates: true });
+  console.log(`  ✓ ${followResult.count} follow relationships`);
+
+  // Likes: each user likes a random 5-20 products from the catalog, so
+  // "Deal of the day" scoring and each product's like count have real,
+  // varied signal instead of an identical fixed count per user.
+  console.log('Seeding product likes...');
+  const allProducts = await prisma.product.findMany({ select: { id: true }, orderBy: { id: 'asc' } });
+  const likeData = [];
+  for (const u of allUsers) {
+    const likeCount = randInt(5, Math.min(20, allProducts.length));
+    for (const p of sample(allProducts, likeCount)) {
+      likeData.push({ userId: u.id, productId: p.id });
+    }
+  }
+  const likeResult = await prisma.productLike.createMany({ data: likeData, skipDuplicates: true });
+  console.log(`  ✓ ${likeResult.count} product likes`);
 
   console.log('Done!');
 }

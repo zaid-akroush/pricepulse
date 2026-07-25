@@ -184,7 +184,12 @@ export default function Search() {
       {!loading && filtered.length > 0 && (
         <Stagger className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4" stagger={0.04}>
           {filtered.map((product, i) => (
-            <StaggerItem key={product.url || `${product.title}-${i}`}>
+            // Always fold the array index into the key, even when product.url
+            // exists — Google Shopping frequently returns multiple listings
+            // that resolve to the same retailer URL, and a shared key made
+            // React silently drop the render for every duplicate but the
+            // first, leaving that grid cell blank.
+            <StaggerItem key={`${product.url || product.title || 'item'}-${i}`}>
               <ProductCard product={product} />
             </StaggerItem>
           ))}
