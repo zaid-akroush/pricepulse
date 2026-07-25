@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import { ProductCardSkeleton } from '../components/Skeleton';
@@ -130,6 +130,24 @@ const CATEGORIES = [
   { label: 'Smart Home',  q: 'smart home device',   note: 'Speakers, cameras & automation' },
 ];
 
+/* Rotating hero banner slides */
+const HERO_SLIDES = [
+  { eyebrow: 'Best deal online on wearables', title: 'SMART\nWEARABLES.', sub: 'Up to 60% off', q: 'smartwatch' },
+  { eyebrow: 'Best deal online on smartphones', title: 'FLAGSHIP\nPHONES.', sub: 'Up to 40% off', q: 'smartphone' },
+  { eyebrow: 'Best deal online on audio', title: 'WIRELESS\nAUDIO.', sub: 'Up to 50% off', q: 'headphones' },
+];
+
+/* Curated brand row for "Top electronics brands". Rendered as a text
+   wordmark (not the external cdn.simpleicons.org logo image used elsewhere)
+   because ad blockers commonly block any URL containing "logo", which made
+   this row silently render empty tiles for some users. */
+const TOP_BRANDS = [
+  { name: 'Apple',   bg: '#111111', color: '#ffffff', tag: 'Up to 40% off' },
+  { name: 'Samsung', bg: '#eef2ff', color: '#3730a3', tag: 'Up to 35% off' },
+  { name: 'Sony',    bg: '#0f172a', color: '#ffffff', tag: 'Up to 30% off' },
+  { name: 'Xiaomi',  bg: '#fff2e5', color: '#eb6200', tag: 'Up to 50% off' },
+];
+
 /* Empty state for a product grid section */
 function EmptyGrid({ icon, message, cta }) {
   return (
@@ -143,14 +161,26 @@ function EmptyGrid({ icon, message, cta }) {
   );
 }
 
-/* Reusable product card */
+/* Reusable product card. Shows a top-left "% off" ribbon and a strikethrough
+   original price + "Save X" line whenever the product has dropped from its
+   all-time high, on top of the caller-supplied badge (tracking count, etc). */
 function ProductCard({ product, badge, badgeClass }) {
+  const hasDrop = product.highestPrice > product.currentPrice;
+  const discountPercent = hasDrop
+    ? Math.round(((product.highestPrice - product.currentPrice) / product.highestPrice) * 100)
+    : 0;
+
   return (
     <Link
       to={`/product/${product.id}`}
       className="group card card-hover p-4 flex flex-col gap-3 hover:border-[var(--brand)]"
     >
       <div className="w-full aspect-square surface-2 group-hover:bg-brand-soft rounded-xl overflow-hidden relative flex items-center justify-center p-4 transition-colors duration-300">
+        {discountPercent > 0 && (
+          <span className="absolute top-2 left-2 z-10 rounded-md bg-danger text-white text-[10px] font-bold px-1.5 py-1 leading-none">
+            {discountPercent}% OFF
+          </span>
+        )}
         <ProductImage
           src={product.imageUrl}
           alt={product.title}
@@ -161,14 +191,94 @@ function ProductCard({ product, badge, badgeClass }) {
       </div>
       <div>
         <p className="text-xs font-semibold text-app line-clamp-2 leading-snug mb-2 min-h-[2rem]">{product.title}</p>
-        <p className="text-lg price-tag">
-          {product.currency} {product.currentPrice.toFixed(2)}
-        </p>
+        <div className="flex items-baseline gap-2 flex-wrap">
+          <p className="text-lg price-tag">
+            {product.currency} {product.currentPrice.toFixed(2)}
+          </p>
+          {discountPercent > 0 && (
+            <span className="text-xs text-faint line-through">{product.currency} {product.highestPrice.toFixed(2)}</span>
+          )}
+        </div>
+        {discountPercent > 0 && (
+          <p className="text-[11px] font-semibold" style={{ color: 'var(--success)' }}>
+            Save {product.currency} {(product.highestPrice - product.currentPrice).toFixed(2)}
+          </p>
+        )}
         {badge && (
           <span className={`badge mt-1.5 inline-block ${badgeClass}`}>{badge}</span>
         )}
       </div>
     </Link>
+  );
+}
+
+/* Compact rotating banner (auto-advances every 5s), replaces the old full
+   split-screen hero: a dark strip with a headline, a "shop now" CTA, and
+   prev/next + dot controls, closer to a typical marketplace homepage. */
+function HeroCarousel() {
+  const navigate = useNavigate();
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % HERO_SLIDES.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  const go = (delta) => setIdx(i => (i + delta + HERO_SLIDES.length) % HERO_SLIDES.length);
+  const slide = HERO_SLIDES[idx];
+
+  return (
+    <div className="relative bg-ink-2 rounded-2xl overflow-hidden px-8 md:px-14 py-10 md:py-14 min-h-[220px] flex items-center">
+      <button
+        onClick={() => go(-1)}
+        aria-label="Previous slide"
+        className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6" /></svg>
+      </button>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={idx}
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -20 }}
+          transition={spring}
+          className="relative z-10 max-w-md mx-auto md:mx-0"
+        >
+          <p className="text-white/70 text-sm mb-2">{slide.eyebrow}</p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight whitespace-pre-line mb-3 tracking-tight">
+            {slide.title}
+          </h2>
+          <p className="text-brand font-bold text-lg mb-6">{slide.sub}</p>
+          <button
+            onClick={() => navigate(`/search?q=${encodeURIComponent(slide.q)}`)}
+            className="bg-on-brand text-brand font-semibold px-6 py-2.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]"
+          >
+            Shop now
+          </button>
+        </motion.div>
+      </AnimatePresence>
+
+      <button
+        onClick={() => go(1)}
+        aria-label="Next slide"
+        className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
+      >
+        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6" /></svg>
+      </button>
+
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 z-20">
+        {HERO_SLIDES.map((_, i) => (
+          <button
+            key={i}
+            onClick={() => setIdx(i)}
+            aria-label={`Go to slide ${i + 1}`}
+            className={`h-1.5 rounded-full transition-all ${i === idx ? 'w-5 bg-brand' : 'w-1.5 bg-white/30'}`}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -195,87 +305,6 @@ function Section({ eyebrow, icon, title, subtitle, action, children }) {
       </FadeIn>
       {children}
     </section>
-  );
-}
-
-/* Hero preview panel: a small illustrated "live tracking" card cluster,
-   built from real UI primitives instead of a stock photo. */
-function HeroPreview() {
-  const points = [64, 58, 61, 46, 50, 34, 26];
-  const w = 220, h = 70;
-  const step = w / (points.length - 1);
-  const max = Math.max(...points), min = Math.min(...points);
-  const norm = (v) => h - ((v - min) / (max - min || 1)) * h;
-  const poly = points.map((p, i) => `${i * step},${norm(p)}`).join(' ');
-
-  return (
-    <div className="relative h-full w-full flex items-center justify-center py-10 lg:py-0">
-      <motion.div
-        initial={{ opacity: 0, scale: 0.94, rotate: -3 }}
-        animate={{ opacity: 1, scale: 1, rotate: -3 }}
-        transition={{ ...spring, delay: 0.15 }}
-        className="relative z-0 animate-float card p-7 w-80 shrink-0"
-        style={{ transform: 'rotate(-3deg)' }}
-      >
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-12 h-12 rounded-xl surface-2 flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 40 40" className="w-7 h-7 text-brand" fill="none">
-              <rect x="10" y="4" width="20" height="32" rx="4" stroke="currentColor" strokeWidth="2.2"/>
-              <circle cx="20" cy="31" r="1.5" fill="currentColor"/>
-            </svg>
-          </div>
-          <div className="min-w-0">
-            <p className="text-sm font-semibold text-app leading-tight">Flagship Phone 128GB</p>
-            <p className="text-xs text-faint">Tracked 42 days</p>
-          </div>
-        </div>
-        <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-3xl font-bold price-tag">$799</span>
-          <span className="text-sm text-faint line-through">$999</span>
-          <span className="badge badge-green ml-auto">-20%</span>
-        </div>
-        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-20" preserveAspectRatio="none">
-          <polyline points={poly} fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, x: -12, y: 10 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ ...spring, delay: 0.4 }}
-        className="absolute z-20 top-0 left-0 lg:-left-4 card !rounded-full px-5 py-3 flex items-center gap-2 shadow-float"
-      >
-        <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse shrink-0" />
-        <span className="text-sm font-semibold text-app whitespace-nowrap">Target price hit</span>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, y: -14 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ ...spring, delay: 0.7 }}
-        className="absolute z-20 top-6 right-2 lg:-top-2 lg:right-2 card px-4 py-3 flex items-center gap-3 shadow-float"
-      >
-        <span className="w-9 h-9 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
-          <Icon.chart className="w-5 h-5" />
-        </span>
-        <div className="leading-tight">
-          <p className="text-base font-bold text-app font-data">$142</p>
-          <p className="text-xs text-faint whitespace-nowrap">avg. saved per item</p>
-        </div>
-      </motion.div>
-
-      <motion.div
-        initial={{ opacity: 0, x: 12, y: -10 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ ...spring, delay: 0.55 }}
-        className="absolute z-20 bottom-4 right-0 lg:right-2 card px-4 py-3 flex items-center gap-2 shadow-float"
-      >
-        <span className="w-8 h-8 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
-          <Icon.bell className="w-4 h-4" />
-        </span>
-        <span className="text-sm font-semibold text-app whitespace-nowrap">Alert emailed</span>
-      </motion.div>
-    </div>
   );
 }
 
@@ -309,81 +338,90 @@ export default function Home() {
 
   return (
     <div className="bg-app overflow-hidden">
-      {/* Hero: asymmetric split-screen, left-aligned copy, solid brand-colored section for contrast */}
-      <section className="relative pt-16 pb-8 md:pb-12 px-4 bg-brand">
-        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={spring}
-            className="relative z-10 text-left"
-          >
-            <div className="inline-flex items-center gap-2 bg-white/15 text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-7 tracking-wide uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-white" /> Real-time price tracking
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-5 leading-[1.05] tracking-tight text-white">
-              Never overpay<br />
-              <span className="text-white/80">for electronics</span>
-            </h1>
-            <p className="text-white/90 text-lg mb-9 max-w-lg leading-relaxed">
-              Track prices across major retailers. Set your target, and we'll email you the moment prices drop.
-            </p>
-
-            <form onSubmit={handleSearch} className="flex gap-2 max-w-lg">
-              <div className="relative flex-1">
-                <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
-                </svg>
-                <input
-                  type="text"
-                  value={query}
-                  onChange={e => setQuery(e.target.value)}
-                  placeholder='Search "iPhone 16", "Sony WH-1000XM5"'
-                  className="input pl-10 py-3.5"
-                />
-              </div>
-              <button type="submit" className="inline-flex items-center justify-center gap-2 font-semibold px-7 py-3.5 rounded-xl bg-on-brand text-brand transition-opacity hover:opacity-90 active:scale-[0.98] whitespace-nowrap">
-                Search
+      {/* Slim top bar: quick category chips + search, sits above the carousel
+          the way a marketplace's category/search strip usually does. */}
+      <section className="max-w-7xl mx-auto px-4 pt-6">
+        <div className="flex items-center gap-4 flex-wrap md:flex-nowrap">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar flex-1 min-w-0">
+            {CATEGORIES.slice(0, 6).map(cat => (
+              <button
+                key={cat.label}
+                onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
+                className="shrink-0 text-xs font-semibold text-muted hover:text-brand transition-colors px-3 py-1.5 rounded-full surface-2 whitespace-nowrap"
+              >
+                {cat.label}
               </button>
-            </form>
-
-            {/* quick stats */}
-            <div className="flex items-center gap-7 mt-9 text-sm text-white/90 flex-wrap">
-              {[[Icon.bell, 'Price alerts'], [Icon.chart, 'Price history'], [Icon.globe, 'All major retailers']].map(([IconCmp, label]) => (
-                <span key={label} className="flex items-center gap-1.5"><IconCmp className="w-4 h-4" />{label}</span>
-              ))}
-            </div>
-          </motion.div>
-
-          <HeroPreview />
+            ))}
+          </div>
+          <form onSubmit={handleSearch} className="relative w-full md:w-72 shrink-0">
+            <svg className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-faint" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={e => setQuery(e.target.value)}
+              placeholder="Search products"
+              className="input pl-10 py-2.5 text-sm"
+            />
+          </form>
         </div>
       </section>
 
-      {/* Categories: asymmetric bento with one featured tile */}
-      <section className="max-w-7xl mx-auto px-4 py-14">
+      {/* Hero: compact rotating deal banner */}
+      <section className="max-w-7xl mx-auto px-4 pt-5 pb-10">
+        <HeroCarousel />
+      </section>
+
+      {/* Categories: circular icon row ("Shop from top categories") */}
+      <section className="max-w-7xl mx-auto px-4 pb-12">
         <FadeIn className="flex items-end justify-between mb-6">
           <div>
-            <h2 className="text-2xl font-bold text-app tracking-tight">Browse by category</h2>
+            <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
             <p className="text-sm text-muted mt-0.5">Jump straight into what you're looking for</p>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-3 [grid-auto-rows:1fr]" stagger={0.05}>
-          {CATEGORIES.map((cat, i) => (
-            <StaggerItem key={cat.label}>
+        <Stagger className="flex gap-5 overflow-x-auto no-scrollbar pb-1" stagger={0.05}>
+          {CATEGORIES.map(cat => (
+            <StaggerItem key={cat.label} className="shrink-0">
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className="spotlight w-full h-full flex flex-col items-start gap-3 rounded-2xl card card-hover text-left group p-4"
+                className="flex flex-col items-center gap-2.5 group w-20"
               >
-                <div className="shrink-0 rounded-xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform w-12 h-12">
+                <span className="w-16 h-16 rounded-full bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                   {icons[cat.label]}
-                </div>
-                <span className="font-semibold text-app group-hover:text-brand transition-colors leading-tight flex items-center gap-1 text-sm">
-                  {cat.label}
-                  <svg className="w-3.5 h-3.5 text-faint group-hover:text-brand group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
-                  </svg>
                 </span>
-                <span className="text-xs text-muted">{cat.note}</span>
+                <span className="text-xs font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
+                  {cat.label}
+                </span>
+              </button>
+            </StaggerItem>
+          ))}
+        </Stagger>
+      </section>
+
+      {/* Top electronics brands: a row of brand tiles with a headline deal tag */}
+      <section className="max-w-7xl mx-auto px-4 pb-14">
+        <FadeIn className="flex items-end justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-app tracking-tight">Top electronics brands</h2>
+            <p className="text-sm text-muted mt-0.5">Deals from the manufacturers people track most</p>
+          </div>
+        </FadeIn>
+        <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-4" stagger={0.05}>
+          {TOP_BRANDS.map(brand => (
+            <StaggerItem key={brand.name}>
+              <button
+                onClick={() => navigate(`/search?q=${encodeURIComponent(brand.name)}`)}
+                className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center"
+              >
+                <span
+                  className="w-14 h-10 rounded-lg flex items-center justify-center font-bold text-sm tracking-tight"
+                  style={{ backgroundColor: brand.bg, color: brand.color }}
+                >
+                  {brand.name}
+                </span>
+                <span className="badge badge-orange text-[11px]">{brand.tag}</span>
               </button>
             </StaggerItem>
           ))}
