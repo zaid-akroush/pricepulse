@@ -120,14 +120,14 @@ const icons = {
 };
 
 const CATEGORIES = [
-  { label: 'Smartphones', q: 'smartphone' },
-  { label: 'Laptops',     q: 'laptop' },
-  { label: 'Headphones',  q: 'headphones' },
-  { label: 'Gaming',      q: 'gaming console' },
-  { label: 'Cameras',     q: 'digital camera' },
-  { label: 'Tablets',     q: 'tablet' },
-  { label: 'TVs',         q: '4K TV' },
-  { label: 'Smart Home',  q: 'smart home device' },
+  { label: 'Smartphones', q: 'smartphone',         note: 'Most tracked category this week' },
+  { label: 'Laptops',     q: 'laptop',              note: 'Compare deals across brands' },
+  { label: 'Headphones',  q: 'headphones',          note: 'Wired, wireless & noise-cancelling' },
+  { label: 'Gaming',      q: 'gaming console',      note: 'Consoles, accessories & bundles' },
+  { label: 'Cameras',     q: 'digital camera',      note: 'DSLR, mirrorless & point-and-shoot' },
+  { label: 'Tablets',     q: 'tablet',              note: 'For work, school & streaming' },
+  { label: 'TVs',         q: '4K TV',               note: '4K, OLED & smart TVs' },
+  { label: 'Smart Home',  q: 'smart home device',   note: 'Speakers, cameras & automation' },
 ];
 
 /* Empty state for a product grid section */
@@ -214,27 +214,27 @@ function HeroPreview() {
         initial={{ opacity: 0, scale: 0.94, rotate: -3 }}
         animate={{ opacity: 1, scale: 1, rotate: -3 }}
         transition={{ ...spring, delay: 0.15 }}
-        className="animate-float card p-6 w-72 shrink-0"
+        className="relative z-0 animate-float card p-7 w-80 shrink-0"
         style={{ transform: 'rotate(-3deg)' }}
       >
         <div className="flex items-center gap-3 mb-4">
-          <div className="w-11 h-11 rounded-xl surface-2 flex items-center justify-center shrink-0">
-            <svg viewBox="0 0 40 40" className="w-6 h-6 text-brand" fill="none">
+          <div className="w-12 h-12 rounded-xl surface-2 flex items-center justify-center shrink-0">
+            <svg viewBox="0 0 40 40" className="w-7 h-7 text-brand" fill="none">
               <rect x="10" y="4" width="20" height="32" rx="4" stroke="currentColor" strokeWidth="2.2"/>
               <circle cx="20" cy="31" r="1.5" fill="currentColor"/>
             </svg>
           </div>
           <div className="min-w-0">
-            <p className="text-xs font-semibold text-app leading-tight">Flagship Phone 128GB</p>
-            <p className="text-[11px] text-faint">Tracked 42 days</p>
+            <p className="text-sm font-semibold text-app leading-tight">Flagship Phone 128GB</p>
+            <p className="text-xs text-faint">Tracked 42 days</p>
           </div>
         </div>
         <div className="flex items-baseline gap-2 mb-3">
-          <span className="text-2xl font-bold price-tag">$799</span>
-          <span className="text-xs text-faint line-through">$999</span>
+          <span className="text-3xl font-bold price-tag">$799</span>
+          <span className="text-sm text-faint line-through">$999</span>
           <span className="badge badge-green ml-auto">-20%</span>
         </div>
-        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-16" preserveAspectRatio="none">
+        <svg viewBox={`0 0 ${w} ${h}`} className="w-full h-20" preserveAspectRatio="none">
           <polyline points={poly} fill="none" stroke="var(--success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </motion.div>
@@ -243,24 +243,24 @@ function HeroPreview() {
         initial={{ opacity: 0, x: -12, y: 10 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ ...spring, delay: 0.4 }}
-        className="absolute top-4 left-2 lg:left-0 card px-4 py-2.5 flex items-center gap-2 shadow-float"
+        className="absolute z-20 top-0 left-0 lg:-left-4 card !rounded-full px-5 py-3 flex items-center gap-2 shadow-float"
       >
-        <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-        <span className="text-xs font-semibold text-app whitespace-nowrap">Target price hit</span>
+        <span className="w-2.5 h-2.5 rounded-full bg-success animate-pulse shrink-0" />
+        <span className="text-sm font-semibold text-app whitespace-nowrap">Target price hit</span>
       </motion.div>
 
       <motion.div
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ...spring, delay: 0.7 }}
-        className="absolute top-6 right-2 lg:-top-1 lg:right-2 card px-3.5 py-2.5 flex items-center gap-3 shadow-float"
+        className="absolute z-20 top-6 right-2 lg:-top-2 lg:right-2 card px-4 py-3 flex items-center gap-3 shadow-float"
       >
-        <span className="w-8 h-8 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
-          <Icon.chart className="w-4 h-4" />
+        <span className="w-9 h-9 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0">
+          <Icon.chart className="w-5 h-5" />
         </span>
         <div className="leading-tight">
-          <p className="text-sm font-bold text-app font-data">$142</p>
-          <p className="text-[10px] text-faint whitespace-nowrap">avg. saved per item</p>
+          <p className="text-base font-bold text-app font-data">$142</p>
+          <p className="text-xs text-faint whitespace-nowrap">avg. saved per item</p>
         </div>
       </motion.div>
 
@@ -268,12 +268,12 @@ function HeroPreview() {
         initial={{ opacity: 0, x: 12, y: -10 }}
         animate={{ opacity: 1, x: 0, y: 0 }}
         transition={{ ...spring, delay: 0.55 }}
-        className="absolute bottom-6 right-0 lg:right-2 card px-3.5 py-2.5 flex items-center gap-2 shadow-float"
+        className="absolute z-20 bottom-4 right-0 lg:right-2 card px-4 py-3 flex items-center gap-2 shadow-float"
       >
-        <span className="w-7 h-7 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
-          <Icon.bell className="w-3.5 h-3.5" />
+        <span className="w-8 h-8 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
+          <Icon.bell className="w-4 h-4" />
         </span>
-        <span className="text-xs font-semibold text-app whitespace-nowrap">Alert emailed</span>
+        <span className="text-sm font-semibold text-app whitespace-nowrap">Alert emailed</span>
       </motion.div>
     </div>
   );
@@ -309,8 +309,8 @@ export default function Home() {
 
   return (
     <div className="bg-app overflow-hidden">
-      {/* Hero: asymmetric split-screen, left-aligned copy */}
-      <section className="relative pt-16 pb-16 md:pb-24 px-4 border-b border-app">
+      {/* Hero: asymmetric split-screen, left-aligned copy, solid brand-colored section for contrast */}
+      <section className="relative pt-16 pb-8 md:pb-12 px-4 bg-brand">
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-[1.1fr_0.9fr] gap-10 items-center">
           <motion.div
             initial={{ opacity: 0, y: 16 }}
@@ -318,14 +318,14 @@ export default function Home() {
             transition={spring}
             className="relative z-10 text-left"
           >
-            <div className="inline-flex items-center gap-2 bg-brand-soft text-brand text-xs font-semibold px-4 py-1.5 rounded-full mb-7 tracking-wide uppercase">
-              <span className="w-1.5 h-1.5 rounded-full bg-brand" /> Real-time price tracking
+            <div className="inline-flex items-center gap-2 bg-white/15 text-white text-xs font-semibold px-4 py-1.5 rounded-full mb-7 tracking-wide uppercase">
+              <span className="w-1.5 h-1.5 rounded-full bg-white" /> Real-time price tracking
             </div>
-            <h1 className="text-5xl md:text-6xl font-bold mb-5 leading-[1.05] tracking-tight text-app">
+            <h1 className="text-5xl md:text-6xl font-bold mb-5 leading-[1.05] tracking-tight text-white">
               Never overpay<br />
-              <span className="text-brand">for electronics</span>
+              <span className="text-white/80">for electronics</span>
             </h1>
-            <p className="text-muted text-lg mb-9 max-w-lg leading-relaxed">
+            <p className="text-white/90 text-lg mb-9 max-w-lg leading-relaxed">
               Track prices across major retailers. Set your target, and we'll email you the moment prices drop.
             </p>
 
@@ -342,15 +342,15 @@ export default function Home() {
                   className="input pl-10 py-3.5"
                 />
               </div>
-              <button type="submit" className="btn-primary px-7 py-3.5 whitespace-nowrap">
+              <button type="submit" className="inline-flex items-center justify-center gap-2 font-semibold px-7 py-3.5 rounded-xl bg-on-brand text-brand transition-opacity hover:opacity-90 active:scale-[0.98] whitespace-nowrap">
                 Search
               </button>
             </form>
 
             {/* quick stats */}
-            <div className="flex items-center gap-7 mt-9 text-xs text-muted flex-wrap">
+            <div className="flex items-center gap-7 mt-9 text-sm text-white/90 flex-wrap">
               {[[Icon.bell, 'Price alerts'], [Icon.chart, 'Price history'], [Icon.globe, 'All major retailers']].map(([IconCmp, label]) => (
-                <span key={label} className="flex items-center gap-1.5"><IconCmp className="w-3.5 h-3.5" />{label}</span>
+                <span key={label} className="flex items-center gap-1.5"><IconCmp className="w-4 h-4" />{label}</span>
               ))}
             </div>
           </motion.div>
@@ -369,21 +369,21 @@ export default function Home() {
         </FadeIn>
         <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-3 [grid-auto-rows:1fr]" stagger={0.05}>
           {CATEGORIES.map((cat, i) => (
-            <StaggerItem key={cat.label} className={i === 0 ? 'md:row-span-2 md:col-span-1' : ''}>
+            <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className={`spotlight w-full h-full flex flex-col items-start gap-3 rounded-2xl card card-hover text-left group ${i === 0 ? 'p-5 justify-between' : 'p-4'}`}
+                className="spotlight w-full h-full flex flex-col items-start gap-3 rounded-2xl card card-hover text-left group p-4"
               >
-                <div className={`shrink-0 rounded-xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform ${i === 0 ? 'w-14 h-14' : 'w-12 h-12'}`}>
+                <div className="shrink-0 rounded-xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform w-12 h-12">
                   {icons[cat.label]}
                 </div>
-                <span className={`font-semibold text-app group-hover:text-brand transition-colors leading-tight flex items-center gap-1 ${i === 0 ? 'text-base' : 'text-sm'}`}>
+                <span className="font-semibold text-app group-hover:text-brand transition-colors leading-tight flex items-center gap-1 text-sm">
                   {cat.label}
                   <svg className="w-3.5 h-3.5 text-faint group-hover:text-brand group-hover:translate-x-0.5 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7"/>
                   </svg>
                 </span>
-                {i === 0 && <span className="text-xs text-muted">Most tracked category this week</span>}
+                <span className="text-xs text-muted">{cat.note}</span>
               </button>
             </StaggerItem>
           ))}
@@ -672,22 +672,22 @@ export default function Home() {
       )}
 
       {/* How it works: asymmetric connected timeline, not a centered 3-card row */}
-      <section className="surface border-y border-app py-20 px-4">
+      <section className="surface border-y border-app py-12 px-4">
         <div className="max-w-5xl mx-auto">
-          <FadeIn className="max-w-md mb-16">
-            <p className="eyebrow mb-3">How it works</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-app tracking-tight">Three steps to smarter shopping</h2>
+          <FadeIn className="max-w-md mb-10">
+            <p className="eyebrow mb-2">How it works</p>
+            <h2 className="text-2xl md:text-3xl font-bold text-app tracking-tight">Three steps to smarter shopping</h2>
           </FadeIn>
           <div className="relative">
-            <div className="hidden md:block absolute left-[27px] top-2 bottom-2 w-px bg-app border-app border-l border-dashed" />
-            <Stagger className="flex flex-col gap-12" stagger={0.12}>
+            <div className="hidden md:block absolute left-[19px] top-2 bottom-2 w-px bg-app border-app border-l border-dashed" />
+            <Stagger className="flex flex-col gap-7" stagger={0.12}>
               {[
                 {
                   step: '01',
                   title: 'Search Any Product',
                   desc: 'Search millions of electronics from major retailers, powered by real-time Google Shopping data.',
                   icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
                     </svg>
                   ),
@@ -697,7 +697,7 @@ export default function Home() {
                   title: 'Set Your Target Price',
                   desc: "Add items to your wishlist and enter the price you want to pay. We'll do the watching.",
                   icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
                     </svg>
                   ),
@@ -707,19 +707,19 @@ export default function Home() {
                   title: 'Get Notified Instantly',
                   desc: 'We check prices every 6 hours and email you the moment your target price is reached.',
                   icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-6 h-6">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
                       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                     </svg>
                   ),
                 },
               ].map(f => (
-                <StaggerItem key={f.step} className="relative flex items-start gap-6 md:gap-8 pl-0 md:pl-0">
-                  <div className="relative z-10 w-14 h-14 shrink-0 rounded-2xl bg-brand text-on-brand flex items-center justify-center shadow-[var(--shadow-brand)]">
+                <StaggerItem key={f.step} className="relative flex items-start gap-5 md:gap-6 pl-0 md:pl-0">
+                  <div className="relative z-10 w-10 h-10 shrink-0 rounded-xl bg-brand text-on-brand flex items-center justify-center shadow-[var(--shadow-brand)]">
                     {f.icon}
                   </div>
-                  <div className="pt-1 max-w-md">
-                    <span className="text-xs font-bold text-faint tracking-widest font-data">{f.step}</span>
-                    <h3 className="font-bold text-app mb-2 text-xl mt-1">{f.title}</h3>
+                  <div className="max-w-md">
+                    <span className="text-[11px] font-bold text-faint tracking-widest font-data">{f.step}</span>
+                    <h3 className="font-bold text-app mb-1 text-lg mt-0.5">{f.title}</h3>
                     <p className="text-sm text-muted leading-relaxed">{f.desc}</p>
                   </div>
                 </StaggerItem>
@@ -738,10 +738,10 @@ export default function Home() {
               <p className="text-lg max-w-md opacity-90">Join smart shoppers already tracking prices with PricePulse.</p>
             </div>
             <div className="flex gap-3 flex-wrap justify-center shrink-0">
-              <Link to="/register" className="bg-[var(--on-brand)] text-brand-strong font-bold px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]">
-                Create Free Account
+              <Link to="/register" className="bg-white text-black font-bold px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]">
+                Sign Up Now
               </Link>
-              <Link to="/search" className="border border-current/30 font-semibold px-8 py-3.5 rounded-xl hover:bg-black/10 transition-colors active:scale-[0.98]">
+              <Link to="/search" className="border border-current/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-black/10 transition-colors active:scale-[0.98]">
                 Browse Products
               </Link>
             </div>

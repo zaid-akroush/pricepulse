@@ -23,6 +23,8 @@ export default function Admin() {
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [togglingId, setTogglingId] = useState(null);
+  const [checkingPrices, setCheckingPrices] = useState(false);
+  const [checkMessage, setCheckMessage] = useState(null);
 
   useEffect(() => {
     if (!user?.isAdmin) return;
@@ -66,11 +68,37 @@ export default function Admin() {
     }
   }
 
+  async function handleCheckPrices() {
+    setCheckingPrices(true);
+    setCheckMessage(null);
+    try {
+      const res = await api.post('/admin/check-prices');
+      setCheckMessage(res.data.message);
+    } catch (err) {
+      setCheckMessage(err.response?.data?.error || 'Could not start price check.');
+    } finally {
+      setCheckingPrices(false);
+    }
+  }
+
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
-      <PageHeader eyebrow="Admin" title="Admin Dashboard" subtitle="Overview of PricePulse activity and users." className="mb-8" />
+      <PageHeader
+        eyebrow="Admin"
+        title="Admin Dashboard"
+        subtitle="Overview of PricePulse activity and users."
+        className="mb-8"
+        action={
+          <div className="flex flex-col items-end gap-1.5">
+            <button onClick={handleCheckPrices} disabled={checkingPrices} className="btn-secondary text-sm disabled:opacity-50">
+              {checkingPrices ? 'Starting…' : 'Run price check now'}
+            </button>
+            {checkMessage && <p className="text-xs text-muted max-w-xs text-right">{checkMessage}</p>}
+          </div>
+        }
+      />
 
       {error && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl mb-6">{error}</p>}
       {loading ? (

@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { sendPasswordResetEmail } = require('../services/mailer');
 const { isAdminEmail } = require('../utils/admin');
+const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -154,7 +155,6 @@ router.post('/reset-password',
 });
 
 // GET /api/auth/me  (protected)
-const authMiddleware = require('../middleware/auth');
 router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
@@ -169,6 +169,7 @@ router.get('/me', authMiddleware, async (req, res) => {
 
 // PATCH /api/auth/profile  (protected), update name/email
 router.patch('/profile',
+  authMiddleware,
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   async (req, res) => {

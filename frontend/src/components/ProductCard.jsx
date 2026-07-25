@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductImage from './ProductImage';
+import { detectBrand, brandLogoUrl } from '../utils/brand';
 
 export default function ProductCard({ product }) {
   const { user } = useAuth();
@@ -49,6 +50,8 @@ export default function ProductCard({ product }) {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
 
+  const brand = detectBrand(product.title);
+
   return (
     <div className="card card-hover flex flex-col overflow-hidden group cursor-pointer relative" onClick={openDetail}>
       {navigating && (
@@ -75,8 +78,19 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* Content */}
-      <div className="p-4 flex flex-col flex-1 gap-3">
-        <h3 className="text-sm font-semibold text-app line-clamp-2 leading-snug min-h-[2.5rem]">{product.title}</h3>
+      <div className="p-4 flex flex-col flex-1 gap-2">
+        <div className="flex items-start gap-2 min-h-[2.5rem]">
+          {brand && (
+            <img
+              src={brandLogoUrl(brand.slug)}
+              alt={brand.name}
+              className="w-4 h-4 mt-0.5 shrink-0 object-contain"
+              loading="lazy"
+              onError={e => { e.currentTarget.style.display = 'none'; }}
+            />
+          )}
+          <h3 className="text-sm font-semibold text-app line-clamp-2 leading-snug">{product.title}</h3>
+        </div>
 
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-xl price-tag">
@@ -86,7 +100,7 @@ export default function ProductCard({ product }) {
         </div>
 
         {!added ? (
-          <div className="flex flex-col gap-2 mt-auto" onClick={e => e.stopPropagation()}>
+          <div className="flex flex-col gap-2 mt-2" onClick={e => e.stopPropagation()}>
             <input
               type="number"
               placeholder="Set target price (optional)"

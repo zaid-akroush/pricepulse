@@ -40,10 +40,10 @@
 /* Design tokens — OKLCH.
    Strategy: Committed. A vivid, saturated orange primary carries the brand
    and doubles as the "price dropped" signal. Text sitting on the brand
-   fill is always near-black ink (not white) — a bright orange holds much
-   better contrast with dark ink than with white, so buttons/badges stay
-   both punchy and accessible. The page surface is a soft warm paper tone
-   (not stark white) with true-white cards lifted on top of it for depth.
+   fill is always white ink (never black) — this keeps every button, badge,
+   and icon chip on an orange fill readable without relying on dark text
+   over orange. The page surface is a soft warm paper tone (not stark
+   white) with true-white cards lifted on top of it for depth.
    No gradients, no glass/blur, no glow blobs. */
 :root {
   --bg:            #f7f2ef;
@@ -63,7 +63,7 @@
   --brand:         #eb6200;
   --brand-strong:  #c22e00;
   --brand-soft:    #ffe0c8;
-  --on-brand:      #100f0e;
+  --on-brand:      #ffffff;
 
   --success:       #006d21;
   --success-soft:  #d5f5d9;
@@ -103,7 +103,7 @@
   --brand:         #f57323;
   --brand-strong:  #e75f00;
   --brand-soft:    #411904;
-  --on-brand:      #100f0e;
+  --on-brand:      #ffffff;
 
   --success:       #48b162;
   --success-soft:  #16301d;
@@ -255,6 +255,7 @@
   .bg-ink-2   { background-color: var(--ink-2); }
   .bg-brand   { background-color: var(--brand); }
   .bg-brand-soft { background-color: var(--brand-soft); }
+  .bg-on-brand { background-color: var(--on-brand); }
   .bg-success { background-color: var(--success); }
   .bg-danger  { background-color: var(--danger); }
   .bg-warning { background-color: var(--warning); }
