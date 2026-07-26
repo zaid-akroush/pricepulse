@@ -18,6 +18,10 @@ export default function Profile() {
   const [privacySaving, setPrivacySaving] = useState(false);
   const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(user?.emailAlertsEnabled ?? true);
   const [emailSaving, setEmailSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [deleteMsg, setDeleteMsg] = useState(null);
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -68,6 +72,18 @@ export default function Profile() {
     } catch (err) {
       setPwMsg({ type: 'error', text: err.response?.data?.error || 'Failed to change password.' });
     } finally { setPwSaving(false); }
+  }
+
+  async function handleDeleteAccount(e) {
+    e.preventDefault();
+    setDeleting(true); setDeleteMsg(null);
+    try {
+      await api.delete('/auth/account', { data: { password: deletePassword } });
+      logout();
+    } catch (err) {
+      setDeleteMsg(err.response?.data?.error || 'Failed to delete account.');
+      setDeleting(false);
+    }
   }
 
   return (
@@ -187,6 +203,43 @@ export default function Profile() {
             {pwSaving ? 'Updating…' : 'Change Password'}
           </button>
         </form>
+      </div>
+
+      {/* Danger zone */}
+      <div className="card p-6 mt-6 border border-danger/30">
+        <h2 className="font-bold text-danger mb-1">Delete Account</h2>
+        <p className="text-sm text-muted mb-4">
+          Permanently deletes your account, wishlist, and alert history. This cannot be undone.
+        </p>
+
+        {!showDeleteConfirm ? (
+          <button
+            onClick={() => { setShowDeleteConfirm(true); setDeleteMsg(null); }}
+            className="text-sm font-semibold text-danger hover:opacity-80"
+          >
+            Delete my account
+          </button>
+        ) : (
+          <form onSubmit={handleDeleteAccount} className="flex flex-col gap-4">
+            <div>
+              <label htmlFor="delete-password" className="block text-sm font-medium text-muted mb-1.5">
+                Enter your password to confirm
+              </label>
+              <input id="delete-password" type="password" value={deletePassword}
+                onChange={e => setDeletePassword(e.target.value)} className="input" required autoFocus />
+            </div>
+            {deleteMsg && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl">{deleteMsg}</p>}
+            <div className="flex gap-3">
+              <button type="submit" disabled={deleting} className="bg-danger text-on-brand font-semibold px-4 py-2.5 rounded-xl disabled:opacity-50 hover:opacity-90 transition-opacity">
+                {deleting ? 'Deleting…' : 'Permanently delete account'}
+              </button>
+              <button type="button" onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); setDeleteMsg(null); }}
+                className="btn-secondary" disabled={deleting}>
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
