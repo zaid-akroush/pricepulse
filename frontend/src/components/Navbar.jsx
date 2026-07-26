@@ -155,13 +155,15 @@ export default function Navbar() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Wishlist/Analytics/Saved are always shown in the nav, even when logged
+  // Wishlist/Analytics are always shown in the nav, even when logged
   // out — clicking one routes through PrivateRoute, which sends anonymous
   // visitors to /login. Admin stays role-gated since it's not a general
-  // user feature.
+  // user feature. Saved searches used to be a standalone page/nav item, but
+  // that's now folded into the Search page itself (the "Save search" button
+  // and Bookmarks popout there), so there's nothing left for a separate tab
+  // to do.
   const userLinks = [
     { to: '/wishlist', label: 'Wishlist' },
-    { to: '/saved-searches', label: 'Saved' },
     user?.isAdmin && { to: '/admin', label: 'Admin' },
   ].filter(Boolean);
 
