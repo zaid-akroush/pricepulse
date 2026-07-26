@@ -16,7 +16,6 @@ import Profile from './pages/Profile';
 import SharedWishlist from './pages/SharedWishlist';
 import Help from './pages/Help';
 import Notifications from './pages/Notifications';
-import SavedSearches from './pages/SavedSearches';
 import Events from './pages/Events';
 import Admin from './pages/Admin';
 import PrivacyPolicy from './pages/PrivacyPolicy';
@@ -49,12 +48,13 @@ export default function App() {
           <Route path="/wishlist" element={<PrivateRoute><Wishlist /></PrivateRoute>} />
           <Route path="/profile" element={<PrivateRoute><Profile /></PrivateRoute>} />
           <Route path="/notifications" element={<PrivateRoute><Notifications /></PrivateRoute>} />
-          <Route path="/saved-searches" element={<PrivateRoute><SavedSearches /></PrivateRoute>} />
-          {/* Analytics and Community are now tabs inside /wishlist — these
-              redirects keep any old bookmarks/links working. */}
+          {/* Analytics and Community are now tabs inside /wishlist, and Saved
+              Searches is now the "Save search" button + Bookmarks popout on
+              /search — these redirects keep any old bookmarks/links working. */}
           <Route path="/dashboard" element={<Navigate to="/wishlist?tab=analytics" replace />} />
           <Route path="/community" element={<Navigate to="/wishlist?tab=following" replace />} />
           <Route path="/accessories" element={<Navigate to="/search" replace />} />
+          <Route path="/saved-searches" element={<Navigate to="/search" replace />} />
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
           <Route path="/shared/:token" element={<SharedWishlist />} />
           <Route path="/events" element={<Events />} />
