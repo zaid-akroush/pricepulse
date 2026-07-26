@@ -144,7 +144,7 @@ export default function Profile() {
             aria-checked={wishlistPublic}
             className={`shrink-0 w-11 h-6 rounded-full relative transition-colors disabled:opacity-50 ${wishlistPublic ? 'bg-brand' : 'surface-3'}`}
           >
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-transform ${wishlistPublic ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-all ${wishlistPublic ? 'left-[calc(100%-1.375rem)]' : 'left-0.5'}`} />
           </button>
         </div>
       </div>
@@ -167,7 +167,7 @@ export default function Profile() {
             aria-checked={emailAlertsEnabled}
             className={`shrink-0 w-11 h-6 rounded-full relative transition-colors disabled:opacity-50 ${emailAlertsEnabled ? 'bg-brand' : 'surface-3'}`}
           >
-            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-transform ${emailAlertsEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-all ${emailAlertsEnabled ? 'left-[calc(100%-1.375rem)]' : 'left-0.5'}`} />
           </button>
         </div>
       </div>
