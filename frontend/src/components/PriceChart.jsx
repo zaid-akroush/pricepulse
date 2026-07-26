@@ -104,8 +104,25 @@ export default function PriceChart({ history, currency = 'USD' }) {
   const domainMax = maxP + yPad;
   const domainSpread = domainMax - domainMin || 1;
 
+  const Y_TICKS = 4;
+  const formatPrice = (v) => {
+    try {
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, maximumFractionDigits: 0 }).format(v);
+    } catch {
+      return `${displayCurrency} ${Math.round(v)}`;
+    }
+  };
+
   const W = 460, H = 200;
-  const PAD = { top: 12, right: 12, bottom: 26, left: 58 };
+  // Left padding has to fit the widest y-axis label, and that width varies
+  // a lot by currency: "$1,021" is short, but "HUF 146,314" (3-letter ISO
+  // code + a much larger number, since HUF has no minor unit) is nearly
+  // twice as wide. A fixed 58px was tuned for $-style labels and clipped
+  // the left edge of longer ones. Estimate width from the actual longest
+  // formatted label instead (monospace, so per-char width is consistent).
+  const yTickLabels = Array.from({ length: Y_TICKS + 1 }, (_, i) => formatPrice(domainMin + (domainSpread * i) / Y_TICKS));
+  const maxLabelChars = Math.max(...yTickLabels.map(s => s.length));
+  const PAD = { top: 12, right: 12, bottom: 26, left: Math.max(58, maxLabelChars * 5.6 + 12) };
   const plotW = W - PAD.left - PAD.right;
   const plotH = H - PAD.top - PAD.bottom;
 
@@ -123,15 +140,7 @@ export default function PriceChart({ history, currency = 'USD' }) {
   const colorVar = isDown ? 'var(--success)' : 'var(--danger)';
   const gradId = isDown ? 'pp-grad-success' : 'pp-grad-danger';
 
-  const Y_TICKS = 4;
   const yTicks = Array.from({ length: Y_TICKS + 1 }, (_, i) => domainMin + (domainSpread * i) / Y_TICKS);
-  const formatPrice = (v) => {
-    try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, maximumFractionDigits: 0 }).format(v);
-    } catch {
-      return `${displayCurrency} ${Math.round(v)}`;
-    }
-  };
   const formatPriceFull = (v) => {
     try {
       return new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, maximumFractionDigits: 2 }).format(v);
