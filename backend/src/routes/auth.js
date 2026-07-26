@@ -222,4 +222,25 @@ router.patch('/password', authMiddleware, async (req, res) => {
   }
 });
 
+// DELETE /api/auth/account  (protected), permanently delete the caller's own
+// account. Requires the current password so a hijacked-but-not-fully-trusted
+// session (e.g. a stolen JWT) can't wipe an account without knowing it.
+// Prisma cascades the delete to the user's wishlist items, notifications,
+// etc. the same way the admin delete-user route does.
+router.delete('/account', authMiddleware, async (req, res) => {
+  try {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password is required to delete your account' });
+
+    const user = await prisma.user.findUnique({ where: { id: req.userId } });
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ error: 'Incorrect password' });
+
+    await prisma.user.delete({ where: { id: req.userId } });
+    res.json({ message: 'Account deleted' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
