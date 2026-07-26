@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
+import { useCurrency } from '../context/CurrencyContext';
 
 // Buy-now-vs-wait recommendation backed by the /forecast endpoint.
 const TONE = {
@@ -11,6 +12,7 @@ const TONE = {
 export default function PricePrediction({ productId }) {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { format } = useCurrency();
 
   useEffect(() => {
     let active = true;
@@ -44,7 +46,7 @@ export default function PricePrediction({ productId }) {
   const diff7 = f7 - cur;
   const diffPct = cur > 0 ? (diff7 / cur) * 100 : 0;
   const rising = diff7 > 0;
-  const fmt = (v) => `${data.currency} ${v.toFixed(2)}`;
+  const fmt = (v) => format(v, data.currency);
   const trendTier = rising ? 'danger' : 'success';
 
   return (

@@ -6,6 +6,8 @@ import PageHeader from '../components/PageHeader';
 import { FadeIn, Stagger, StaggerItem } from '../components/motion';
 import Dashboard from './Dashboard';
 import ProductImage from '../components/ProductImage';
+import Price from '../components/Price';
+import { useCurrency } from '../context/CurrencyContext';
 
 function WishlistTab({ active, onClick, label }) {
   return (
@@ -111,7 +113,7 @@ function FollowingTab() {
                   <p className="font-bold text-app">{u.name}</p>
                   <p className="text-xs text-faint mt-0.5">{u.itemCount} item{u.itemCount !== 1 ? 's' : ''} tracked</p>
                 </div>
-                <p className="font-bold price-tag shrink-0 hidden sm:block">${u.totalValue.toFixed(2)}</p>
+                <p className="font-bold price-tag shrink-0 hidden sm:block"><Price amount={u.totalValue} currency="USD" /></p>
               </button>
               {expanded === u.userId && (
                 <div className="border-t border-app divide-y divide-app">
@@ -123,7 +125,7 @@ function FollowingTab() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-app line-clamp-1">{item.product.title}</p>
-                        <p className="text-xs text-faint mt-0.5">{item.product.currency} {item.product.currentPrice.toFixed(2)}</p>
+                        <p className="text-xs text-faint mt-0.5"><Price amount={item.product.currentPrice} currency={item.product.currency} /></p>
                       </div>
                     </Link>
                   ))}
@@ -225,6 +227,7 @@ export default function Wishlist() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { convert, displayCurrency } = useCurrency();
 
   useEffect(() => {
     api.get('/wishlist')
@@ -233,8 +236,11 @@ export default function Wishlist() {
       .finally(() => setLoading(false));
   }, []);
 
-  const totalValue = items.reduce((sum, i) => sum + i.product.currentPrice, 0);
-  const totalSaved = items.reduce((sum, i) => sum + Math.max(0, i.product.highestPrice - i.product.currentPrice), 0);
+  // Summed post-conversion (not pre-conversion) so this stays correct if
+  // items are ever tracked in different currencies, not just when the
+  // display currency is switched.
+  const totalValue = items.reduce((sum, i) => sum + convert(i.product.currentPrice, i.product.currency).amount, 0);
+  const totalSaved = items.reduce((sum, i) => sum + Math.max(0, convert(i.product.highestPrice - i.product.currentPrice, i.product.currency).amount), 0);
   const trackedItems = items.filter(i => i.targetPrice);
 
   // Segment items into organized sections so the page isn't just one long
@@ -307,11 +313,11 @@ export default function Wishlist() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
             <div className="card p-4">
               <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Total Value</p>
-              <p className="text-xl font-bold font-data text-app">${totalValue.toFixed(2)}</p>
+              <p className="text-xl font-bold font-data text-app"><Price amount={totalValue} currency={displayCurrency} /></p>
             </div>
             <div className="card p-4">
               <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Saved vs Peak</p>
-              <p className="text-xl font-bold font-data text-success">${totalSaved.toFixed(2)}</p>
+              <p className="text-xl font-bold font-data text-success"><Price amount={totalSaved} currency={displayCurrency} /></p>
             </div>
             <div className="card p-4">
               <p className="text-[10px] text-muted font-bold uppercase tracking-widest mb-1">Alerts Set</p>

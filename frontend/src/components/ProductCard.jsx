@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductImage from './ProductImage';
+import Price from './Price';
 import { detectBrand, brandLogoUrl } from '../utils/brand';
-import { getRepairabilityGrade, getEuEnergyGrade } from './ProductSpecs';
+import { getRepairabilityGrade, getEuEnergyGrade, repairabilityTier, euEnergyTier } from './ProductSpecs';
 
 export default function ProductCard({ product }) {
   const { user } = useAuth();
@@ -100,7 +101,7 @@ export default function ProductCard({ product }) {
 
         <div className="flex items-baseline gap-2 flex-wrap">
           <span className="text-xl price-tag">
-            {product.currency} {product.price?.toFixed(2) ?? 'N/A'}
+            {product.price != null ? <Price amount={product.price} currency={product.currency} /> : 'N/A'}
           </span>
           {product.rating && (
             <span className="text-xs text-warning font-semibold">
@@ -110,10 +111,10 @@ export default function ProductCard({ product }) {
         </div>
 
         <div className="flex items-center gap-1.5 flex-wrap">
-          <span className="badge badge-neutral !text-[10px]" title="Repairability score (iFixit, 0-10)">
+          <span className={`badge badge-${repairabilityTier(repairability)} !text-[10px]`} title="Repairability score (iFixit, 0-10)">
             Repair: {repairability != null ? `${repairability}/10` : 'N/A'}
           </span>
-          <span className="badge badge-neutral !text-[10px]" title="EU energy efficiency class (A-G)">
+          <span className={`badge badge-${euEnergyTier(euEnergy)} !text-[10px]`} title="EU energy efficiency class (A-G)">
             EU Energy: {euEnergy || 'N/A'}
           </span>
         </div>

@@ -8,6 +8,7 @@ import DealScore, { getDealScore } from '../components/DealScore';
 import PricePrediction from '../components/PricePrediction';
 import PriceCompare from '../components/PriceCompare';
 import ProductSpecs from '../components/ProductSpecs';
+import Price from '../components/Price';
 import { FadeIn } from '../components/motion';
 
 // Helpers
@@ -164,7 +165,7 @@ function RelatedProducts({ productId }) {
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-medium line-clamp-2 leading-snug" style={{ color: 'var(--text)' }}>{p.title}</p>
-                  <p className="text-sm price-tag mt-1">{p.currency} {p.currentPrice.toFixed(2)}</p>
+                  <p className="text-sm price-tag mt-1"><Price amount={p.currentPrice} currency={p.currency} /></p>
                 </div>
               </div>
               {p.url && (
@@ -331,7 +332,7 @@ export default function ProductDetail() {
 
           {/* Price row */}
           <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-4xl price-tag">{product.currency} {product.currentPrice.toFixed(2)}</span>
+            <span className="text-4xl price-tag"><Price amount={product.currentPrice} currency={product.currency} /></span>
             {dropPercent > 0 && (
               <span className="badge badge-green text-sm">{dropPercent}% below peak</span>
             )}
@@ -354,11 +355,11 @@ export default function ProductDetail() {
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-success-soft rounded-xl p-3 text-center">
               <p className="text-xs text-success font-medium">Lowest Ever</p>
-              <p className="text-lg font-bold price-tag text-success">{product.currency} {product.lowestPrice.toFixed(2)}</p>
+              <p className="text-lg font-bold price-tag text-success"><Price amount={product.lowestPrice} currency={product.currency} /></p>
             </div>
             <div className="bg-danger-soft rounded-xl p-3 text-center">
               <p className="text-xs text-danger font-medium">Highest Ever</p>
-              <p className="text-lg font-bold price-tag text-danger">{product.currency} {product.highestPrice.toFixed(2)}</p>
+              <p className="text-lg font-bold price-tag text-danger"><Price amount={product.highestPrice} currency={product.currency} /></p>
             </div>
           </div>
 
@@ -463,7 +464,7 @@ export default function ProductDetail() {
                 {[...product.priceHistory].reverse().map(h => (
                   <tr key={h.id} className="border-b" style={{ borderColor: 'var(--border)' }}>
                     <td className="py-1.5 font-data">{new Date(h.recordedAt).toLocaleDateString()}</td>
-                    <td className="py-1.5 font-semibold font-data" style={{ color: 'var(--text)' }}>{product.currency} {h.price.toFixed(2)}</td>
+                    <td className="py-1.5 font-semibold font-data" style={{ color: 'var(--text)' }}><Price amount={h.price} currency={product.currency} /></td>
                   </tr>
                 ))}
               </tbody>
