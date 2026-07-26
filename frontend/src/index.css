@@ -273,6 +273,13 @@
   .no-scrollbar { scrollbar-width: none; -ms-overflow-style: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .surface    { background-color: var(--surface); }
+  /* Translucent variant for the sticky navbar's scrolled state: "surface/90"
+     doesn't work because Tailwind's opacity-modifier syntax only applies to
+     its own generated color utilities, not custom classes like .surface. Without
+     this, the scrolled navbar had no real background, just backdrop-blur, so
+     page content behind it (e.g. the orange Save Changes button) bled through
+     as a blurred glow. */
+  .surface-translucent { background-color: color-mix(in srgb, var(--surface) 90%, transparent); }
   .surface-2  { background-color: var(--surface-2); }
   .surface-3  { background-color: var(--surface-3); }
   .bg-app     { background-color: var(--bg); }

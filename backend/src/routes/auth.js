@@ -182,8 +182,18 @@ router.patch('/profile',
   try {
     const { name, email, wishlistPublic, emailAlertsEnabled } = req.body;
 
-    const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
-    if (existing) return res.status(409).json({ error: 'Email already in use' });
+    const currentUser = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
+    if (!currentUser) return res.status(404).json({ error: 'User not found' });
+
+    // Only check for a conflicting email if it's actually changing. Toggles
+    // like wishlistPublic/emailAlertsEnabled resend the unchanged email on
+    // every request, so checking unconditionally caused every save to fail
+    // with a false "Email already in use" the moment the email happened to
+    // collide with a stale/duplicate lookup instead of a real conflict.
+    if (email !== currentUser.email) {
+      const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
+      if (existing) return res.status(409).json({ error: 'Email already in use' });
+    }
 
     const updated = await prisma.user.update({
       where: { id: req.userId },
