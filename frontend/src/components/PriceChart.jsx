@@ -22,33 +22,66 @@ export default function PriceChart({ history, currency = 'USD' }) {
   // currency is just whatever the first converted point resolves to.
   const displayCurrency = convert(0, currency).currency;
 
+  // How many days back the earliest price check actually goes. Any range
+  // button whose window is wider than this would show exactly the same
+  // data as "All" — greyed out below so it's clear they're not broken,
+  // there just isn't older history yet.
+  const trackedDays = useMemo(() => {
+    const all = history || [];
+    if (all.length === 0) return 0;
+    const oldest = Math.min(...all.map(h => new Date(h.recordedAt).getTime()));
+    return Math.max(1, Math.ceil((Date.now() - oldest) / 86400000));
+  }, [history]);
+
+  // If the currently-selected range is one of the greyed-out ones (e.g. the
+  // default 1Y on a product tracked for only a few days), fall back to
+  // "All" so we're never rendering a filter that has no effect and no
+  // visual indication of why.
+  const effectiveRange = (() => {
+    const active = RANGES.find(r => r.label === range);
+    if (active?.days != null && active.days > trackedDays) return 'All';
+    return range;
+  })();
+
   const filtered = useMemo(() => {
     const all = history || [];
-    const active = RANGES.find(r => r.label === range);
+    const active = RANGES.find(r => r.label === effectiveRange);
     if (!active || active.days == null) return all;
     const cutoff = Date.now() - active.days * 86400000;
     return all.filter(h => new Date(h.recordedAt).getTime() >= cutoff);
-  }, [history, range]);
+  }, [history, effectiveRange]);
 
   if (!history || history.length < 2) {
     return <p className="text-xs text-faint text-center py-4">Not enough price history yet.</p>;
   }
 
   const rangePicker = (
-    <div className="flex justify-end gap-1 mb-2">
-      {RANGES.map(r => (
-        <button
-          key={r.label}
-          onClick={() => setRange(r.label)}
-          className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
-            range === r.label
-              ? 'bg-brand text-on-brand'
-              : 'surface-3 text-muted hover:text-brand'
-          }`}
-        >
-          {r.label}
-        </button>
-      ))}
+    <div className="flex flex-col items-end gap-1 mb-2">
+      <div className="flex items-center gap-1">
+        {RANGES.map(r => {
+          const disabled = r.days != null && r.days > trackedDays;
+          return (
+            <button
+              key={r.label}
+              onClick={() => !disabled && setRange(r.label)}
+              disabled={disabled}
+              title={disabled ? `Only tracked for ${trackedDays} day${trackedDays === 1 ? '' : 's'} so far, this range has no extra data yet` : undefined}
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full transition-colors ${
+                disabled
+                  ? 'opacity-35 cursor-not-allowed text-muted'
+                  : effectiveRange === r.label
+                    ? 'bg-brand text-on-brand'
+                    : 'surface-3 text-muted hover:text-brand'
+              }`}
+            >
+              {r.label}
+            </button>
+          );
+        })}
+      </div>
+      <span className="text-[10px] text-faint">
+        Tracked for {trackedDays} day{trackedDays === 1 ? '' : 's'} so far
+      </span>
     </div>
   );
 
@@ -113,8 +146,17 @@ export default function PriceChart({ history, currency = 'USD' }) {
       Math.round((i * (points.length - 1)) / Math.max(1, xTickCount - 1))
     )
   )];
-  const formatDate = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
-  const formatDateFull = (d) => d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  // When every point in the visible range falls on the same calendar day
+  // (e.g. a brand-new product with only same-day checks so far), a plain
+  // date formatter would print the identical label at every tick. Fall
+  // back to a time-of-day format in that case so the ticks stay distinct.
+  const sameDay = dates.length > 0 && dates.every(d => d.toDateString() === dates[0].toDateString());
+  const formatDate = (d) => sameDay
+    ? d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  const formatDateFull = (d) => sameDay
+    ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 
   function nearestIndex(clientX) {
     const svg = svgRef.current;
@@ -149,6 +191,14 @@ export default function PriceChart({ history, currency = 'USD' }) {
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`}
           className="w-full touch-none"
+          // Locking the rendered aspect ratio to match the viewBox means
+          // preserveAspectRatio="none" never actually has to stretch
+          // anything non-uniformly. Without this, the container's real
+          // width/height ratio (set by CSS layout, unrelated to W:H here)
+          // could differ from 460:200, and the browser would squish text
+          // and lines horizontally or vertically to fill it — small axis
+          // labels like "HUF" become badly compressed and unreadable.
+          style={{ aspectRatio: `${W} / ${H}` }}
           preserveAspectRatio="none"
           onPointerMove={(e) => setHoverIdx(nearestIndex(e.clientX))}
           onPointerLeave={() => setHoverIdx(null)}
@@ -180,13 +230,19 @@ export default function PriceChart({ history, currency = 'USD' }) {
             <line x1={PAD.left} x2={W - PAD.right} y1={baseline} y2={baseline} />
           </g>
 
-          {/* X-axis date labels */}
+          {/* X-axis date labels. The first/last ticks sit right at the plot
+              edges, so a centered anchor would push half the text past the
+              SVG's viewBox and get clipped by the browser's default SVG
+              overflow:hidden — anchor those two to start/end instead. */}
           <g fill="var(--text-faint)" fontFamily="'IBM Plex Mono', monospace">
-            {xTickIdx.map((i) => (
-              <text key={i} x={xAt(i)} y={H - 6} fontSize="9" textAnchor="middle">
-                {formatDate(dates[i])}
-              </text>
-            ))}
+            {xTickIdx.map((i, idx) => {
+              const anchor = idx === 0 ? 'start' : idx === xTickIdx.length - 1 ? 'end' : 'middle';
+              return (
+                <text key={i} x={xAt(i)} y={H - 6} fontSize="9" textAnchor={anchor}>
+                  {formatDate(dates[i])}
+                </text>
+              );
+            })}
           </g>
 
           {/* Price line + fill */}
