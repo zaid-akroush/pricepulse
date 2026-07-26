@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useDarkMode } from '../context/DarkModeContext';
+import { useCurrency, SUPPORTED_CURRENCIES } from '../context/CurrencyContext';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
@@ -71,6 +72,47 @@ function ThemeMenu({ theme, setTheme }) {
               >
                 <ThemeIcon theme={opt.value} className="w-4 h-4 shrink-0" />
                 {opt.label}
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// Popout listing every supported display currency — same interaction
+// pattern as ThemeMenu, so switching currency feels consistent with theme.
+function CurrencyMenu() {
+  const { displayCurrency, setDisplayCurrency } = useCurrency();
+  const [open, setOpen] = useState(false);
+  const current = SUPPORTED_CURRENCIES.find(c => c.code === displayCurrency) || SUPPORTED_CURRENCIES[0];
+  return (
+    <div className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="h-9 px-2.5 rounded-lg border border-app hover:bg-app-subtle flex items-center gap-1 text-xs font-bold text-muted transition-colors active:scale-95"
+        title="Change display currency"
+        aria-label="Change display currency"
+        aria-expanded={open}
+      >
+        {current.code}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 top-11 z-50 w-48 card p-1.5 shadow-float max-h-72 overflow-y-auto">
+            {SUPPORTED_CURRENCIES.map(c => (
+              <button
+                key={c.code}
+                onClick={() => { setDisplayCurrency(c.code); setOpen(false); }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
+                  displayCurrency === c.code ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-app-subtle hover:text-app'
+                }`}
+              >
+                <span className="w-6 text-center font-bold shrink-0">{c.symbol}</span>
+                <span className="flex-1 text-left truncate">{c.label}</span>
+                <span className="text-[10px] text-faint shrink-0">{c.code}</span>
               </button>
             ))}
           </div>
@@ -160,6 +202,7 @@ export default function Navbar() {
         {/* Auth + theme */}
         <div className="hidden lg:flex items-center gap-2 shrink-0">
           <ThemeMenu theme={theme} setTheme={setTheme} />
+          <CurrencyMenu />
 
           {user ? (
             <>
@@ -199,6 +242,7 @@ export default function Navbar() {
         {/* Mobile hamburger */}
         <div className="lg:hidden flex items-center gap-2">
           <ThemeMenu theme={theme} setTheme={setTheme} />
+          <CurrencyMenu />
           {user && (
             <Link to="/notifications" className="relative w-8 h-8 rounded-lg border border-app flex items-center justify-center shrink-0" title="Notifications" aria-label={`Notifications${unread > 0 ? ` (${unread} unread)` : ''}`}>
               <svg className="w-4 h-4 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>

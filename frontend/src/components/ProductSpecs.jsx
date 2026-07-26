@@ -115,6 +115,23 @@ export function getEuEnergyGrade(title = '') {
   return hit ? hit[1] : null;
 }
 
+// Maps a grade to one of the app's existing badge color tiers, so the
+// repairability/EU energy badges actually read as good/middling/bad at a
+// glance instead of all looking identically neutral.
+export function repairabilityTier(score) {
+  if (score == null) return 'neutral';
+  if (score >= 7) return 'green';
+  if (score >= 4) return 'orange';
+  return 'red';
+}
+
+export function euEnergyTier(grade) {
+  if (!grade) return 'neutral';
+  if (['A', 'B'].includes(grade)) return 'green';
+  if (['C', 'D'].includes(grade)) return 'orange';
+  return 'red'; // E, F, G
+}
+
 export function parseSpecs(title = '') {
   const specs = [];
   const add = (label, value) => value && specs.push({ label, value });
@@ -151,6 +168,13 @@ export function getReleaseDate(title = '') {
   return hit ? hit[1] : null;
 }
 
+const GRADE_TIER_CLASS = {
+  green: 'bg-success-soft text-success',
+  orange: 'bg-warning-soft text-warning',
+  red: 'bg-danger-soft text-danger',
+  neutral: 'surface-3 text-muted',
+};
+
 export default function ProductSpecs({ title }) {
   const specs = parseSpecs(title);
   const released = getReleaseDate(title);
@@ -169,10 +193,11 @@ export default function ProductSpecs({ title }) {
 
       {/* Repairability + EU energy grade: always shown, N/A when the
           specific model isn't in our (small, real-data-only) lookup table
-          rather than guessing a value for it. */}
+          rather than guessing a value for it. Colored by tier (green/orange/
+          red/neutral) so a good vs. bad grade reads at a glance. */}
       <div className="grid grid-cols-2 gap-3 mb-4">
         <div className="rounded-xl p-3 flex items-center gap-3" style={{ backgroundColor: 'var(--bg)' }}>
-          <span className="w-8 h-8 rounded-lg bg-success-soft text-success flex items-center justify-center shrink-0 font-bold text-sm">
+          <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-sm ${GRADE_TIER_CLASS[repairabilityTier(repairability)]}`}>
             {repairability != null ? repairability : 'N/A'}
           </span>
           <div className="min-w-0">
@@ -181,7 +206,7 @@ export default function ProductSpecs({ title }) {
           </div>
         </div>
         <div className="rounded-xl p-3 flex items-center gap-3" style={{ backgroundColor: 'var(--bg)' }}>
-          <span className="w-8 h-8 rounded-lg bg-info-soft text-info flex items-center justify-center shrink-0 font-bold text-sm">
+          <span className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 font-bold text-sm ${GRADE_TIER_CLASS[euEnergyTier(euEnergy)]}`}>
             {euEnergy || 'N/A'}
           </span>
           <div className="min-w-0">

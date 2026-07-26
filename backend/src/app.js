@@ -9,6 +9,7 @@ const wishlistRoutes = require('./routes/wishlist');
 const communityRoutes = require('./routes/community');
 const socialRoutes = require('./routes/social');
 const adminRoutes = require('./routes/admin');
+const currencyRoutes = require('./routes/currency');
 
 const app = express();
 
@@ -99,6 +100,7 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/social', socialRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/currency', currencyRoutes);
 
 // Global error handler
 app.use((err, req, res, next) => {

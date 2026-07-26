@@ -4,10 +4,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import api from '../api/axios';
 import PriceChart from './PriceChart';
 import ProductImage from './ProductImage';
+import Price from './Price';
+import { useCurrency } from '../context/CurrencyContext';
 import { spring } from './motion';
 
 export default function WishlistItem({ item, onRemove, onUpdate }) {
   const { product } = item;
+  const { convert } = useCurrency();
   const [editing, setEditing] = useState(false);
   const [targetPrice, setTargetPrice] = useState(item.targetPrice ?? '');
   const [targetDropPercent, setTargetDropPercent] = useState(item.targetDropPercent ?? '');
@@ -89,10 +92,10 @@ export default function WishlistItem({ item, onRemove, onUpdate }) {
           </div>
 
           <div className="flex items-baseline gap-2 mt-1.5">
-            <span className="text-xl price-tag">{product.currency} {product.currentPrice.toFixed(2)}</span>
+            <span className="text-xl price-tag"><Price amount={product.currentPrice} currency={product.currency} /></span>
             {priceChange !== null && priceChange !== 0 && (
               <span className={`text-xs font-bold font-data ${priceChange < 0 ? 'text-success' : 'text-danger'}`}>
-                {priceChange < 0 ? '▼' : '▲'} {Math.abs(priceChange).toFixed(2)}
+                {priceChange < 0 ? '▼' : '▲'} {Math.abs(convert(priceChange, product.currency).amount).toFixed(2)}
               </span>
             )}
             {dropPercent > 0 && (
@@ -103,13 +106,13 @@ export default function WishlistItem({ item, onRemove, onUpdate }) {
           {product.url && (
             <a href={product.url} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-on-brand bg-brand hover:opacity-90 px-2.5 py-1 rounded-lg transition-opacity">
-              Buy for {product.currency} {product.currentPrice.toFixed(2)}{retailer ? ` at ${retailer}` : ''} &rarr;
+              Buy for <Price amount={product.currentPrice} currency={product.currency} />{retailer ? ` at ${retailer}` : ''} &rarr;
             </a>
           )}
 
           <div className="flex gap-4 mt-1.5 text-xs text-muted">
-            <span>Low: <strong className="text-success font-data">{product.currency} {product.lowestPrice.toFixed(2)}</strong></span>
-            <span>High: <strong className="text-danger font-data">{product.currency} {product.highestPrice.toFixed(2)}</strong></span>
+            <span>Low: <strong className="text-success font-data"><Price amount={product.lowestPrice} currency={product.currency} /></strong></span>
+            <span>High: <strong className="text-danger font-data"><Price amount={product.highestPrice} currency={product.currency} /></strong></span>
           </div>
 
           {/* Target price */}
@@ -130,7 +133,7 @@ export default function WishlistItem({ item, onRemove, onUpdate }) {
             </div>
           ) : (
             <div className="text-xs text-muted mt-2 flex flex-wrap gap-x-3 gap-y-0.5">
-              <span>Target: <span className="font-medium">{item.targetPrice ? `${product.currency} ${item.targetPrice.toFixed(2)}` : 'Not set'}</span></span>
+              <span>Target: <span className="font-medium">{item.targetPrice ? <Price amount={item.targetPrice} currency={product.currency} /> : 'Not set'}</span></span>
               {item.targetDropPercent && (
                 <span>Drop alert: <span className="font-medium text-brand">{item.targetDropPercent}% off peak</span></span>
               )}

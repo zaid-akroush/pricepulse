@@ -20,6 +20,7 @@ model User {
   resetTokenExpiry DateTime?            // when the reset token expires
   tokenVersion  Int            @default(0) // bumped on password change/reset to invalidate old JWTs
   wishlistPublic Boolean       @default(true) // whether /api/community endpoints may list this user's wishlist
+  emailAlertsEnabled Boolean   @default(true) // whether price-drop alerts are sent by email (in-app notifications always fire regardless)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   wishlistItems WishlistItem[]

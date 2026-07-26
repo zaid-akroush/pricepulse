@@ -159,7 +159,7 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, name: true, email: true, createdAt: true, wishlistPublic: true },
+      select: { id: true, name: true, email: true, createdAt: true, wishlistPublic: true, emailAlertsEnabled: true },
     });
     res.json({ ...user, isAdmin: isAdminEmail(user.email) });
   } catch (err) {
@@ -177,7 +177,7 @@ router.patch('/profile',
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
   try {
-    const { name, email, wishlistPublic } = req.body;
+    const { name, email, wishlistPublic, emailAlertsEnabled } = req.body;
 
     const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
     if (existing) return res.status(409).json({ error: 'Email already in use' });
@@ -190,8 +190,10 @@ router.patch('/profile',
         // Optional: lets a user hide their wishlist from Community browsing
         // and the Follow-by-name search without touching name/email.
         ...(typeof wishlistPublic === 'boolean' ? { wishlistPublic } : {}),
+        // Optional: opt out of price-drop emails without affecting in-app notifications.
+        ...(typeof emailAlertsEnabled === 'boolean' ? { emailAlertsEnabled } : {}),
       },
-      select: { id: true, name: true, email: true, wishlistPublic: true },
+      select: { id: true, name: true, email: true, wishlistPublic: true, emailAlertsEnabled: true },
     });
     res.json(updated);
   } catch (err) {

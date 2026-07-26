@@ -58,14 +58,18 @@ async function checkPrices() {
         const customDropMet = item.targetDropPercent != null && dropFromPeakPct >= item.targetDropPercent;
 
         if ((targetMet || significantDrop || customDropMet) && !item.notified) {
-          await sendPriceDropEmail(item.user.email, {
-            title: product.title,
-            currentPrice: newPrice,
-            targetPrice: item.targetPrice,
-            url: product.url,
-            imageUrl: product.imageUrl,
-            currency: product.currency,
-          });
+          // In-app notification always fires regardless of email preference;
+          // emailAlertsEnabled only gates the actual email send below.
+          if (item.user.emailAlertsEnabled) {
+            await sendPriceDropEmail(item.user.email, {
+              title: product.title,
+              currentPrice: newPrice,
+              targetPrice: item.targetPrice,
+              url: product.url,
+              imageUrl: product.imageUrl,
+              currency: product.currency,
+            }).catch(err => console.error(`[cron] Failed to send price-drop email to user ${item.userId}: ${err.message}`));
+          }
 
           // In-app notification + browser push
           const msg = targetMet

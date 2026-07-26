@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import api from '../api/axios';
+import Price from './Price';
 
 // Shows other retailer listings found for this product's search query, side
 // by side with the price already being tracked. Not merged into the tracked
@@ -46,7 +47,7 @@ export default function PriceCompare({ productId, currentPrice, currency, curren
               </a>
             )}
           </div>
-          <span className="text-sm font-bold price-tag shrink-0">{currency} {currentPrice.toFixed(2)}</span>
+          <span className="text-sm font-bold price-tag shrink-0"><Price amount={currentPrice} currency={currency} /></span>
         </div>
 
         {listings.map((l, i) => (
@@ -60,7 +61,7 @@ export default function PriceCompare({ productId, currentPrice, currency, curren
                 className="text-sm font-bold font-data"
                 style={{ color: l.price < currentPrice ? 'var(--success)' : 'var(--text)' }}
               >
-                {l.currency} {l.price.toFixed(2)}
+                <Price amount={l.price} currency={l.currency} />
               </span>
               {l.url && (
                 <a href={l.url} target="_blank" rel="noopener noreferrer"

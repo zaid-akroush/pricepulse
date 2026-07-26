@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from 'react';
+import { useCurrency } from '../context/CurrencyContext';
 
 const RANGES = [
   { label: '1W', days: 7 },
@@ -16,6 +17,10 @@ export default function PriceChart({ history, currency = 'USD' }) {
   const [range, setRange] = useState('1Y');
   const [hoverIdx, setHoverIdx] = useState(null);
   const svgRef = useRef(null);
+  const { convert } = useCurrency();
+  // Every point converts from the SAME source currency, so the display
+  // currency is just whatever the first converted point resolves to.
+  const displayCurrency = convert(0, currency).currency;
 
   const filtered = useMemo(() => {
     const all = history || [];
@@ -56,7 +61,7 @@ export default function PriceChart({ history, currency = 'USD' }) {
     );
   }
 
-  const prices = filtered.map(h => h.price);
+  const prices = filtered.map(h => convert(h.price, currency).amount);
   const dates = filtered.map(h => new Date(h.recordedAt));
   const minP = Math.min(...prices);
   const maxP = Math.max(...prices);
@@ -89,16 +94,16 @@ export default function PriceChart({ history, currency = 'USD' }) {
   const yTicks = Array.from({ length: Y_TICKS + 1 }, (_, i) => domainMin + (domainSpread * i) / Y_TICKS);
   const formatPrice = (v) => {
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 0 }).format(v);
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, maximumFractionDigits: 0 }).format(v);
     } catch {
-      return `${currency} ${Math.round(v)}`;
+      return `${displayCurrency} ${Math.round(v)}`;
     }
   };
   const formatPriceFull = (v) => {
     try {
-      return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(v);
+      return new Intl.NumberFormat(undefined, { style: 'currency', currency: displayCurrency, maximumFractionDigits: 2 }).format(v);
     } catch {
-      return `${currency} ${v.toFixed(2)}`;
+      return `${displayCurrency} ${v.toFixed(2)}`;
     }
   };
 
@@ -133,7 +138,7 @@ export default function PriceChart({ history, currency = 'USD' }) {
       <div className="flex items-center justify-between mb-2">
         <span className="text-xs font-semibold flex items-center gap-1" style={{ color: colorVar }}>
           <span aria-hidden="true">{isDown ? '▼' : '▲'}</span>
-          <span className="font-data">{currency} {Math.abs(latest - first).toFixed(2)}</span>
+          <span className="font-data">{formatPriceFull(Math.abs(latest - first))}</span>
           <span className="text-muted font-normal">over this range</span>
         </span>
         {rangePicker}

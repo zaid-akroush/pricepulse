@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../api/axios';
 import ProductImage from '../components/ProductImage';
 import PageHeader from '../components/PageHeader';
+import Price from '../components/Price';
+import { useCurrency } from '../context/CurrencyContext';
 
 // Public, read-only view of a single user's wishlist via a share token.
 // No auth required, and the backend only returns the owner's display name
@@ -12,6 +14,7 @@ export default function SharedWishlist() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const { convert, displayCurrency } = useCurrency();
 
   useEffect(() => {
     setLoading(true);
@@ -35,7 +38,7 @@ export default function SharedWishlist() {
   );
 
   const items = data.items || [];
-  const totalValue = items.reduce((sum, i) => sum + i.product.currentPrice, 0);
+  const totalValue = items.reduce((sum, i) => sum + convert(i.product.currentPrice, i.product.currency).amount, 0);
 
   return (
     <div className="bg-app min-h-screen">
@@ -43,7 +46,7 @@ export default function SharedWishlist() {
         <PageHeader
           eyebrow="Shared Wishlist"
           title={`${data.name}'s Wishlist`}
-          subtitle={items.length === 0 ? 'No products tracked yet' : `${items.length} product${items.length !== 1 ? 's' : ''} · $${totalValue.toFixed(2)} total`}
+          subtitle={items.length === 0 ? 'No products tracked yet' : <>{items.length} product{items.length !== 1 ? 's' : ''} &middot; <Price amount={totalValue} currency={displayCurrency} /> total</>}
           className="mb-8"
         />
 
@@ -67,11 +70,11 @@ export default function SharedWishlist() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-semibold text-app line-clamp-2 leading-snug">{product.title}</p>
                     <div className="flex items-baseline gap-2 mt-1.5">
-                      <span className="text-lg price-tag">{product.currency} {product.currentPrice.toFixed(2)}</span>
+                      <span className="text-lg price-tag"><Price amount={product.currentPrice} currency={product.currency} /></span>
                       {dropPercent > 0 && <span className="badge badge-green">{dropPercent}% below peak</span>}
                     </div>
                     {item.targetPrice != null && (
-                      <p className="text-xs text-muted mt-1">Target: {product.currency} {item.targetPrice.toFixed(2)}</p>
+                      <p className="text-xs text-muted mt-1">Target: <Price amount={item.targetPrice} currency={product.currency} /></p>
                     )}
                   </div>
                 </Link>

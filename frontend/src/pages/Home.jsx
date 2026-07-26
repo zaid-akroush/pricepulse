@@ -6,6 +6,7 @@ import api from '../api/axios';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import ProductImage from '../components/ProductImage';
 import DealScore from '../components/DealScore';
+import Price from '../components/Price';
 import { FadeIn, Stagger, StaggerItem, spring } from '../components/motion';
 import { brandLogoUrl } from '../utils/brand';
 
@@ -369,15 +370,15 @@ function ProductCard({ product, badge, badgeClass }) {
         <p className="text-xs font-semibold text-app line-clamp-2 leading-snug mb-2 min-h-[2rem]">{product.title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
           <p className="text-lg price-tag">
-            {product.currency} {product.currentPrice.toFixed(2)}
+            <Price amount={product.currentPrice} currency={product.currency} />
           </p>
           {discountPercent > 0 && (
-            <span className="text-xs text-faint line-through">{product.currency} {product.highestPrice.toFixed(2)}</span>
+            <span className="text-xs text-faint line-through"><Price amount={product.highestPrice} currency={product.currency} /></span>
           )}
         </div>
         {discountPercent > 0 && (
           <p className="text-[11px] font-semibold" style={{ color: 'var(--success)' }}>
-            Save {product.currency} {(product.highestPrice - product.currentPrice).toFixed(2)}
+            Save <Price amount={product.highestPrice - product.currentPrice} currency={product.currency} />
           </p>
         )}
         {badge && (
@@ -674,14 +675,14 @@ export default function Home() {
                 </div>
                 <h3 className="font-bold text-app text-lg mb-1 line-clamp-2">{dealOfDay.title}</h3>
                 <div className="flex items-baseline gap-3 justify-center md:justify-start">
-                  <span className="text-3xl price-tag">{dealOfDay.currency} {dealOfDay.currentPrice.toFixed(2)}</span>
-                  <span className="text-sm text-faint line-through">{dealOfDay.currency} {dealOfDay.highestPrice.toFixed(2)}</span>
+                  <span className="text-3xl price-tag"><Price amount={dealOfDay.currentPrice} currency={dealOfDay.currency} /></span>
+                  <span className="text-sm text-faint line-through"><Price amount={dealOfDay.highestPrice} currency={dealOfDay.currency} /></span>
                   <span className="badge badge-green">{dealOfDay.dropPercent}% off</span>
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-xs text-muted justify-center md:justify-start">
                   <span className="flex items-center gap-1"><Icon.users className="w-3.5 h-3.5" />{dealOfDay.wishlistCount} tracking this</span>
                   <span className="flex items-center gap-1"><Icon.heart className="w-3.5 h-3.5" />{dealOfDay.likeCount} likes</span>
-                  <span>Lowest ever: <strong className="text-success">{dealOfDay.currency} {dealOfDay.lowestPrice.toFixed(2)}</strong></span>
+                  <span>Lowest ever: <strong className="text-success"><Price amount={dealOfDay.lowestPrice} currency={dealOfDay.currency} /></strong></span>
                 </div>
               </div>
               <div className="shrink-0 flex items-center justify-center">

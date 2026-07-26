@@ -16,6 +16,8 @@ export default function Profile() {
   // so this doesn't flash the wrong state on load.
   const [wishlistPublic, setWishlistPublic] = useState(user?.wishlistPublic ?? true);
   const [privacySaving, setPrivacySaving] = useState(false);
+  const [emailAlertsEnabled, setEmailAlertsEnabled] = useState(user?.emailAlertsEnabled ?? true);
+  const [emailSaving, setEmailSaving] = useState(false);
 
   async function handleSaveProfile(e) {
     e.preventDefault();
@@ -37,6 +39,17 @@ export default function Profile() {
     } catch {
       setWishlistPublic(!next); // revert on failure
     } finally { setPrivacySaving(false); }
+  }
+
+  async function toggleEmailAlerts() {
+    const next = !emailAlertsEnabled;
+    setEmailAlertsEnabled(next); // optimistic
+    setEmailSaving(true);
+    try {
+      await api.patch('/auth/profile', { name: form.name, email: form.email, emailAlertsEnabled: next });
+    } catch {
+      setEmailAlertsEnabled(!next); // revert on failure
+    } finally { setEmailSaving(false); }
   }
 
   async function handleChangePassword(e) {
@@ -116,6 +129,29 @@ export default function Profile() {
             className={`shrink-0 w-11 h-6 rounded-full relative transition-colors disabled:opacity-50 ${wishlistPublic ? 'bg-brand' : 'surface-3'}`}
           >
             <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-transform ${wishlistPublic ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
+          </button>
+        </div>
+      </div>
+
+      {/* Notifications */}
+      <div className="card p-6 mb-6">
+        <h2 className="font-bold text-app mb-1">Notifications</h2>
+        <p className="text-sm text-muted mb-4">Control how you hear about price drops.</p>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-app">Email price-drop alerts</p>
+            <p className="text-xs text-muted mt-0.5">
+              When off, you'll still see alerts in Notifications inside the app, just no email will be sent.
+            </p>
+          </div>
+          <button
+            onClick={toggleEmailAlerts}
+            disabled={emailSaving}
+            role="switch"
+            aria-checked={emailAlertsEnabled}
+            className={`shrink-0 w-11 h-6 rounded-full relative transition-colors disabled:opacity-50 ${emailAlertsEnabled ? 'bg-brand' : 'surface-3'}`}
+          >
+            <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-[var(--shadow-sm)] transition-transform ${emailAlertsEnabled ? 'translate-x-[22px]' : 'translate-x-0.5'}`} />
           </button>
         </div>
       </div>

@@ -5,6 +5,8 @@ import api from '../api/axios';
 import ProductImage from '../components/ProductImage';
 import PageHeader from '../components/PageHeader';
 import PriceChart from '../components/PriceChart';
+import Price from '../components/Price';
+import { useCurrency } from '../context/CurrencyContext';
 import { Stagger, StaggerItem } from '../components/motion';
 
 function StatCard({ label, value, sub, accent }) {
@@ -35,6 +37,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const { convert, displayCurrency } = useCurrency();
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
@@ -80,7 +83,12 @@ export default function Dashboard() {
     );
   }
 
-  const c = data.items[0]?.currency || 'USD';
+  // Aggregate totals convert PER ITEM before summing, so this stays correct
+  // even when items are tracked in different currencies (data.items[0]'s
+  // currency alone used to be applied to the whole aggregate, which was
+  // wrong the moment two items didn't share a currency).
+  const totalSavedVsPeak = data.items.reduce((sum, d) => sum + convert(d.savedVsPeak, d.currency).amount, 0);
+  const totalCurrentValue = data.items.reduce((sum, d) => sum + convert(d.currentPrice, d.currency).amount, 0);
   const maxSaved = Math.max(...data.items.map(d => d.savedVsPeak), 1);
   const topSavers = [...data.items].sort((a, b) => b.savedVsPeak - a.savedVsPeak).slice(0, 6);
 
@@ -97,7 +105,7 @@ export default function Dashboard() {
       {/* Stat cards */}
       <Stagger className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" stagger={0.05}>
         <StaggerItem><StatCard label="Products Tracked" value={data.totalTracked} sub={`${data.alertsSet} with alerts`} /></StaggerItem>
-        <StaggerItem><StatCard label="Saved vs Peak" value={`${c} ${data.totalSavedVsPeak.toFixed(2)}`} accent="text-success" sub="across your wishlist" /></StaggerItem>
+        <StaggerItem><StatCard label="Saved vs Peak" value={<Price amount={totalSavedVsPeak} currency={displayCurrency} />} accent="text-success" sub="across your wishlist" /></StaggerItem>
         <StaggerItem><StatCard label="Alerts Triggered" value={data.targetsHit} sub={`${data.targetsMet} targets met now`} accent="text-brand" /></StaggerItem>
         <StaggerItem><StatCard label="Avg Deal Score" value={`${data.avgDealScore}/100`} sub="0 = peak, 100 = lowest" /></StaggerItem>
       </Stagger>
@@ -106,7 +114,7 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
         <div className="card p-5">
           <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: 'var(--text-muted)' }}>Total Tracked Value</p>
-          <p className="text-2xl font-bold font-data mt-1" style={{ color: 'var(--text)' }}>{c} {data.totalCurrentValue.toFixed(2)}</p>
+          <p className="text-2xl font-bold font-data mt-1" style={{ color: 'var(--text)' }}><Price amount={totalCurrentValue} currency={displayCurrency} /></p>
           <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>Sum of current prices of all tracked items</p>
         </div>
         {data.biggestDrop && (
@@ -131,7 +139,7 @@ export default function Dashboard() {
             <Link key={d.id} to={`/product/${d.productId}`} className="block group">
               <div className="flex items-center justify-between text-xs mb-1">
                 <span className="font-medium line-clamp-1 pr-3 group-hover:text-brand" style={{ color: 'var(--text)' }}>{d.title}</span>
-                <span className="font-bold font-data shrink-0 text-success">{d.currency} {d.savedVsPeak.toFixed(2)}</span>
+                <span className="font-bold font-data shrink-0 text-success"><Price amount={d.savedVsPeak} currency={d.currency} /></span>
               </div>
               <div className="h-2.5 rounded-r-full overflow-hidden" style={{ backgroundColor: 'var(--bg)' }}>
                 <div className="h-full rounded-r-full bg-success"
@@ -160,8 +168,8 @@ export default function Dashboard() {
                 <div className="min-w-0">
                   <p className="text-sm font-bold line-clamp-1 group-hover:text-brand transition-colors" style={{ color: 'var(--text)' }}>{d.title}</p>
                   <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {d.currency} {d.currentPrice.toFixed(2)}
-                    {d.savedVsPeak > 0 && <span className="text-success font-semibold"> · saved {d.currency} {d.savedVsPeak.toFixed(2)} vs peak</span>}
+                    <Price amount={d.currentPrice} currency={d.currency} />
+                    {d.savedVsPeak > 0 && <span className="text-success font-semibold"> · saved <Price amount={d.savedVsPeak} currency={d.currency} /> vs peak</span>}
                   </p>
                 </div>
               </Link>
