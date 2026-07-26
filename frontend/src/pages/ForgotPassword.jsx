@@ -30,7 +30,7 @@ export default function ForgotPassword() {
       {sent ? (
         <div className="card p-6 text-center">
           <p className="text-sm text-app mb-2 font-semibold">Check your inbox</p>
-          <p className="text-sm text-muted">If an account exists for <span className="font-medium">{email}</span>, a password reset link is on its way. The link expires in 1 hour.</p>
+          <p className="text-sm text-muted">A password reset link has been sent to <span className="font-medium">{email}</span>. The link expires in 1 hour.</p>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">

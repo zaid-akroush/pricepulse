@@ -84,38 +84,41 @@ router.post('/login',
   }
 });
 
-// POST /api/auth/forgot-password, email a reset link if the account exists
+// POST /api/auth/forgot-password, email a reset link if the account exists.
+// NOTE: this deliberately reveals whether an email is registered (404 if not
+// found) at the request of the project owner, trading the usual
+// anti-enumeration protection for clearer UX during development/demoing.
 router.post('/forgot-password',
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   async (req, res) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
-  // Always respond the same way so we never reveal whether an email is registered.
-  const genericMsg = { message: 'If an account exists for that email, a reset link has been sent.' };
-
   try {
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (user) {
-      const rawToken = crypto.randomBytes(32).toString('hex');
-      const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
-
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { resetToken: hashToken(rawToken), resetTokenExpiry: expiry },
-      });
-
-      const resetUrl = `${getFrontendUrl()}/reset-password?token=${rawToken}`;
-      try {
-        await sendPasswordResetEmail(user.email, resetUrl);
-      } catch (mailErr) {
-        console.error('[forgot-password] email send failed:', mailErr.message);
-      }
+    if (!user) {
+      return res.status(404).json({ error: 'No account found with that email address.' });
     }
 
-    res.json(genericMsg);
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { resetToken: hashToken(rawToken), resetTokenExpiry: expiry },
+    });
+
+    const resetUrl = `${getFrontendUrl()}/reset-password?token=${rawToken}`;
+    try {
+      await sendPasswordResetEmail(user.email, resetUrl);
+    } catch (mailErr) {
+      console.error('[forgot-password] email send failed:', mailErr.message);
+      return res.status(502).json({ error: 'Could not send the reset email. Please try again later.' });
+    }
+
+    res.json({ message: 'A reset link has been sent to your email.' });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
