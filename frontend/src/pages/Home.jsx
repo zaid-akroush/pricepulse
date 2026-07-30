@@ -599,22 +599,21 @@ export default function Home() {
         <FadeIn className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
-            <p className="text-sm text-muted mt-0.5">Jump straight into what you're looking for, or a top brand below</p>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-4 sm:grid-cols-9 gap-x-3 gap-y-6 mb-8" stagger={0.05}>
+        <Stagger className="grid grid-cols-3 sm:grid-cols-6 gap-x-4 gap-y-8 mb-8" stagger={0.05}>
           {CATEGORIES.map(cat => (
             <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className="flex flex-col items-center gap-2.5 group w-full"
+                className="flex flex-col items-center gap-3 group w-full"
               >
-                <span className="w-16 h-16 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                  <span className="flex items-center justify-center" style={{ transform: `scale(${ICON_SCALE[cat.label] ?? 1})` }}>
+                <span className="w-24 h-24 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+                  <span className="flex items-center justify-center" style={{ transform: `scale(${(ICON_SCALE[cat.label] ?? 1) * 1.4})` }}>
                     {icons[cat.label]}
                   </span>
                 </span>
-                <span className="text-xs font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
+                <span className="text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
                   {cat.label}
                 </span>
               </button>
@@ -639,7 +638,6 @@ export default function Home() {
           </span>
           <div>
             <h2 className="text-2xl font-bold text-app tracking-tight">Deal of the day</h2>
-            <p className="text-sm text-muted">Today's top-rated deal by our community</p>
           </div>
         </FadeIn>
         {loadingDeal ? (
@@ -700,7 +698,6 @@ export default function Home() {
         <Section
           icon={<Icon.users className="w-4 h-4" />}
           title="Most wishlisted"
-          subtitle="Products most users are tracking right now"
           action={
             <Link to="/wishlist?tab=following" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
               Following <span>&rarr;</span>
@@ -748,7 +745,6 @@ export default function Home() {
       <Section
         icon={<Icon.chart className="w-4 h-4" />}
         title="Top price drops"
-        subtitle="Biggest drops on products being tracked"
         action={
           <Link to="/search" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
             View all <span>&rarr;</span>
@@ -780,7 +776,7 @@ export default function Home() {
       </Section>
 
       {/* Newest Added */}
-      <Section icon={<Icon.bell className="w-4 h-4" />} title="Newly tracked" subtitle="Latest products people just started following">
+      <Section icon={<Icon.bell className="w-4 h-4" />} title="Newly tracked">
         {loadingNewest ? (
           <Stagger className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {Array(4).fill(0).map((_, i) => <ProductCardSkeleton key={i} />)}
@@ -814,7 +810,6 @@ export default function Home() {
       <section className="max-w-7xl mx-auto px-4 pb-14">
         <FadeIn className="mb-6">
           <h2 className="text-2xl font-bold text-app tracking-tight">More than a price tag</h2>
-          <p className="text-sm text-muted mt-0.5">Three tools that go beyond basic tracking</p>
         </FadeIn>
 
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
