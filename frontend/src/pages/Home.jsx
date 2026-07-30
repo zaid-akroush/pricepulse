@@ -601,19 +601,19 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-3 sm:grid-cols-6 gap-x-4 gap-y-8 mb-8" stagger={0.05}>
+        <Stagger className="grid grid-cols-9 gap-x-2 sm:gap-x-4 gap-y-8 mb-8" stagger={0.05}>
           {CATEGORIES.map(cat => (
             <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
                 className="flex flex-col items-center gap-3 group w-full"
               >
-                <span className="w-24 h-24 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
+                <span className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
                   <span className="flex items-center justify-center" style={{ transform: `scale(${(ICON_SCALE[cat.label] ?? 1) * 1.4})` }}>
                     {icons[cat.label]}
                   </span>
                 </span>
-                <span className="text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
+                <span className="text-[11px] sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
                   {cat.label}
                 </span>
               </button>
