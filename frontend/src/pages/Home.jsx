@@ -78,6 +78,23 @@ const icons = {
   'PC Parts': <Cpu className={ICON_CLS} strokeWidth={1.6} />,
 };
 
+/* Each category badge gets its own accent from the app's existing semantic
+   palette (already defined for success/danger/warning/info states in
+   index.css, reused here rather than inventing new brand-unrelated colors)
+   instead of every tile sharing one flat brand-color circle — makes the
+   row read as distinct categories at a glance, not a repeated stamp. */
+const CATEGORY_COLOR = {
+  Smartphones: 'bg-brand-soft text-brand',
+  Laptops: 'bg-info-soft text-info',
+  Headphones: 'bg-warning-soft text-warning',
+  Gaming: 'bg-danger-soft text-danger',
+  Cameras: 'bg-success-soft text-success',
+  Tablets: 'bg-brand-soft text-brand',
+  TVs: 'bg-info-soft text-info',
+  'Smart Home': 'bg-warning-soft text-warning',
+  'PC Parts': 'bg-danger-soft text-danger',
+};
+
 const CATEGORIES = [
   { label: 'Smartphones', q: 'smartphone',         note: 'Most tracked category this week' },
   { label: 'Laptops',     q: 'laptop',              note: 'Compare deals across brands' },
@@ -541,7 +558,7 @@ export default function Home() {
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
                 className="flex flex-col items-center gap-3 group w-full"
               >
-                <span className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-brand-soft text-brand flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0">
+                <span className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full ${CATEGORY_COLOR[cat.label]} flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0`}>
                   {icons[cat.label]}
                 </span>
                 <span className="text-[11px] sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
