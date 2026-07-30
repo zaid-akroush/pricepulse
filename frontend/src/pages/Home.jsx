@@ -516,7 +516,7 @@ function HeroCarousel() {
    one section that deserves a named kicker, not repeated on every section. */
 function Section({ eyebrow, icon, title, subtitle, action, children }) {
   return (
-    <section className="max-w-7xl mx-auto px-4 pb-14">
+    <section className="max-w-7xl mx-auto px-4 pb-8">
       <FadeIn className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           {icon && (
@@ -588,14 +588,14 @@ export default function Home() {
       </section>
 
       {/* Hero: compact rotating deal banner */}
-      <section className="max-w-7xl mx-auto px-4 pt-5 pb-10">
+      <section className="max-w-7xl mx-auto px-4 pt-4 pb-6">
         <HeroCarousel />
       </section>
 
       {/* Categories (square tiles, "Shop from top categories") + top brands
           stacked underneath in the same section, rather than two separate
           full headers back to back. */}
-      <section className="max-w-7xl mx-auto px-4 pb-14">
+      <section className="max-w-7xl mx-auto px-4 pb-8">
         <FadeIn className="flex items-end justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
@@ -631,7 +631,7 @@ export default function Home() {
       </section>
 
       {/* Deal of the Day */}
-      <section className="max-w-7xl mx-auto px-4 pb-10">
+      <section className="max-w-7xl mx-auto px-4 pb-6">
         <FadeIn className="flex items-center gap-3 mb-4">
           <span className="w-9 h-9 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
             <Icon.bolt className="w-4 h-4" />
@@ -694,7 +694,7 @@ export default function Home() {
       {/* Most Wishlisted — set on a raised `surface` band (same technique as
           "How it works" below) so this doesn't read as a third identical
           section stacked on the same paper background as the two after it. */}
-      <div className="surface border-y border-app pt-14">
+      <div className="surface border-y border-app pt-8">
         <Section
           icon={<Icon.users className="w-4 h-4" />}
           title="Most wishlisted"
@@ -807,7 +807,7 @@ export default function Home() {
           built static illustration of the real component it represents
           (PricePrediction.jsx, PriceCompare.jsx, the /shared/:token wishlist
           link), not a stock graphic. */}
-      <section className="max-w-7xl mx-auto px-4 pb-14">
+      <section className="max-w-7xl mx-auto px-4 pb-8">
         <FadeIn className="mb-6">
           <h2 className="text-2xl font-bold text-app tracking-tight">More than a price tag</h2>
         </FadeIn>
