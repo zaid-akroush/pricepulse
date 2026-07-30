@@ -9,7 +9,20 @@ import DealScore from '../components/DealScore';
 import Price from '../components/Price';
 import { FadeIn, Stagger, StaggerItem, spring } from '../components/motion';
 import { brandLogoUrl } from '../utils/brand';
-import { Smartphone, Laptop, Headphones as HeadphonesIcon, Gamepad2, Camera as CameraIcon, Tablet, Tv, House, Cpu } from 'lucide-react';
+// Deep-imported per icon (not the top-level barrel) — the package ships
+// 1650+ icons re-exported from one giant index, and pulling all of them
+// through a single barrel import made local production builds take
+// several minutes. Importing each icon's own small module keeps the build
+// fast and the shipped bundle limited to just the 9 icons actually used.
+import { DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobile';
+import { Laptop } from '@phosphor-icons/react/dist/csr/Laptop';
+import { Headphones as HeadphonesIcon } from '@phosphor-icons/react/dist/csr/Headphones';
+import { GameController } from '@phosphor-icons/react/dist/csr/GameController';
+import { Camera as CameraIcon } from '@phosphor-icons/react/dist/csr/Camera';
+import { DeviceTablet } from '@phosphor-icons/react/dist/csr/DeviceTablet';
+import { Television } from '@phosphor-icons/react/dist/csr/Television';
+import { House } from '@phosphor-icons/react/dist/csr/House';
+import { Cpu } from '@phosphor-icons/react/dist/csr/Cpu';
 
 /* Small inline icon set used in place of emoji throughout this page. */
 const Icon = {
@@ -60,22 +73,21 @@ const Icon = {
   ),
 };
 
-/* Category icons, from lucide-react (MIT-licensed, actively maintained icon
-   set) rather than hand-drawn SVGs — consistent stroke weight and corner
-   language across every glyph without needing a per-icon scale table.
-   Sized via className (not the size prop) so they scale responsively with
-   the tile instead of needing a fixed px size plus a CSS transform hack. */
+/* Category icons, from @phosphor-icons/react (MIT-licensed) rendered with
+   the "duotone" weight — a filled two-tone glyph (solid shape + a lighter
+   currentColor-opacity fill behind it) instead of a plain thin outline, so
+   they read as more substantial than a simple line-art stroke icon. */
 const ICON_CLS = 'w-8 h-8 sm:w-11 sm:h-11';
 const icons = {
-  Smartphones: <Smartphone className={ICON_CLS} strokeWidth={1.6} />,
-  Laptops: <Laptop className={ICON_CLS} strokeWidth={1.6} />,
-  Headphones: <HeadphonesIcon className={ICON_CLS} strokeWidth={1.6} />,
-  Gaming: <Gamepad2 className={ICON_CLS} strokeWidth={1.6} />,
-  Cameras: <CameraIcon className={ICON_CLS} strokeWidth={1.6} />,
-  Tablets: <Tablet className={ICON_CLS} strokeWidth={1.6} />,
-  TVs: <Tv className={ICON_CLS} strokeWidth={1.6} />,
-  'Smart Home': <House className={ICON_CLS} strokeWidth={1.6} />,
-  'PC Parts': <Cpu className={ICON_CLS} strokeWidth={1.6} />,
+  Smartphones: <DeviceMobile className={ICON_CLS} weight="duotone" />,
+  Laptops: <Laptop className={ICON_CLS} weight="duotone" />,
+  Headphones: <HeadphonesIcon className={ICON_CLS} weight="duotone" />,
+  Gaming: <GameController className={ICON_CLS} weight="duotone" />,
+  Cameras: <CameraIcon className={ICON_CLS} weight="duotone" />,
+  Tablets: <DeviceTablet className={ICON_CLS} weight="duotone" />,
+  TVs: <Television className={ICON_CLS} weight="duotone" />,
+  'Smart Home': <House className={ICON_CLS} weight="duotone" />,
+  'PC Parts': <Cpu className={ICON_CLS} weight="duotone" />,
 };
 
 /* Each category badge gets its own accent from the app's existing semantic
