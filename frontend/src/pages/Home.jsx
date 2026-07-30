@@ -14,7 +14,7 @@ import { brandLogoUrl } from '../utils/brand';
 // through a single barrel import made local production builds take
 // several minutes. Importing each icon's own small module keeps the build
 // fast and the shipped bundle limited to just the 9 icons actually used.
-import { DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobile';
+import { DeviceMobileSpeaker as DeviceMobile } from '@phosphor-icons/react/dist/csr/DeviceMobileSpeaker';
 import { Laptop } from '@phosphor-icons/react/dist/csr/Laptop';
 import { Headphones as HeadphonesIcon } from '@phosphor-icons/react/dist/csr/Headphones';
 import { GameController } from '@phosphor-icons/react/dist/csr/GameController';
