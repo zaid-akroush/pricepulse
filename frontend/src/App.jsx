@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import InstallPrompt from './components/InstallPrompt';
 import TutorialModal from './components/TutorialModal';
+import ScrollToTop from './components/ScrollToTop';
 import Home from './pages/Home';
 import Search from './pages/Search';
 import Wishlist from './pages/Wishlist';
@@ -35,6 +36,7 @@ export default function App() {
       >
         Skip to content
       </a>
+      <ScrollToTop />
       <Navbar />
       <main id="main-content" className="flex-1">
         <Routes>
