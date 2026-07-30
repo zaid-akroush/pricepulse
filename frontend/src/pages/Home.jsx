@@ -59,90 +59,74 @@ const Icon = {
   ),
 };
 
-/* Category icons */
+/* Category icons. Redrawn on a shared 24x24 grid with a single consistent
+   stroke weight (1.7) and corner radius language, so every glyph reads as
+   the same visual weight at the same render size without needing the old
+   per-icon fudge-factor scale table the previous 40x40 set required. */
 const icons = {
   Smartphones: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="10" y="4" width="20" height="32" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <circle cx="20" cy="31" r="1.5" fill="currentColor"/>
-      <rect x="15" y="8" width="10" height="1.5" rx="0.75" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="7" y="2" width="10" height="20" rx="2.3" stroke="currentColor" strokeWidth="1.7"/>
+      <path d="M10.3 19.2h3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
     </svg>
   ),
   Laptops: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="6" y="9" width="28" height="18" rx="2.5" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <path d="M2 28h36" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-      <rect x="13" y="28" width="14" height="2.5" rx="1.25" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="4" y="4" width="16" height="11" rx="1.4" stroke="currentColor" strokeWidth="1.7"/>
+      <path d="M1.5 18.5h21" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+      <path d="M9.5 18.5 8.3 20.6h7.4l-1.2-2.1" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
     </svg>
   ),
   Headphones: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M8 22v-4a12 12 0 0 1 24 0v4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-      <rect x="4" y="22" width="6" height="10" rx="3" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <rect x="30" y="22" width="6" height="10" rx="3" stroke="currentColor" strokeWidth="2.2" fill="none"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <path d="M4 14.5v-3a8 8 0 0 1 16 0v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
+      <rect x="2.3" y="13.5" width="4.4" height="6.5" rx="2.1" stroke="currentColor" strokeWidth="1.7"/>
+      <rect x="17.3" y="13.5" width="4.4" height="6.5" rx="2.1" stroke="currentColor" strokeWidth="1.7"/>
     </svg>
   ),
   Gaming: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="4" y="13" width="32" height="18" rx="6" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <path d="M13 19v6M10 22h6" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-      <circle cx="27" cy="20" r="1.5" fill="currentColor"/>
-      <circle cx="30" cy="23" r="1.5" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <path d="M7 8h10a4.5 4.5 0 0 1 4.5 5.3l-.7 3.3a2.2 2.2 0 0 1-3.9.9l-1.7-2.1a2 2 0 0 0-1.6-.8h-2.2a2 2 0 0 0-1.6.8l-1.7 2.1a2.2 2.2 0 0 1-3.9-.9l-.7-3.3A4.5 4.5 0 0 1 7 8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
+      <path d="M8.2 11.2v3M6.7 12.7h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+      <circle cx="17" cy="11.6" r=".9" fill="currentColor"/>
+      <circle cx="15.1" cy="13.5" r=".9" fill="currentColor"/>
     </svg>
   ),
   Cameras: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="5" y="12" width="30" height="20" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <path d="M15 12l2-4h6l2 4" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-      <circle cx="20" cy="22" r="6" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <circle cx="20" cy="22" r="2" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <path d="M9 6.5 10.1 4h3.8L15 6.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <rect x="2.5" y="6.5" width="19" height="13.5" rx="2.3" stroke="currentColor" strokeWidth="1.7"/>
+      <circle cx="12" cy="13.3" r="3.6" stroke="currentColor" strokeWidth="1.7"/>
+      <circle cx="18.2" cy="9.7" r=".8" fill="currentColor"/>
     </svg>
   ),
   Tablets: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="7" y="4" width="26" height="32" rx="4" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <circle cx="20" cy="31.5" r="1.5" fill="currentColor"/>
-      <rect x="14" y="8" width="12" height="1.5" rx="0.75" fill="currentColor"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="4.5" y="2" width="15" height="20" rx="2.2" stroke="currentColor" strokeWidth="1.7"/>
+      <path d="M10.5 19.2h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
     </svg>
   ),
   TVs: (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="3" y="7" width="34" height="22" rx="3" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <path d="M14 29v4M26 29v4M10 33h20" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
-      <rect x="8" y="11" width="24" height="14" rx="1.5" fill="currentColor" opacity="0.15"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="2" y="4" width="20" height="13.5" rx="1.8" stroke="currentColor" strokeWidth="1.7"/>
+      <path d="M8.3 21h7.4M12 17.5V21" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
     </svg>
   ),
   'Smart Home': (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M5 18L20 6l15 12" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M9 16v16h22V16" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-      <rect x="16" y="24" width="8" height="8" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <path d="M3.5 11 12 3.5 20.5 11" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M5.8 9.3V20h12.4V9.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M9.3 20v-4.3a2.7 2.7 0 0 1 5.4 0V20" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
     </svg>
   ),
   'PC Parts': (
-    <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="9" y="9" width="22" height="22" rx="2.5" stroke="currentColor" strokeWidth="2.2" fill="none"/>
-      <rect x="15" y="15" width="10" height="10" rx="1" stroke="currentColor" strokeWidth="2" fill="none"/>
-      <path d="M16 3v6M24 3v6M16 31v6M24 31v6M3 16h6M3 24h6M31 16h6M31 24h6"
-        stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/>
+    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
+      <rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" strokeWidth="1.7"/>
+      <rect x="9.3" y="9.3" width="5.4" height="5.4" rx=".6" stroke="currentColor" strokeWidth="1.5"/>
+      <path d="M9 2.3v3M15 2.3v3M9 18.7v3M15 18.7v3M2.3 9h3M2.3 15h3M18.7 9h3M18.7 15h3"
+        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
     </svg>
   ),
-};
-
-/* Each icon above fills a different fraction of its 40x40 viewBox (the TV
-   glyph spans nearly the full box, Headphones only the middle), so at an
-   identical 28px render size they read as visibly different weights. This
-   nudges each one back toward a consistent visual size inside its tile. */
-const ICON_SCALE = {
-  Smartphones: 1,
-  Laptops: 0.9,
-  Headphones: 1.05,
-  Gaming: 0.95,
-  Cameras: 0.95,
-  Tablets: 1,
-  TVs: 0.85,
-  'Smart Home': 1,
-  'PC Parts': 0.95,
 };
 
 const CATEGORIES = [
@@ -609,7 +593,7 @@ export default function Home() {
                 className="flex flex-col items-center gap-3 group w-full"
               >
                 <span className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                  <span className="flex items-center justify-center" style={{ transform: `scale(${(ICON_SCALE[cat.label] ?? 1) * 1.4})` }}>
+                  <span className="flex items-center justify-center" style={{ transform: 'scale(1.4)' }}>
                     {icons[cat.label]}
                   </span>
                 </span>
