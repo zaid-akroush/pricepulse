@@ -9,6 +9,7 @@ import DealScore from '../components/DealScore';
 import Price from '../components/Price';
 import { FadeIn, Stagger, StaggerItem, spring } from '../components/motion';
 import { brandLogoUrl } from '../utils/brand';
+import { Smartphone, Laptop, Headphones as HeadphonesIcon, Gamepad2, Camera as CameraIcon, Tablet, Tv, House, Cpu } from 'lucide-react';
 
 /* Small inline icon set used in place of emoji throughout this page. */
 const Icon = {
@@ -59,74 +60,20 @@ const Icon = {
   ),
 };
 
-/* Category icons. Redrawn on a shared 24x24 grid with a single consistent
-   stroke weight (1.7) and corner radius language, so every glyph reads as
-   the same visual weight at the same render size without needing the old
-   per-icon fudge-factor scale table the previous 40x40 set required. */
+/* Category icons, from lucide-react (MIT-licensed, actively maintained icon
+   set) rather than hand-drawn SVGs — consistent stroke weight and corner
+   language across every glyph without needing a per-icon scale table. */
+const CATEGORY_ICON_SIZE = 28;
 const icons = {
-  Smartphones: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="7" y="2" width="10" height="20" rx="2.3" stroke="currentColor" strokeWidth="1.7"/>
-      <path d="M10.3 19.2h3.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-    </svg>
-  ),
-  Laptops: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="4" y="4" width="16" height="11" rx="1.4" stroke="currentColor" strokeWidth="1.7"/>
-      <path d="M1.5 18.5h21" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-      <path d="M9.5 18.5 8.3 20.6h7.4l-1.2-2.1" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
-    </svg>
-  ),
-  Headphones: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M4 14.5v-3a8 8 0 0 1 16 0v3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-      <rect x="2.3" y="13.5" width="4.4" height="6.5" rx="2.1" stroke="currentColor" strokeWidth="1.7"/>
-      <rect x="17.3" y="13.5" width="4.4" height="6.5" rx="2.1" stroke="currentColor" strokeWidth="1.7"/>
-    </svg>
-  ),
-  Gaming: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M7 8h10a4.5 4.5 0 0 1 4.5 5.3l-.7 3.3a2.2 2.2 0 0 1-3.9.9l-1.7-2.1a2 2 0 0 0-1.6-.8h-2.2a2 2 0 0 0-1.6.8l-1.7 2.1a2.2 2.2 0 0 1-3.9-.9l-.7-3.3A4.5 4.5 0 0 1 7 8Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
-      <path d="M8.2 11.2v3M6.7 12.7h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-      <circle cx="17" cy="11.6" r=".9" fill="currentColor"/>
-      <circle cx="15.1" cy="13.5" r=".9" fill="currentColor"/>
-    </svg>
-  ),
-  Cameras: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M9 6.5 10.1 4h3.8L15 6.5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <rect x="2.5" y="6.5" width="19" height="13.5" rx="2.3" stroke="currentColor" strokeWidth="1.7"/>
-      <circle cx="12" cy="13.3" r="3.6" stroke="currentColor" strokeWidth="1.7"/>
-      <circle cx="18.2" cy="9.7" r=".8" fill="currentColor"/>
-    </svg>
-  ),
-  Tablets: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="4.5" y="2" width="15" height="20" rx="2.2" stroke="currentColor" strokeWidth="1.7"/>
-      <path d="M10.5 19.2h3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-    </svg>
-  ),
-  TVs: (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="2" y="4" width="20" height="13.5" rx="1.8" stroke="currentColor" strokeWidth="1.7"/>
-      <path d="M8.3 21h7.4M12 17.5V21" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-    </svg>
-  ),
-  'Smart Home': (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <path d="M3.5 11 12 3.5 20.5 11" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M5.8 9.3V20h12.4V9.3" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M9.3 20v-4.3a2.7 2.7 0 0 1 5.4 0V20" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/>
-    </svg>
-  ),
-  'PC Parts': (
-    <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-7 h-7">
-      <rect x="6" y="6" width="12" height="12" rx="1.6" stroke="currentColor" strokeWidth="1.7"/>
-      <rect x="9.3" y="9.3" width="5.4" height="5.4" rx=".6" stroke="currentColor" strokeWidth="1.5"/>
-      <path d="M9 2.3v3M15 2.3v3M9 18.7v3M15 18.7v3M2.3 9h3M2.3 15h3M18.7 9h3M18.7 15h3"
-        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/>
-    </svg>
-  ),
+  Smartphones: <Smartphone size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Laptops: <Laptop size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Headphones: <HeadphonesIcon size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Gaming: <Gamepad2 size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Cameras: <CameraIcon size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Tablets: <Tablet size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  TVs: <Tv size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  'Smart Home': <House size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  'PC Parts': <Cpu size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
 };
 
 const CATEGORIES = [
