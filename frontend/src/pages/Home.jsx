@@ -62,18 +62,20 @@ const Icon = {
 
 /* Category icons, from lucide-react (MIT-licensed, actively maintained icon
    set) rather than hand-drawn SVGs — consistent stroke weight and corner
-   language across every glyph without needing a per-icon scale table. */
-const CATEGORY_ICON_SIZE = 28;
+   language across every glyph without needing a per-icon scale table.
+   Sized via className (not the size prop) so they scale responsively with
+   the tile instead of needing a fixed px size plus a CSS transform hack. */
+const ICON_CLS = 'w-8 h-8 sm:w-11 sm:h-11';
 const icons = {
-  Smartphones: <Smartphone size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  Laptops: <Laptop size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  Headphones: <HeadphonesIcon size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  Gaming: <Gamepad2 size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  Cameras: <CameraIcon size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  Tablets: <Tablet size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  TVs: <Tv size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  'Smart Home': <House size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
-  'PC Parts': <Cpu size={CATEGORY_ICON_SIZE} strokeWidth={1.7} />,
+  Smartphones: <Smartphone className={ICON_CLS} strokeWidth={1.6} />,
+  Laptops: <Laptop className={ICON_CLS} strokeWidth={1.6} />,
+  Headphones: <HeadphonesIcon className={ICON_CLS} strokeWidth={1.6} />,
+  Gaming: <Gamepad2 className={ICON_CLS} strokeWidth={1.6} />,
+  Cameras: <CameraIcon className={ICON_CLS} strokeWidth={1.6} />,
+  Tablets: <Tablet className={ICON_CLS} strokeWidth={1.6} />,
+  TVs: <Tv className={ICON_CLS} strokeWidth={1.6} />,
+  'Smart Home': <House className={ICON_CLS} strokeWidth={1.6} />,
+  'PC Parts': <Cpu className={ICON_CLS} strokeWidth={1.6} />,
 };
 
 const CATEGORIES = [
@@ -198,18 +200,18 @@ function BrandTile({ brand, onClick }) {
   return (
     <button onClick={onClick} className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center">
       {!imgFailed ? (
-        <span className="w-14 h-10 flex items-center justify-center">
+        <span className="w-24 h-14 flex items-center justify-center">
           <img
             src={brandLogoUrl(brand.slug, brand.logoColor)}
             alt={brand.name}
-            className="max-w-9 max-h-9 object-contain"
+            className="max-w-20 max-h-14 object-contain"
             loading="lazy"
             onError={() => setImgFailed(true)}
           />
         </span>
       ) : (
         <span
-          className="w-14 h-10 rounded-lg flex items-center justify-center font-bold text-sm tracking-tight"
+          className="w-24 h-14 rounded-lg flex items-center justify-center font-bold text-lg tracking-tight"
           style={{ backgroundColor: brand.bg, color: brand.color }}
         >
           {brand.name}
@@ -539,10 +541,8 @@ export default function Home() {
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
                 className="flex flex-col items-center gap-3 group w-full"
               >
-                <span className="w-16 h-16 sm:w-24 sm:h-24 rounded-2xl bg-brand-soft text-brand flex items-center justify-center group-hover:scale-105 transition-transform shrink-0">
-                  <span className="flex items-center justify-center" style={{ transform: 'scale(1.4)' }}>
-                    {icons[cat.label]}
-                  </span>
+                <span className="w-16 h-16 sm:w-24 sm:h-24 rounded-full bg-brand-soft text-brand flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0">
+                  {icons[cat.label]}
                 </span>
                 <span className="text-[11px] sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
                   {cat.label}
