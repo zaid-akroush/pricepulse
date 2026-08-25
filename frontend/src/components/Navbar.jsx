@@ -133,6 +133,10 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [scrolled, setScrolled] = useState(false);
+  // The deployed version, shown next to the logo for admins only. Served from
+  // the admin-only /health/diagnostics endpoint, so a non-admin never even
+  // receives it.
+  const [version, setVersion] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -140,6 +144,15 @@ export default function Navbar() {
       .then(r => setUnread(r.data.count))
       .catch(() => {});
   }, [user, location.pathname]);
+
+  useEffect(() => {
+    if (!user?.isAdmin) { setVersion(null); return; }
+    let active = true;
+    api.get('/health/diagnostics')
+      .then(r => { if (active) setVersion(r.data?.version || null); })
+      .catch(() => { if (active) setVersion(null); });
+    return () => { active = false; };
+  }, [user]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -177,10 +190,22 @@ export default function Navbar() {
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'surface-translucent backdrop-blur-md border-b border-app shadow-[var(--shadow-sm)]' : 'surface border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo */}
-        <Link to="/" className="flex items-center shrink-0">
-          <Wordmark />
-        </Link>
+        {/* Logo, with the running version pinned beside it for admins so the
+            first thing they see is which build they are looking at. */}
+        <div className="flex items-center gap-2 shrink-0">
+          <Link to="/" className="flex items-center">
+            <Wordmark />
+          </Link>
+          {user?.isAdmin && version && (
+            <Link
+              to="/admin"
+              title="Deployed version (visible to admins only)"
+              className="hidden sm:inline-block text-[10px] font-data font-semibold px-1.5 py-0.5 rounded-md bg-brand-soft text-brand leading-none hover:opacity-80 transition-opacity"
+            >
+              v{version}
+            </Link>
+          )}
+        </div>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-0.5">
