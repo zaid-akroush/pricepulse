@@ -1,9 +1,12 @@
 import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useCurrency } from '../context/CurrencyContext';
 import api from '../api/axios';
 import PriceChart from '../components/PriceChart';
 import ProductImage from '../components/ProductImage';
+import ProductGallery from '../components/ProductGallery';
+import AdminDiagnostic from '../components/AdminDiagnostic';
 import DealScore, { getDealScore } from '../components/DealScore';
 import PricePrediction from '../components/PricePrediction';
 import PriceCompare from '../components/PriceCompare';
@@ -41,6 +44,17 @@ function exportCSV(product) {
 
 // Sub-components
 
+// Community notes.
+//
+// Notes are public user-generated text, so posting is governed by rules the
+// server enforces (length, profanity, links, spam, flood control). Those
+// rules are fetched from /social/guidelines rather than duplicated here, so
+// the list a user reads can never drift from what's actually enforced. Notes
+// default to "Top" order — most-upvoted first — so the genuinely useful tips
+// surface instead of whatever was posted most recently.
+const NOTE_MAX_FALLBACK = 500;
+const NOTE_MIN_FALLBACK = 10;
+
 function CommentsSection({ productId }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -48,22 +62,46 @@ function CommentsSection({ productId }) {
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [posting, setPosting] = useState(false);
+  const [error, setError] = useState('');
+  const [sort, setSort] = useState('top');
+  const [guidelines, setGuidelines] = useState(null);
+  const [showRules, setShowRules] = useState(false);
+
+  const maxLength = guidelines?.maxLength ?? NOTE_MAX_FALLBACK;
+  const minLength = guidelines?.minLength ?? NOTE_MIN_FALLBACK;
+  const trimmedLength = text.trim().length;
+  const tooShort = trimmedLength > 0 && trimmedLength < minLength;
+  const overLimit = trimmedLength > maxLength;
 
   useEffect(() => {
-    api.get(`/social/comments/${productId}`)
-      .then(r => setComments(r.data))
-      .finally(() => setLoading(false));
-  }, [productId]);
+    let active = true;
+    setLoading(true);
+    api.get(`/social/comments/${productId}`, { params: { sort } })
+      .then(r => { if (active) setComments(r.data); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [productId, sort]);
+
+  useEffect(() => {
+    api.get('/social/guidelines')
+      .then(r => setGuidelines(r.data))
+      .catch(() => {});
+  }, []);
 
   async function post(e) {
     e.preventDefault();
+    setError('');
     if (!user) { navigate('/login'); return; }
-    if (!text.trim()) return;
+    if (!trimmedLength || tooShort || overLimit) return;
     setPosting(true);
     try {
       const res = await api.post(`/social/comments/${productId}`, { text });
       setComments(prev => [res.data, ...prev]);
       setText('');
+    } catch (err) {
+      // The server returns a specific, user-facing reason (which rule was
+      // broken); show it rather than a generic failure message.
+      setError(err.response?.data?.error || 'Could not post your note. Please try again.');
     } finally { setPosting(false); }
   }
 
@@ -72,27 +110,101 @@ function CommentsSection({ productId }) {
     setComments(prev => prev.filter(c => c.id !== id));
   }
 
+  async function toggleLike(comment) {
+    if (!user) { navigate('/login'); return; }
+    // Optimistic: the vote is a single counter, so showing it immediately and
+    // reconciling with the server's count keeps the button feeling instant.
+    const optimistic = comment.likedByMe ? -1 : 1;
+    setComments(prev => prev.map(c => c.id === comment.id
+      ? { ...c, likeCount: Math.max(0, (c.likeCount || 0) + optimistic), likedByMe: !c.likedByMe }
+      : c));
+    try {
+      const res = await api.post(`/social/comments/${comment.id}/like`);
+      setComments(prev => prev.map(c => c.id === comment.id
+        ? { ...c, likeCount: res.data.likeCount, likedByMe: res.data.likedByMe }
+        : c));
+    } catch (err) {
+      setComments(prev => prev.map(c => c.id === comment.id ? comment : c));
+      setError(err.response?.data?.error || 'Could not register your vote.');
+    }
+  }
+
+  const counterColor = overLimit || tooShort ? 'var(--danger)' : 'var(--text-muted)';
+
   return (
     <div className="card p-6 mt-6">
-      <h2 className="text-lg font-bold mb-4" style={{ color: 'var(--text)' }}>
-        Community Notes ({comments.length})
-      </h2>
+      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
+        <h2 className="text-lg font-bold" style={{ color: 'var(--text)' }}>
+          Community Notes ({comments.length})
+        </h2>
+        {comments.length > 1 && (
+          <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--bg)' }}>
+            {[['top', 'Top'], ['new', 'Newest']].map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setSort(key)}
+                aria-pressed={sort === key}
+                className={`text-xs font-semibold px-3 py-1 rounded-md transition-colors ${sort === key ? 'bg-brand text-on-brand' : 'text-muted hover:text-brand'}`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
 
-      <form onSubmit={post} className="flex gap-2 mb-5">
-        <input
-          value={text}
-          onChange={e => setText(e.target.value)}
-          placeholder={user ? 'Share a tip, deal alert, or note…' : 'Login to leave a comment'}
-          className="input flex-1 text-sm"
-          disabled={!user}
-        />
-        {user ? (
-          <button type="submit" disabled={posting || !text.trim()}
-            className="btn-primary text-sm px-4 shrink-0 disabled:opacity-50">
-            {posting ? '…' : 'Post'}
+      <form onSubmit={post} className="mb-5">
+        <div className="flex gap-2">
+          <input
+            value={text}
+            onChange={e => { setText(e.target.value); if (error) setError(''); }}
+            placeholder={user ? 'Share a tip, deal alert, or note…' : 'Login to leave a note'}
+            className="input flex-1 text-sm"
+            maxLength={maxLength + 50}
+            disabled={!user}
+            aria-describedby="note-rules"
+          />
+          {user ? (
+            <button type="submit" disabled={posting || !trimmedLength || tooShort || overLimit}
+              className="btn-primary text-sm px-4 shrink-0 disabled:opacity-50">
+              {posting ? '…' : 'Post'}
+            </button>
+          ) : (
+            <Link to="/login" className="btn-primary text-sm px-4 shrink-0">Login</Link>
+          )}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setShowRules(v => !v)}
+            className="text-[11px] font-semibold text-brand hover:underline"
+            aria-expanded={showRules}
+          >
+            {showRules ? 'Hide posting guidelines' : 'Posting guidelines'}
           </button>
-        ) : (
-          <Link to="/login" className="btn-primary text-sm px-4 shrink-0">Login</Link>
+          {user && trimmedLength > 0 && (
+            <span className="text-[11px] font-data" style={{ color: counterColor }}>
+              {tooShort
+                ? `${minLength - trimmedLength} more character${minLength - trimmedLength === 1 ? '' : 's'} needed`
+                : `${trimmedLength} / ${maxLength}`}
+            </span>
+          )}
+        </div>
+
+        {showRules && (
+          <ul id="note-rules" className="mt-2 space-y-1 text-[11px] leading-relaxed pl-4 list-disc" style={{ color: 'var(--text-muted)' }}>
+            {(guidelines?.rules || [
+              `Between ${minLength} and ${maxLength} characters.`,
+              'Be helpful and civil — no profanity, slurs or personal attacks.',
+              'No links, phone numbers or contact details.',
+              'No spam: no all-caps, repeated characters or repeated words.',
+            ]).map(rule => <li key={rule}>{rule}</li>)}
+          </ul>
+        )}
+
+        {error && (
+          <p role="alert" className="text-xs mt-2 font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
         )}
       </form>
 
@@ -104,22 +216,40 @@ function CommentsSection({ productId }) {
         <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>No notes yet. Be the first to share a tip!</p>
       ) : (
         <div className="space-y-3">
-          {comments.map(c => (
+          {comments.map((c, i) => (
             <div key={c.id} className="flex gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg)' }}>
               <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">
                 {c.user.name[0]}
               </div>
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-bold" style={{ color: 'var(--text)' }}>{c.user.name}</span>
                   <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {new Date(c.createdAt).toLocaleDateString()}
                   </span>
+                  {/* Only meaningful in "Top" order, and only when the note
+                      actually has votes behind it. */}
+                  {sort === 'top' && i === 0 && c.likeCount > 0 && (
+                    <span className="badge badge-green text-[10px]">Top note</span>
+                  )}
                 </div>
-                <p className="text-sm mt-0.5" style={{ color: 'var(--text)' }}>{c.text}</p>
+                <p className="text-sm mt-0.5 break-words" style={{ color: 'var(--text)' }}>{c.text}</p>
+                <button
+                  onClick={() => toggleLike(c)}
+                  disabled={user && user.id === c.user.id}
+                  aria-pressed={!!c.likedByMe}
+                  aria-label={c.likedByMe ? 'Remove your upvote' : 'Upvote this note'}
+                  title={user && user.id === c.user.id ? "You can't vote on your own note" : undefined}
+                  className={`mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold rounded-full px-2 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-default ${c.likedByMe ? 'bg-brand-soft text-brand' : 'text-muted hover:text-brand'}`}
+                >
+                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill={c.likedByMe ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 4l7 8h-4v8h-6v-8H5z" />
+                  </svg>
+                  {c.likeCount || 0}
+                </button>
               </div>
               {user && user.id === c.user.id && (
-                <button onClick={() => deleteComment(c.id)} className="text-faint hover:text-danger text-lg leading-none shrink-0" title="Delete comment" aria-label="Delete comment">×</button>
+                <button onClick={() => deleteComment(c.id)} className="text-faint hover:text-danger text-lg leading-none shrink-0" title="Delete note" aria-label="Delete note">×</button>
               )}
             </div>
           ))}
@@ -230,19 +360,50 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [diagnostic, setDiagnostic] = useState(null);
   const [targetPrice, setTargetPrice] = useState('');
   const [added, setAdded] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
   const [shareMsg, setShareMsg] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [refreshMsg, setRefreshMsg] = useState('');
+  const { displayCurrency, rates } = useCurrency();
+
+  // Inverse of CurrencyContext.convert: display currency -> the product's
+  // stored currency, which is what the backend's alert comparison uses.
+  function toProductCurrency(amountInDisplayCurrency) {
+    if (amountInDisplayCurrency == null || Number.isNaN(amountInDisplayCurrency)) return null;
+    const productCurrency = product?.currency || 'USD';
+    if (!rates || displayCurrency === productCurrency) return amountInDisplayCurrency;
+    const displayRate = rates[displayCurrency];
+    const productRate = rates[productCurrency];
+    if (!displayRate || !productRate) return amountInDisplayCurrency;
+    return (amountInDisplayCurrency / displayRate) * productRate;
+  }
 
   useEffect(() => {
+    // `active` guards against two problems this effect had:
+    //  1. Clicking two "similar products" quickly meant whichever request
+    //     resolved LAST won, so product A could end up rendered on product
+    //     B's URL.
+    //  2. `error` was never reset when `id` changed, and the `if (error)`
+    //     branch below wins over `product` — so once any load failed, every
+    //     later navigation within this component rendered "Product not
+    //     found." over a product that had in fact loaded fine.
+    let active = true;
     setLoading(true);
+    setError(null);
+    setDiagnostic(null);
     api.get(`/products/${id}`)
-      .then(res => setProduct(res.data))
-      .catch(err => setError(err.response?.status === 404 ? 'Product not found.' : 'Failed to load product.'))
-      .finally(() => setLoading(false));
+      .then(res => { if (active) setProduct(res.data); })
+      .catch(err => {
+        if (!active) return;
+        setError(err.response?.status === 404 ? 'Product not found.' : 'Failed to load product.');
+        // Only populated for admins; renders nothing for anyone else.
+        setDiagnostic(err.response?.data?.diagnostic || null);
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [id]);
 
   async function handleAddToWishlist() {
@@ -253,7 +414,12 @@ export default function ProductDetail() {
         title: product.title, url: product.url, imageUrl: product.imageUrl,
         currentPrice: product.currentPrice, currency: product.currency,
         serpApiQuery: product.serpApiQuery,
-        targetPrice: targetPrice ? parseFloat(targetPrice) : null,
+        // The user types a target in whatever currency the page is DISPLAYING,
+        // but the backend compares it against the price in the product's OWN
+        // currency. Sending the raw number meant that with the display set to
+        // JOD, typing 800 (≈ $1,128) told the server to wait for $800 — an
+        // alert that should have fired never did, silently. Convert back.
+        targetPrice: targetPrice ? toProductCurrency(parseFloat(targetPrice)) : null,
       });
       setAdded(true);
     } finally { setAddLoading(false); }
@@ -297,7 +463,14 @@ export default function ProductDetail() {
       <div className="card h-96 animate-pulse surface-2" />
     </div>
   );
-  if (error) return <div className="text-center py-20 text-danger">{error}</div>;
+  if (error) {
+    return (
+      <div className="max-w-lg mx-auto py-20 px-4 text-center">
+        <p className="text-danger">{error}</p>
+        <AdminDiagnostic diagnostic={diagnostic} />
+      </div>
+    );
+  }
   if (!product) return null;
 
   const dropPercent = product.highestPrice > 0
@@ -315,20 +488,27 @@ export default function ProductDetail() {
       </button>
 
       <FadeIn className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* Image */}
-        <div className="card p-6 flex items-center justify-center min-h-64">
-          <ProductImage
-            src={product.imageUrl}
-            alt={product.title}
-            productId={product.id}
-            className="max-h-64 w-full object-contain"
-            fallbackClass="h-40 w-full"
-          />
-        </div>
+        {/* Images — a gallery of every photo we can match to this product,
+            falling back to the single stored thumbnail. */}
+        <ProductGallery product={product} />
 
         {/* Info */}
         <div className="flex flex-col gap-4">
           <h1 className="text-2xl font-bold leading-tight" style={{ color: 'var(--text)' }}>{product.title}</h1>
+
+          {/* An unreleased product's "price" is a pre-order figure, and its
+              price history is a single speculative point, so say so plainly
+              rather than letting the page read like a normal listing. */}
+          {product.released === false && (
+            <div
+              className="rounded-xl p-3 text-xs leading-relaxed border"
+              style={{ borderColor: 'var(--brand)', backgroundColor: 'var(--brand-soft)', color: 'var(--text)' }}
+            >
+              <span className="font-bold">{product.releaseLabel || 'Not released yet'}.</span>{' '}
+              This product isn't on sale yet, so the price shown is a pre-order or
+              announced price and its history will be limited until it ships.
+            </div>
+          )}
 
           {/* Price row */}
           <div className="flex items-baseline gap-3 flex-wrap">
@@ -398,8 +578,9 @@ export default function ProductDetail() {
           {/* Add to wishlist */}
           {!added ? (
             <div className="flex gap-2">
-              <input type="number" placeholder="Target price (optional)" value={targetPrice}
-                onChange={e => setTargetPrice(e.target.value)} className="input flex-1 text-sm" />
+              <input type="number" placeholder={`Target price in ${displayCurrency} (optional)`} value={targetPrice}
+                onChange={e => setTargetPrice(e.target.value)} className="input flex-1 text-sm"
+                aria-label={`Target price in ${displayCurrency}`} />
               <button onClick={handleAddToWishlist} disabled={addLoading}
                 className="btn-primary shrink-0 disabled:opacity-50 text-sm px-4">
                 {addLoading ? '…' : '+ Wishlist'}

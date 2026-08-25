@@ -37,13 +37,20 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  // A failed load is NOT an empty dashboard. Without this, a 500 or a dropped
+  // connection left data null and rendered "Your dashboard is waiting — track
+  // a few products" to someone with 30 tracked products.
+  const [loadError, setLoadError] = useState(false);
   const { convert, displayCurrency } = useCurrency();
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
+    let active = true;
     api.get('/wishlist/analytics')
-      .then(r => setData(r.data))
-      .finally(() => setLoading(false));
+      .then(r => { if (active) { setData(r.data); setLoadError(false); } })
+      .catch(() => { if (active) setLoadError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [user]);
 
   function exportWishlist() {

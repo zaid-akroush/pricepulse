@@ -20,17 +20,29 @@ export default function Notifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+  // A failed load is not "no notifications" — see Dashboard for the same bug.
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
+    let active = true;
     api.get('/social/notifications')
-      .then(r => setNotifications(r.data))
-      .finally(() => setLoading(false));
+      .then(r => { if (active) { setNotifications(r.data); setLoadError(false); } })
+      .catch(() => { if (active) setLoadError(true); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
   }, [user]);
 
   async function markAllRead() {
-    await api.patch('/social/notifications/read-all');
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    // Applied only after the request succeeds. Flipping state first meant a
+    // failed PATCH cleared the badge locally and the unread count reappeared
+    // on the next page load, with nothing telling the user why.
+    try {
+      await api.patch('/social/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    } catch {
+      setLoadError(false);
+    }
   }
 
   async function markRead(id) {
@@ -64,6 +76,11 @@ export default function Notifications() {
               <div className="h-3 rounded w-1/2 surface-3" />
             </div>
           ))}
+        </div>
+      ) : loadError ? (
+        <div className="card p-16 text-center">
+          <p className="font-semibold text-lg mb-1" style={{ color: 'var(--text)' }}>Couldn't load your notifications</p>
+          <p className="text-sm" style={{ color: 'var(--text-muted)' }}>Something went wrong on our side. Please refresh to try again.</p>
         </div>
       ) : notifications.length === 0 ? (
         <div className="card p-16 text-center">
