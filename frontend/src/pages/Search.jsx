@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import AdminDiagnostic from '../components/AdminDiagnostic';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
@@ -61,12 +62,16 @@ export default function Search() {
   const [filtered, setFiltered] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // Present only for admins — the backend attaches it to failure responses.
+  const [diagnostic, setDiagnostic] = useState(null);
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState('default');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
+  // Bumped once per successful save to refresh the bookmarks list.
+  const [bookmarksVersion, setBookmarksVersion] = useState(0);
   const [bookmarks, setBookmarks] = useState([]);
 
   // Bookmarks sidebar: reuses the existing saved-searches feature so past
@@ -74,7 +79,10 @@ export default function Search() {
   useEffect(() => {
     if (!user) { setBookmarks([]); return; }
     api.get('/social/saved-searches').then(r => setBookmarks(r.data)).catch(() => {});
-  }, [user, savedMsg]);
+    // `savedMsg` used to be a dependency, and it is set twice per save
+    // ('Saved!' then '' two seconds later), so every save fired three
+    // fetches. `bookmarksVersion` is bumped exactly once per save instead.
+  }, [user, bookmarksVersion]);
 
   async function removeBookmark(id) {
     setBookmarks(prev => prev.filter(b => b.id !== id));
@@ -87,6 +95,7 @@ export default function Search() {
     if (!q) return;
     try {
       await api.post('/social/saved-searches', { query: q });
+      setBookmarksVersion(v => v + 1);
       setSavedMsg('Saved!');
       setTimeout(() => setSavedMsg(''), 2000);
     } catch { setSavedMsg('Already saved'); setTimeout(() => setSavedMsg(''), 2000); }
@@ -115,16 +124,29 @@ export default function Search() {
     setFiltered(out);
   }, [results, sort, minPrice, maxPrice]);
 
+  // Which search is the current one. Clicking "Laptops" then "Cameras" fires
+  // two overlapping requests, and whichever resolved last used to win — so
+  // the page could show laptops while the URL and the active chip both said
+  // Cameras. Every response now checks it is still the newest before it is
+  // allowed to touch state.
+  const searchSeq = useRef(0);
+
   async function doSearch(q) {
     if (!q?.trim()) return;
-    setLoading(true); setError(null); setSearched(true);
+    const seq = ++searchSeq.current;
+    setLoading(true); setError(null); setDiagnostic(null); setSearched(true);
     setResults([]); setFiltered([]);
     try {
       const { data } = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
+      if (seq !== searchSeq.current) return; // superseded by a newer search
       setResults(data);
     } catch (err) {
+      if (seq !== searchSeq.current) return;
       setError(err.response?.data?.error || 'Search failed. Please try again.');
-    } finally { setLoading(false); }
+      setDiagnostic(err.response?.data?.diagnostic || null);
+    } finally {
+      if (seq === searchSeq.current) setLoading(false);
+    }
   }
 
   function handleSubmit(e) {
@@ -226,7 +248,12 @@ export default function Search() {
       )}
 
       {/* Error */}
-      {error && <p className="text-danger text-sm mb-6 bg-danger-soft p-3 rounded-xl">{error}</p>}
+      {error && (
+        <div className="mb-6">
+          <p className="text-danger text-sm bg-danger-soft p-3 rounded-xl">{error}</p>
+          <AdminDiagnostic diagnostic={diagnostic} />
+        </div>
+      )}
 
       {!loading && filtered.length > 0 && filtered.some(p => p.stale) && (
         <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">

@@ -193,6 +193,18 @@ router.patch('/profile',
     if (email !== currentUser.email) {
       const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
       if (existing) return res.status(409).json({ error: 'Email already in use' });
+
+      // Admin rights are derived purely from the address matching
+      // ADMIN_EMAILS, and there is no email verification anywhere in this
+      // app. So if an address in that list has no account yet — a
+      // not-yet-onboarded admin, an alias, a rotated address — any user
+      // could simply set their own email to it and become an admin. Claiming
+      // an admin address through a self-service profile edit is never
+      // legitimate: an admin account is created by registering with that
+      // address, not by renaming an existing one into it.
+      if (isAdminEmail(email) && !isAdminEmail(currentUser.email)) {
+        return res.status(403).json({ error: 'That email address cannot be used.' });
+      }
     }
 
     const updated = await prisma.user.update({
@@ -228,7 +240,21 @@ router.patch('/password', authMiddleware, async (req, res) => {
     const hashed = await bcrypt.hash(newPassword, 10);
     // Bump tokenVersion so a leaked long-lived JWT stops working the moment
     // the password changes, instead of staying valid until it expires.
-    await prisma.user.update({ where: { id: req.userId }, data: { password: hashed, tokenVersion: { increment: 1 } } });
+    //
+    // Also clear any outstanding password-reset token. Without this, a reset
+    // link an attacker requested earlier (and deliberately did not use) stays
+    // valid for its full hour AFTER the victim changes their password — so
+    // the victim does everything right, believes the account is secured, and
+    // the attacker still takes it over from the stashed link.
+    await prisma.user.update({
+      where: { id: req.userId },
+      data: {
+        password: hashed,
+        tokenVersion: { increment: 1 },
+        resetToken: null,
+        resetTokenExpiry: null,
+      },
+    });
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
     res.status(500).json({ error: err.message });
