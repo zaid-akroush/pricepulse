@@ -26,6 +26,9 @@ export default function Admin() {
   const [togglingId, setTogglingId] = useState(null);
   const [checkingPrices, setCheckingPrices] = useState(false);
   const [checkMessage, setCheckMessage] = useState(null);
+  // Which build is actually running. Served from /api/health/diagnostics,
+  // which is admin-only, so this never reaches a normal user.
+  const [build, setBuild] = useState(null);
 
   useEffect(() => {
     if (!user?.isAdmin) return;
@@ -37,6 +40,16 @@ export default function Admin() {
       .catch(err => setError(err.response?.data?.error || 'Failed to load admin data.'))
       .finally(() => setLoading(false));
   }, [user]);
+
+  // Separate from the main load: a failure here must not blank the dashboard,
+  // and the version line is useful even when something else is broken.
+  useEffect(() => {
+    let active = true;
+    api.get('/health/diagnostics')
+      .then(r => { if (active) setBuild(r.data); })
+      .catch(() => { if (active) setBuild(null); });
+    return () => { active = false; };
+  }, []);
 
   // Non-admins never see this page.
   if (!user?.isAdmin) return <Navigate to="/" replace />;
@@ -209,6 +222,35 @@ export default function Admin() {
               </div>
             )}
           </section>
+
+          {/* Build info — tells you which version you are actually looking at,
+              which is the first thing worth knowing when a report of "it's
+              broken" turns out to be a stale deploy. */}
+          {build && (
+            <footer className="mt-10 pt-4 border-t border-app">
+              <p className="text-xs font-data text-faint">
+                PricePulse v{build.version}
+                {build.commit && <> · {build.commit}</>}
+                {' · '}{build.nodeEnv}
+                {' · Node '}{build.nodeVersion}
+                {build.startedAt && <> · up since {new Date(build.startedAt).toLocaleString()}</>}
+              </p>
+              {build.ok === false && (
+                <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>
+                  {build.checks.filter(c => !c.ok).length} integration(s) not configured — see the checks below.
+                </p>
+              )}
+              {build.checks?.some(c => !c.ok) && (
+                <ul className="mt-2 space-y-1">
+                  {build.checks.filter(c => !c.ok).map(c => (
+                    <li key={c.name} className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                      <span className="font-semibold" style={{ color: 'var(--text)' }}>{c.name}</span>: {c.fix}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </footer>
+          )}
         </>
       )}
     </div>

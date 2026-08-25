@@ -3,6 +3,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const { diagnose, environmentReport } = require('./services/diagnostics');
 const attachDiagnostics = require('./middleware/attachDiagnostics');
+const { version: APP_VERSION } = require('../package.json');
 const authMiddleware = require('./middleware/auth');
 const adminOnly = require('./middleware/admin');
 const rateLimit = require('express-rate-limit');
@@ -102,6 +103,29 @@ app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 // diagnosis. Never blocks a request.
 app.use('/api/', attachDiagnostics);
 
+
+// What is actually deployed. Read from package.json rather than a duplicated
+// constant, so `npm version` is the single place a release is stamped. The
+// commit and build time are only present when the deploy pipeline provides
+// them (Render and most CI systems expose the commit SHA as an env var), and
+// are reported as null rather than guessed when it doesn't.
+function buildInfo() {
+  const commit = process.env.RENDER_GIT_COMMIT
+    || process.env.GIT_COMMIT
+    || process.env.SOURCE_VERSION
+    || process.env.VERCEL_GIT_COMMIT_SHA
+    || null;
+  return {
+    version: APP_VERSION,
+    commit: commit ? String(commit).slice(0, 7) : null,
+    builtAt: process.env.BUILD_TIME || null,
+    startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
+    uptimeSeconds: Math.round(process.uptime()),
+    nodeEnv: process.env.NODE_ENV || 'development',
+    nodeVersion: process.version,
+  };
+}
+
 // GET /api/health/diagnostics — admin-only environment self-check. Reports
 // which integrations are configured (never their values) and how to fix each
 // gap, so an admin can tell at a glance why something isn't loading.
@@ -114,8 +138,7 @@ app.get('/api/health/diagnostics', authMiddleware, adminOnly, (req, res) => {
   res.json({
     ok: checks.every(c => c.ok),
     checks,
-    uptimeSeconds: Math.round(process.uptime()),
-    nodeEnv: process.env.NODE_ENV || 'development',
+    ...buildInfo(),
   });
 });
 
