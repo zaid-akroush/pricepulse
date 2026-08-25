@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const { diagnose, environmentReport } = require('./services/diagnostics');
+const attachDiagnostics = require('./middleware/attachDiagnostics');
+const authMiddleware = require('./middleware/auth');
+const adminOnly = require('./middleware/admin');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
@@ -94,6 +98,27 @@ app.use('/api/auth/password', authLimiter);
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
 // Routes
+// Flags admin requests so failures below can be answered with a full
+// diagnosis. Never blocks a request.
+app.use('/api/', attachDiagnostics);
+
+// GET /api/health/diagnostics — admin-only environment self-check. Reports
+// which integrations are configured (never their values) and how to fix each
+// gap, so an admin can tell at a glance why something isn't loading.
+// NOTE: guarded by the real `authMiddleware` + `adminOnly` pair, NOT by
+// req.isAdmin. req.isAdmin comes from attachDiagnostics, which skips the
+// tokenVersion check — fine for deciding how much an error explains, but it
+// would let a token revoked by a password reset keep reading this.
+app.get('/api/health/diagnostics', authMiddleware, adminOnly, (req, res) => {
+  const checks = environmentReport();
+  res.json({
+    ok: checks.every(c => c.ok),
+    checks,
+    uptimeSeconds: Math.round(process.uptime()),
+    nodeEnv: process.env.NODE_ENV || 'development',
+  });
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/wishlist', wishlistRoutes);
@@ -103,9 +128,30 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/currency', currencyRoutes);
 
 // Global error handler
+// Global error handler.
+//
+// Regular users get the short message only. Admins additionally get a
+// `diagnostic` block naming the likely cause and the steps that fix it, so
+// "something didn't load" is actionable from the UI instead of requiring a
+// trip to the server logs. See services/diagnostics.
+// Errors a route raised deliberately (4xx) carry a message written FOR the
+// user and are safe to pass through. A 5xx is an internal failure, and its
+// message is whatever the library threw — Prisma in particular embeds the
+// database host, port and column names. Those were being returned verbatim
+// to anonymous callers, so any request made while the DB was down disclosed
+// internal infrastructure. 5xx now gets a fixed generic message; the real
+// text still goes to the server log, and to the admin-only diagnostic block.
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
+  const status = err.status || 500;
+  const safeMessage = status < 500
+    ? (err.message || 'Request failed')
+    : 'Something went wrong on our side. Please try again.';
+  const body = { error: safeMessage };
+  if (req.isAdmin) {
+    body.diagnostic = diagnose(err, { method: req.method, path: req.originalUrl });
+  }
+  res.status(status).json(body);
 });
 
 module.exports = app;
