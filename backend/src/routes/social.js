@@ -2,8 +2,18 @@ const express = require('express');
 const router = express.Router();
 const { PrismaClient } = require('@prisma/client');
 const auth = require('../middleware/auth');
+const optionalAuth = require('../middleware/optionalAuth');
 const prisma = new PrismaClient();
 const { getPublicKey } = require('../services/push');
+const {
+  MIN_LENGTH: NOTE_MIN_LENGTH,
+  MAX_LENGTH: NOTE_MAX_LENGTH,
+  RATE_LIMIT_MAX,
+  RATE_LIMIT_WINDOW_MS,
+  DUPLICATE_WINDOW_MS,
+  NOTE_GUIDELINES,
+  validateNoteText,
+} = require('../services/noteModeration');
 
 // Wrap async handlers so a rejected promise is forwarded to the global error
 // handler instead of becoming an unhandled rejection (which crashes the Node
@@ -146,30 +156,158 @@ router.get('/likes/:productId', asyncHandler(async (req, res) => {
 
 // ── Comments ──────────────────────────────────────────────────────────────────
 
-// GET /api/social/comments/:productId
-router.get('/comments/:productId', asyncHandler(async (req, res) => {
+// GET /api/social/guidelines
+// The posting rules, served from the same module the server validates
+// against, so the UI can never show rules that differ from what's enforced.
+router.get('/guidelines', (req, res) => {
+  res.json({
+    minLength: NOTE_MIN_LENGTH,
+    maxLength: NOTE_MAX_LENGTH,
+    rateLimit: { max: RATE_LIMIT_MAX, windowMinutes: RATE_LIMIT_WINDOW_MS / 60000 },
+    rules: NOTE_GUIDELINES,
+  });
+});
+
+// Attach like counts (and whether the current viewer liked each note) to a
+// list of comments, then order them. `sort=top` puts the most-liked notes
+// first — the default view, so the most useful tips surface instead of just
+// the most recent. Ties break on recency.
+async function decorateComments(comments, viewerId, sort) {
+  if (comments.length === 0) return [];
+  const ids = comments.map(c => c.id);
+
+  const counts = await prisma.commentLike.groupBy({
+    by: ['commentId'],
+    where: { commentId: { in: ids } },
+    _count: { commentId: true },
+  });
+  const countBy = new Map(counts.map(c => [c.commentId, c._count.commentId]));
+
+  let likedIds = new Set();
+  if (viewerId) {
+    const mine = await prisma.commentLike.findMany({
+      where: { userId: viewerId, commentId: { in: ids } },
+      select: { commentId: true },
+    });
+    likedIds = new Set(mine.map(m => m.commentId));
+  }
+
+  const decorated = comments.map(c => ({
+    ...c,
+    likeCount: countBy.get(c.id) || 0,
+    likedByMe: likedIds.has(c.id),
+  }));
+
+  if (sort === 'top') {
+    decorated.sort((a, b) =>
+      b.likeCount - a.likeCount || new Date(b.createdAt) - new Date(a.createdAt));
+  }
+  return decorated;
+}
+
+// GET /api/social/comments/:productId?sort=top|new
+router.get('/comments/:productId', optionalAuth, asyncHandler(async (req, res) => {
   const productId = intParam(res, req.params.productId, 'product id');
   if (productId === null) return;
+  const sort = req.query.sort === 'new' ? 'new' : 'top';
+
   const comments = await prisma.comment.findMany({
     where: { productId },
     include: { user: { select: { id: true, name: true } } },
     orderBy: { createdAt: 'desc' },
   });
-  res.json(comments);
+
+  // This route is public (no auth middleware), but if a token happens to be
+  // present we use it to mark the viewer's own likes.
+  res.json(await decorateComments(comments, req.userId || null, sort));
 }));
 
 // POST /api/social/comments/:productId
 router.post('/comments/:productId', auth, asyncHandler(async (req, res) => {
   const productId = intParam(res, req.params.productId, 'product id');
   if (productId === null) return;
-  const { text } = req.body;
-  if (!text?.trim()) return res.status(400).json({ error: 'Comment text required' });
-  if (text.trim().length > 500) return res.status(400).json({ error: 'Comment must be 500 characters or fewer' });
+  // Content rules (length, profanity, links, spam) live in
+  // services/noteModeration so they're testable on their own and shared with
+  // the /guidelines endpoint the UI reads.
+  const verdict = validateNoteText(req.body?.text);
+  if (!verdict.ok) return res.status(400).json({ error: verdict.error });
+  const text = verdict.text;
+
+  // Flood control: a burst of notes from one account is spam even when each
+  // note passes the content checks on its own.
+  const since = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const recentCount = await prisma.comment.count({
+    where: { userId: req.userId, createdAt: { gte: since } },
+  });
+  if (recentCount >= RATE_LIMIT_MAX) {
+    return res.status(429).json({
+      error: `You've posted ${RATE_LIMIT_MAX} notes in the last ${RATE_LIMIT_WINDOW_MS / 60000} minutes. Please wait a bit before posting again.`,
+    });
+  }
+
+  // Reposting the same note (here or on another product) is the other common
+  // spam shape, so an identical recent note from the same user is rejected.
+  const duplicate = await prisma.comment.findFirst({
+    where: {
+      userId: req.userId,
+      text,
+      createdAt: { gte: new Date(Date.now() - DUPLICATE_WINDOW_MS) },
+    },
+    select: { id: true },
+  });
+  if (duplicate) {
+    return res.status(400).json({ error: 'You already posted this note. Try adding something new instead.' });
+  }
+
   const comment = await prisma.comment.create({
-    data: { userId: req.userId, productId, text: text.trim() },
+    data: { userId: req.userId, productId, text },
     include: { user: { select: { id: true, name: true } } },
   });
-  res.json(comment);
+  res.json({ ...comment, likeCount: 0, likedByMe: false });
+}));
+
+// POST /api/social/comments/:commentId/like — toggles the viewer's upvote.
+// The unique (userId, commentId) index means one vote per person per note;
+// posting again removes it, so this one route both likes and unlikes.
+router.post('/comments/:commentId/like', auth, asyncHandler(async (req, res) => {
+  const commentId = intParam(res, req.params.commentId, 'comment id');
+  if (commentId === null) return;
+
+  const comment = await prisma.comment.findUnique({ where: { id: commentId }, select: { id: true, userId: true } });
+  if (!comment) return res.status(404).json({ error: 'Not found' });
+  if (comment.userId === req.userId) {
+    return res.status(400).json({ error: "You can't like your own note." });
+  }
+
+  // Toggling used to be read-then-branch, which races with itself: two
+  // concurrent requests (a double-click — the button fires optimistically)
+  // both saw "not liked", both inserted, and the second hit the unique index
+  // and returned a 500. The mirror case double-deleted. Both operations are
+  // now idempotent, so concurrent presses converge instead of erroring, and
+  // the reported state is read back AFTER the write rather than from the
+  // stale pre-write value.
+  const existing = await prisma.commentLike.findUnique({
+    where: { userId_commentId: { userId: req.userId, commentId } },
+  });
+
+  if (existing) {
+    // deleteMany, not delete: a no-op when the row is already gone.
+    await prisma.commentLike.deleteMany({ where: { userId: req.userId, commentId } });
+  } else {
+    try {
+      await prisma.commentLike.create({ data: { userId: req.userId, commentId } });
+    } catch (err) {
+      // P2002 = the other request won the race and already inserted it.
+      // That is the state the user asked for, so it is not an error.
+      if (err.code !== 'P2002') throw err;
+    }
+  }
+
+  const [likeCount, mine] = await Promise.all([
+    prisma.commentLike.count({ where: { commentId } }),
+    prisma.commentLike.findUnique({ where: { userId_commentId: { userId: req.userId, commentId } } }),
+  ]);
+  res.json({ likeCount, likedByMe: Boolean(mine) });
 }));
 
 // DELETE /api/social/comments/:commentId
@@ -318,9 +456,20 @@ router.post('/push/subscribe', auth, asyncHandler(async (req, res) => {
   const { endpoint, keys } = req.body || {};
   if (!endpoint || !keys?.p256dh || !keys?.auth)
     return res.status(400).json({ error: 'Invalid subscription' });
+  // Upserting on `endpoint` alone let any authenticated user re-point
+  // someone else's subscription at their own account just by knowing the
+  // endpoint URL, silently cutting off the victim's push alerts. A row is
+  // only updated when it already belongs to the caller; an endpoint owned by
+  // somebody else is reassigned only after removing their claim to it, which
+  // is what a genuine re-subscribe on a shared device looks like.
+  const existing = await prisma.pushSubscription.findUnique({ where: { endpoint } });
+  if (existing && existing.userId !== req.userId) {
+    return res.status(409).json({ error: 'This subscription is registered to another account.' });
+  }
+
   const sub = await prisma.pushSubscription.upsert({
     where: { endpoint },
-    update: { userId: req.userId, p256dh: keys.p256dh, auth: keys.auth },
+    update: { p256dh: keys.p256dh, auth: keys.auth },
     create: { userId: req.userId, endpoint, p256dh: keys.p256dh, auth: keys.auth },
   });
   res.status(201).json({ id: sub.id });
