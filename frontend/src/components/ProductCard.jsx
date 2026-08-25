@@ -82,6 +82,14 @@ export default function ProductCard({ product }) {
         {product.source && (
           <div className="absolute top-2.5 right-2.5 badge bg-black/70 text-white text-[10px]">{product.source}</div>
         )}
+        {/* Not on sale yet (pre-order / future model year). Called out on the
+            card itself so an unreleased item is never mistaken for a price
+            you can act on today. */}
+        {product.released === false && (
+          <div className="absolute top-2.5 left-2.5 badge badge-orange text-[10px]">
+            {product.releaseLabel || 'Not released yet'}
+          </div>
+        )}
       </div>
 
       {/* Content */}

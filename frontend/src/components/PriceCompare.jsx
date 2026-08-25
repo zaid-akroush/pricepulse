@@ -22,7 +22,23 @@ export default function PriceCompare({ productId, currentPrice, currency, curren
   if (loading) {
     return <div className="card p-6 mt-6 h-24 animate-pulse" style={{ backgroundColor: 'var(--surface)' }} />;
   }
-  if (!listings || listings.length === 0) return null;
+  // The backend only returns listings it could match to THIS product (same
+  // brand, same model/capacity tokens, sane price band). A broad search query
+  // like "smartphone" used to surface unrelated cheaper phones here, which
+  // made the section claim savings that didn't exist. When nothing matches we
+  // say so rather than hiding the section or showing look-alikes.
+  if (!listings || listings.length === 0) {
+    return (
+      <div className="card p-6 mt-6">
+        <h2 className="text-lg font-bold mb-2" style={{ color: 'var(--text)' }}>Compare Prices</h2>
+        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+          No other retailers currently list this exact product. We only compare listings we can
+          confidently match to the same model, so nothing is shown here unless it really is the
+          same item.
+        </p>
+      </div>
+    );
+  }
 
   const cheapest = listings.reduce((min, l) => (l.price < min.price ? l : min), listings[0]);
   const cheaperThanTracked = cheapest.price < currentPrice;
@@ -54,7 +70,7 @@ export default function PriceCompare({ productId, currentPrice, currency, curren
           <div key={`${l.source}-${i}`} className="flex items-center justify-between gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg)' }}>
             <div className="min-w-0 flex-1">
               <p className="text-xs font-semibold truncate" style={{ color: 'var(--text)' }}>{l.source}</p>
-              <p className="text-[11px] truncate" style={{ color: 'var(--text-muted)' }}>{l.title}</p>
+              <p className="text-[11px] leading-snug line-clamp-2" style={{ color: 'var(--text-muted)' }}>{l.title}</p>
             </div>
             <div className="flex items-center gap-3 shrink-0">
               <span
@@ -75,7 +91,9 @@ export default function PriceCompare({ productId, currentPrice, currency, curren
       </div>
 
       <p className="text-[10px] mt-4 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-        Other listings found for this search, from Google Shopping. Prices and availability may change.
+        Listings matched to this same product (same brand and model) from Google Shopping.
+        Different models, accessories and instalment-plan prices are filtered out. Prices and
+        availability may change.
       </p>
     </div>
   );
