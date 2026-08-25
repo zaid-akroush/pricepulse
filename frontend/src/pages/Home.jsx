@@ -8,7 +8,7 @@ import ProductImage from '../components/ProductImage';
 import DealScore from '../components/DealScore';
 import Price from '../components/Price';
 import { FadeIn, Stagger, StaggerItem, spring } from '../components/motion';
-import { brandLogoUrl } from '../utils/brand';
+import BrandLogo from '../components/BrandLogo';
 // Deep-imported per icon (not the top-level barrel) — the package ships
 // 1650+ icons re-exported from one giant index, and pulling all of them
 // through a single barrel import made local production builds take
@@ -77,7 +77,7 @@ const Icon = {
    the "duotone" weight — a filled two-tone glyph (solid shape + a lighter
    currentColor-opacity fill behind it) instead of a plain thin outline, so
    they read as more substantial than a simple line-art stroke icon. */
-const ICON_CLS = 'w-8 h-8 sm:w-11 sm:h-11';
+const ICON_CLS = 'w-9 h-9 sm:w-11 sm:h-11';
 const icons = {
   Smartphones: <DeviceMobile className={ICON_CLS} weight="duotone" />,
   Laptops: <Laptop className={ICON_CLS} weight="duotone" />,
@@ -225,27 +225,21 @@ const TOP_BRANDS = [
 ];
 
 function BrandTile({ brand, onClick }) {
-  const [imgFailed, setImgFailed] = useState(false);
+  /* The logo is an inlined local SVG (see components/BrandLogo). It used to
+     be a remote CDN image, which rendered as an empty tile whenever that CDN
+     was unreachable. If a slug ever has no bundled glyph, BrandLogo returns
+     null and the styled wordmark below takes over. */
+  const logo = (
+    <BrandLogo slug={brand.slug} title={brand.name} className="h-10 w-10 shrink-0" />
+  );
   return (
     <button onClick={onClick} className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center">
-      {!imgFailed ? (
-        <span className="w-24 h-14 flex items-center justify-center">
-          <img
-            src={brandLogoUrl(brand.slug, brand.logoColor)}
-            alt={brand.name}
-            className="max-w-20 max-h-14 object-contain"
-            loading="lazy"
-            onError={() => setImgFailed(true)}
-          />
-        </span>
-      ) : (
-        <span
-          className="w-24 h-14 rounded-lg flex items-center justify-center font-bold text-lg tracking-tight"
-          style={{ backgroundColor: brand.bg, color: brand.color }}
-        >
-          {brand.name}
-        </span>
-      )}
+      <span
+        className="w-24 h-14 rounded-lg flex items-center justify-center px-3 py-2 font-bold text-lg tracking-tight overflow-hidden"
+        style={{ backgroundColor: brand.bg, color: brand.color }}
+      >
+        {logo || brand.name}
+      </span>
       <span className="badge badge-orange text-[11px]">{brand.tag}</span>
     </button>
   );
@@ -412,7 +406,12 @@ function HeroCarousel() {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 1.05 }}
           transition={spring}
-          className="hidden md:block absolute inset-y-0 right-0 w-[58%] z-0"
+          /* Visible at every width. It used to be `hidden md:block`, which
+             left the banner as a flat colour block on phones and narrow
+             windows. On small screens it becomes a dimmed full-bleed
+             backdrop behind the copy instead of a side panel, so there's
+             still a product image without the headline losing contrast. */
+          className="absolute inset-y-0 right-0 w-full opacity-30 md:opacity-100 md:w-[58%] z-0"
         >
           <HeroPhoto slide={slide} />
         </motion.div>
@@ -563,17 +562,17 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-9 gap-x-2 sm:gap-x-4 gap-y-8 mb-8" stagger={0.05}>
+        <Stagger className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-x-4 sm:gap-x-5 gap-y-7 mb-8" stagger={0.05}>
           {CATEGORIES.map(cat => (
             <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
                 className="flex flex-col items-center gap-3 group w-full"
               >
-                <span className={`w-16 h-16 sm:w-24 sm:h-24 rounded-full ${CATEGORY_COLOR[cat.label]} flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0`}>
+                <span className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${CATEGORY_COLOR[cat.label]} flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0`}>
                   {icons[cat.label]}
                 </span>
-                <span className="text-[11px] sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-tight">
+                <span className="text-xs sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-snug break-words w-full">
                   {cat.label}
                 </span>
               </button>
@@ -835,8 +834,11 @@ export default function Home() {
           </FadeIn>
 
           {/* Shareable wishlists — narrower duo panel */}
-          <FadeIn delay={0.16} className="lg:col-span-3 card card-hover p-6 flex flex-col md:flex-row items-start gap-6">
-            <div className="flex-1 min-w-0">
+          {/* items-stretch (not items-start) so the mock panel matches the
+              card's height instead of hugging the top and leaving a large
+              dead area underneath it. */}
+          <FadeIn delay={0.16} className="lg:col-span-3 card card-hover p-6 flex flex-col md:flex-row items-stretch gap-6">
+            <div className="flex-1 min-w-0 flex flex-col justify-center">
               <span className="w-10 h-10 rounded-xl bg-purple-soft text-purple flex items-center justify-center mb-4">
                 <Icon.link className="w-5 h-5" />
               </span>
@@ -846,23 +848,27 @@ export default function Home() {
                 chat, or just showing off what you're tracking. No account needed to view it.
               </p>
             </div>
-            <div className="w-full md:w-56 shrink-0 rounded-2xl border border-app p-4 surface-2">
+            {/* A miniature of what a shared list actually looks like. The
+                three generic picture-frame icons that used to sit here read
+                as broken images and said nothing about the feature. */}
+            <div className="w-full md:w-72 shrink-0 rounded-2xl border border-app p-4 surface-2 flex flex-col">
               <div className="flex items-center gap-2 mb-3 px-2.5 py-2 rounded-lg surface border border-app">
                 <Icon.link className="w-3.5 h-3.5 text-faint shrink-0" />
                 <span className="text-[11px] text-muted truncate font-data">pricepulse.app/shared/a3f9…</span>
               </div>
-              <div className="flex gap-1.5">
-                {[0, 1, 2].map(i => (
-                  <div key={i} className="flex-1 aspect-square rounded-lg bg-brand-soft text-brand border border-app flex items-center justify-center">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <circle cx="9" cy="9" r="1.5" fill="currentColor" stroke="none" />
-                      <path d="M21 15l-5-5L5 21" />
-                    </svg>
+              <div className="flex flex-col gap-1.5 flex-1">
+                {[
+                  ['Wireless earbuds', '$149.00'],
+                  ['27" 4K monitor', '$329.99'],
+                  ['Mechanical keyboard', '$89.50'],
+                ].map(([name, price]) => (
+                  <div key={name} className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg surface border border-app">
+                    <span className="text-[11px] text-muted truncate">{name}</span>
+                    <span className="text-[11px] font-bold font-data text-app shrink-0">{price}</span>
                   </div>
                 ))}
               </div>
-              <span className="badge badge-purple mt-3 inline-flex">Public link</span>
+              <span className="badge badge-purple mt-3 inline-flex w-fit">Public link</span>
             </div>
           </FadeIn>
         </div>
@@ -887,7 +893,9 @@ export default function Home() {
         </section>
       )}
 
-      {/* How it works: asymmetric connected timeline, not a centered 3-card row */}
+      {/* How it works: three steps laid out left-to-right, connected by a
+          single horizontal rule. Stacks back to a vertical list on mobile,
+          where three columns would be unreadably narrow. */}
       <section className="surface border-y border-app py-12 px-4">
         <div className="max-w-5xl mx-auto">
           <FadeIn className="max-w-md mb-10">
@@ -895,8 +903,9 @@ export default function Home() {
             <h2 className="text-2xl md:text-3xl font-bold text-app tracking-tight">Three steps to smarter shopping</h2>
           </FadeIn>
           <div className="relative">
-            <div className="hidden md:block absolute left-[19px] top-2 bottom-2 w-px bg-app border-app border-l border-dashed" />
-            <Stagger className="flex flex-col gap-7" stagger={0.12}>
+            {/* Connector sits behind the step icons, aligned with their centre. */}
+            <div className="hidden md:block absolute left-5 right-5 top-5 h-px border-app border-t border-dashed" />
+            <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6" stagger={0.12}>
               {[
                 {
                   step: '01',
@@ -929,11 +938,11 @@ export default function Home() {
                   ),
                 },
               ].map(f => (
-                <StaggerItem key={f.step} className="relative flex items-start gap-5 md:gap-6 pl-0 md:pl-0">
+                <StaggerItem key={f.step} className="relative flex items-start gap-5 md:flex-col md:gap-4 md:pr-4">
                   <div className="relative z-10 w-10 h-10 shrink-0 rounded-xl bg-brand text-on-brand flex items-center justify-center shadow-[var(--shadow-brand)]">
                     {f.icon}
                   </div>
-                  <div className="max-w-md">
+                  <div className="max-w-md md:max-w-none">
                     <span className="text-[11px] font-bold text-faint tracking-widest font-data">{f.step}</span>
                     <h3 className="font-bold text-app mb-1 text-lg mt-0.5">{f.title}</h3>
                     <p className="text-sm text-muted leading-relaxed">{f.desc}</p>
