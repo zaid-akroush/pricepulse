@@ -28,6 +28,7 @@ model User {
   following     Follow[]       @relation("Follower")
   likes         ProductLike[]
   comments      Comment[]
+  commentLikes  CommentLike[]
   savedSearches SavedSearch[]
   notifications Notification[]
   pushSubscriptions PushSubscription[]
@@ -51,6 +52,7 @@ model Product {
   priceHistory  PriceHistory[]
   likes         ProductLike[]
   comments      Comment[]
+  commentLikes  CommentLike[]
   notifications Notification[]
 }
 
@@ -60,7 +62,11 @@ model WishlistItem {
   productId         Int
   targetPrice       Float?
   targetDropPercent Float?   // notify when price drops X% from highest
-  notified          Boolean  @default(false)
+  notified          Boolean  @default(false) // a drop alert has been sent for the current move
+  // Tracked separately from `notified` so a generic "dropped 3%" alert can
+  // never suppress the "hit your target" alert that follows it. Cleared when
+  // the price recovers, which re-arms both.
+  notifiedTargetAt  DateTime?
   createdAt         DateTime @default(now())
   user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
@@ -110,8 +116,24 @@ model Comment {
   createdAt DateTime @default(now())
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  likes     CommentLike[]
 
   @@index([productId])
+}
+
+// An upvote on a community note. Kept as its own row (rather than a counter
+// column on Comment) so a user can only ever like a note once, and so the
+// "top notes" ordering can be computed from real votes.
+model CommentLike {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  commentId Int
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  comment   Comment  @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, commentId])
+  @@index([commentId])
 }
 
 model SavedSearch {
