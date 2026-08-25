@@ -5,9 +5,17 @@ const { searchProducts } = require('../services/serpApi');
 const { validateExternalUrl } = require('../utils/urlSafety');
 
 const router = express.Router();
+
+// Inline data: image URIs. Only image MIME types, only a bounded length — the
+// previous code skipped validation entirely for anything starting with
+// `data:`, which let an unauthenticated caller store an arbitrary blob of any
+// type or size that was then served to every viewer as an <img src>.
+const MAX_DATA_IMAGE_LENGTH = 32 * 1024;
+const DATA_IMAGE_RE = /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml)(;charset=[\w-]+)?(;base64)?,[A-Za-z0-9+/=%._~!$&'()*,;:@-]*$/i;
+
 const prisma = new PrismaClient();
 const MAX_TITLE_LENGTH = 300;
-const MAX_WISHLIST_ITEMS = 20; // per-user cap on tracked products
+const MAX_WISHLIST_ITEMS = 25; // per-user cap on tracked products
 
 // All wishlist routes require authentication
 router.use(authMiddleware);
@@ -22,9 +30,17 @@ router.get('/analytics', async (req, res) => {
       include: { product: { include: { priceHistory: { orderBy: { recordedAt: 'asc' } } } } },
     });
 
+    // Mirrors getDealScore in frontend/src/components/DealScore.jsx — keep the
+    // two in step. Returns null (not a number) when there is no observed price
+    // range to score against: a brand-new product has high === low, and the
+    // old code asserted 50/100 for it, which is a made-up figure that also
+    // dragged the dashboard's average away from the real one. Nulls are
+    // excluded from the average below rather than counted as 50.
     const dealScore = (p) => {
-      if (p.highestPrice <= p.lowestPrice) return 50;
-      return Math.round(((p.highestPrice - p.currentPrice) / (p.highestPrice - p.lowestPrice)) * 100);
+      if (p.currentPrice == null || !p.highestPrice || p.highestPrice <= p.lowestPrice) return null;
+      const range = p.highestPrice - p.lowestPrice;
+      const saved = p.highestPrice - p.currentPrice;
+      return Math.max(0, Math.min(100, Math.round((saved / range) * 100)));
     };
 
     const detailed = items.map(i => {
@@ -54,8 +70,12 @@ router.get('/analytics', async (req, res) => {
     const totalSavedVsPeak = detailed.reduce((s, d) => s + d.savedVsPeak, 0);
     const alertsSet = detailed.filter(d => d.targetPrice != null).length;
     const targetsMet = detailed.filter(d => d.targetMet).length;
-    const avgDealScore = detailed.length
-      ? Math.round(detailed.reduce((s, d) => s + d.dealScore, 0) / detailed.length)
+    // Average only over products that HAVE a score. Including the nulls (or,
+    // as before, counting an unscoreable product as 50) reports a number that
+    // no product actually has.
+    const scored = detailed.filter(d => d.dealScore != null);
+    const avgDealScore = scored.length
+      ? Math.round(scored.reduce((s, d) => s + d.dealScore, 0) / scored.length)
       : 0;
     const biggest = detailed.slice().sort((a, b) => b.dropPercent - a.dropPercent)[0] || null;
 
@@ -113,9 +133,23 @@ router.post('/', async (req, res) => {
       const check = await validateExternalUrl(url);
       if (!check.valid) return res.status(400).json({ error: `Invalid url: ${check.reason}` });
     }
-    if (imageUrl && !String(imageUrl).startsWith('data:')) {
-      const check = await validateExternalUrl(imageUrl);
-      if (!check.valid) return res.status(400).json({ error: `Invalid imageUrl: ${check.reason}` });
+    if (imageUrl) {
+      // The `data:` exemption that used to sit here let an unauthenticated
+      // caller store an arbitrary, unvalidated data: URI of any size and any
+      // type, which was then served to every viewer as an <img src>. The
+      // seed script generates small data: SVG placeholders, so those are
+      // allowed — but only that shape, and only within a size cap.
+      const value = String(imageUrl);
+      if (value.startsWith('data:')) {
+        // Must be an image type, base64 or percent-encoded (the seed's SVG
+        // placeholders are percent-encoded), and within the size cap.
+        if (!DATA_IMAGE_RE.test(value) || value.length > MAX_DATA_IMAGE_LENGTH) {
+          return res.status(400).json({ error: 'Invalid imageUrl' });
+        }
+      } else {
+        const check = await validateExternalUrl(imageUrl);
+        if (!check.valid) return res.status(400).json({ error: `Invalid imageUrl: ${check.reason}` });
+      }
     }
 
     // Upsert the product
