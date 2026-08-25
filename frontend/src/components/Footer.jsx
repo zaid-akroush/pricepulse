@@ -11,6 +11,15 @@ const LINK_COLUMNS = [
     ],
   },
   {
+    title: 'Categories',
+    links: [
+      { to: '/search?q=smartphone', label: 'Smartphones' },
+      { to: '/search?q=laptop', label: 'Laptops' },
+      { to: '/search?q=headphones', label: 'Headphones' },
+      { to: '/search?q=4K%20TV', label: 'TVs' },
+    ],
+  },
+  {
     title: 'Account',
     links: [
       { to: '/wishlist', label: 'My Wishlist' },
@@ -25,13 +34,12 @@ export default function Footer() {
   return (
     <footer className="bg-app-subtle border-t border-app text-muted mt-auto">
       <div className="max-w-7xl mx-auto px-4 pt-10 pb-6">
-        {/* Brand on the left, link columns grouped together on the right —
-            a full-width 3-column grid left the link columns stranded with a
-            large dead gap after them once there were only two of them, so
-            this uses flex + justify-between instead, which keeps the two
-            columns snug next to each other regardless of how many there are. */}
+        {/* Brand on the left, link columns grouped on the right. The brand
+            column is capped in width, so with only two link columns the row
+            left a wide band of nothing in the middle — a third column of
+            category shortcuts both fills it and is useful. */}
         <div className="flex flex-col lg:flex-row lg:justify-between gap-6 mb-6">
-          <div className="lg:max-w-md">
+          <div className="lg:max-w-sm">
             <div className="mb-2.5">
               <Wordmark textClassName="text-lg" iconClassName="h-5" />
             </div>

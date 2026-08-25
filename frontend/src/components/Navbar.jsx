@@ -15,7 +15,10 @@ const LINKS = [
 const THEME_OPTIONS = [
   { value: 'light', label: 'Light' },
   { value: 'grey', label: 'Dark' },
-  { value: 'amoled', label: 'AMOLED' },
+  // The stored value stays 'amoled' — renaming it would invalidate the
+  // theme every existing user already has saved in localStorage. Only the
+  // label people actually read changes.
+  { value: 'amoled', label: 'Midnight' },
 ];
 
 // Sun / full moon / crescent ("almost gone") moon icons for the three theme
@@ -37,7 +40,7 @@ function ThemeIcon({ theme, className = 'w-4 h-4' }) {
       </svg>
     );
   }
-  // AMOLED: crescent ("almost gone") moon
+  // Midnight (true black): crescent ("almost gone") moon
   return (
     <svg className={`${className} text-muted`} fill="currentColor" viewBox="0 0 20 20">
       <path d="M15.5 13.5A7 7 0 018 3.06 7 7 0 1015.5 13.5z" />

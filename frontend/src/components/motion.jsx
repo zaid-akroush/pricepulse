@@ -1,51 +1,26 @@
-import { motion } from 'framer-motion';
-
-/* Shared motion primitives. Spring-physics based (per design system: no
-   linear easing, weighty premium feel), isolated here so perpetual/entrance
-   animation logic doesn't leak into every page. */
+/* Shared layout primitives.
+ *
+ * These used to be framer-motion scroll/entrance animations (fade + rise on
+ * whileInView, staggered children). They were removed: on route changes and
+ * while scrolling up and down, elements re-evaluated their viewport state and
+ * flickered / re-played, and content briefly rendered invisible. They now
+ * render as plain elements with the same API and class names, so every call
+ * site keeps working unchanged and content is visible immediately.
+ *
+ * The `delay`, `y`, `once` and `stagger` props are still accepted and ignored
+ * on purpose, so nothing has to change at the call sites.
+ */
 
 export const spring = { type: 'spring', stiffness: 100, damping: 20 };
 
-/* Fades + rises an element in once, when it enters the viewport. */
-export function FadeIn({ children, delay = 0, y = 16, className = '', as = 'div', once = true }) {
-  const MotionTag = motion[as] || motion.div;
-  return (
-    <MotionTag
-      className={className}
-      initial={{ opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once, margin: '-60px' }}
-      transition={{ ...spring, delay }}
-    >
-      {children}
-    </MotionTag>
-  );
+export function FadeIn({ children, className = '', as: Tag = 'div' }) {
+  return <Tag className={className}>{children}</Tag>;
 }
 
-/* Parent wrapper: staggers any <StaggerItem> children as they enter view. */
-export function Stagger({ children, className = '', stagger = 0.08, as = 'div' }) {
-  const MotionTag = motion[as] || motion.div;
-  return (
-    <MotionTag
-      className={className}
-      initial="hidden"
-      whileInView="show"
-      viewport={{ once: true, margin: '-60px' }}
-      variants={{ hidden: {}, show: { transition: { staggerChildren: stagger } } }}
-    >
-      {children}
-    </MotionTag>
-  );
+export function Stagger({ children, className = '', as: Tag = 'div' }) {
+  return <Tag className={className}>{children}</Tag>;
 }
 
-export function StaggerItem({ children, className = '', y = 14, as = 'div' }) {
-  const MotionTag = motion[as] || motion.div;
-  return (
-    <MotionTag
-      className={className}
-      variants={{ hidden: { opacity: 0, y }, show: { opacity: 1, y: 0, transition: spring } }}
-    >
-      {children}
-    </MotionTag>
-  );
+export function StaggerItem({ children, className = '', as: Tag = 'div' }) {
+  return <Tag className={className}>{children}</Tag>;
 }
