@@ -2,7 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
-const { searchProducts, fetchCurrentPrice, SerpApiError } = require('../services/serpApi');
+const { searchProducts, searchByBrands, fetchCurrentPrice, SerpApiError } = require('../services/serpApi');
+const { matchCountry } = require('../services/countryBrands');
 const { getReleaseStatus } = require('../services/productClassifier');
 const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
@@ -34,6 +35,20 @@ router.get('/search', async (req, res) => {
   const { q } = req.query;
   try {
     if (!q) return res.status(400).json({ error: 'Query parameter q is required' });
+
+    // A bare country name is a question about origin, not a product search.
+    // Passed through literally it returns whatever the word also means —
+    // "china" returned porcelain dinnerware — so it is answered with
+    // electronics from that country's brands instead. Only an exact country
+    // match is rewritten; "chinese phone case" stays the user's own query.
+    const country = matchCountry(q);
+    if (country) {
+      const { results, brandsSearched } = await searchByBrands(country.brands);
+      res.set('X-Search-Country', country.country);
+      res.set('X-Search-Brands', brandsSearched.join(', '));
+      res.set('Access-Control-Expose-Headers', 'X-Search-Country, X-Search-Brands');
+      return res.json(results);
+    }
 
     const results = await searchProducts(q);
     res.json(results);
