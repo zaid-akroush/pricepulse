@@ -62,7 +62,14 @@ async function searchProducts(query, opts = {}) {
     if (status === 402) {
       throw new SerpApiError('Product search is temporarily unavailable (search provider is out of credits). Please try again later.', 402);
     }
-    throw new SerpApiError('Product search is temporarily unavailable. Please try again later.', status || 502);
+    // Anything else: name what actually happened rather than the old blanket
+    // "try again later", which was indistinguishable from a rejected key.
+    const providerMsg =
+      err.response?.data?.message || err.response?.data?.error || err.code || err.message;
+    const cause = status
+      ? `search provider returned HTTP ${status}${providerMsg ? `: ${providerMsg}` : ''}`
+      : `could not reach the search provider${providerMsg ? `: ${providerMsg}` : ''}`;
+    throw new SerpApiError(`Product search failed (${cause}).`, status || 502);
   }
 
   const results = data.shopping || [];

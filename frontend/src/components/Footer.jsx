@@ -73,6 +73,13 @@ export default function Footer() {
             &copy; {new Date().getFullYear()} PricePulse. All rights reserved. <Link to="/privacy-policy" className="hover:text-brand transition-colors underline">Privacy Policy</Link>
           </p>
         </div>
+
+        {/* Author credit — the last line on every page, below everything else. */}
+        <div className="border-t border-app mt-4 pt-4">
+          <p className="text-xs text-center text-faint">
+            Made by Zaid Akroush
+          </p>
+        </div>
       </div>
     </footer>
   );
