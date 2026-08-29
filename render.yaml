@@ -35,6 +35,12 @@ services:
         sync: false
       - key: ADMIN_EMAILS
         sync: false
+      - key: SEARCH_PROVIDER
+        value: brightdata
+      - key: BRIGHTDATA_API_KEY
+        sync: false
+      - key: BRIGHTDATA_SERP_ZONE
+        sync: false
       - key: SERP_API_KEY
         sync: false
       - key: RESEND_API_KEY
