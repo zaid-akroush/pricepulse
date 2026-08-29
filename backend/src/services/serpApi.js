@@ -204,6 +204,59 @@ async function searchProducts(query, opts = {}) {
 }
 
 
+// How many of a country's brands are queried for one country search. Each
+// brand is a separate provider request, and the free plan is metered, so this
+// is deliberately small — the per-query cache means a repeated country search
+// costs nothing.
+const COUNTRY_BRAND_LIMIT = Number(process.env.COUNTRY_BRAND_LIMIT || 3);
+// Per brand, so one brand cannot fill the whole page.
+const COUNTRY_PER_BRAND = 8;
+
+/**
+ * Products from a country's tech brands.
+ *
+ * Searching each brand separately (rather than one "Chinese electronics"
+ * query) is what makes the results real products instead of articles and
+ * listicles, and it lets us verify each listing actually belongs to the brand
+ * we asked for.
+ *
+ * @param {string[]} brands
+ * @returns {Promise<{results: object[], brandsSearched: string[], failed: string[]}>}
+ */
+async function searchByBrands(brands) {
+  const chosen = brands.slice(0, COUNTRY_BRAND_LIMIT);
+
+  const settled = await Promise.allSettled(chosen.map(b => searchProducts(b)));
+
+  const failed = [];
+  const perBrand = [];
+  settled.forEach((outcome, i) => {
+    const brand = chosen[i];
+    if (outcome.status === 'rejected') {
+      failed.push(brand);
+      return;
+    }
+    // The provider answers the query loosely, so a search for "Sony" returns
+    // third-party accessories too. Keep only listings that name the brand.
+    const brandRe = new RegExp(`(^|[^a-z0-9])${brand.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i');
+    const mine = outcome.value
+      .filter(r => brandRe.test(r.title || ''))
+      .slice(0, COUNTRY_PER_BRAND)
+      .map(r => ({ ...r, brand }));
+    perBrand.push(mine);
+  });
+
+  // Interleave, so the page opens with one product from each brand rather
+  // than eight of whichever brand happened to answer first.
+  const results = [];
+  for (let i = 0; i < COUNTRY_PER_BRAND; i++) {
+    for (const list of perBrand) if (list[i]) results.push(list[i]);
+  }
+
+  return { results, brandsSearched: chosen.filter(b => !failed.includes(b)), failed };
+}
+
+
 // Do two listing titles describe the same product?
 //
 // Mirrors the matcher used by the compare endpoint: every token containing a
@@ -266,4 +319,4 @@ async function fetchCurrentPrice(serpApiQuery, productTitle) {
   return scored.length > 0 ? scored[0].price : null;
 }
 
-module.exports = { searchProducts, fetchCurrentPrice, SerpApiError, resetSearchCache };
+module.exports = { searchProducts, searchByBrands, fetchCurrentPrice, SerpApiError, resetSearchCache };

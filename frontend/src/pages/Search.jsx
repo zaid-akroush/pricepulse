@@ -74,6 +74,8 @@ export default function Search() {
   const [diagnostic, setDiagnostic] = useState(null);
   // Why the results are cached rather than live, when the backend says so.
   const [degraded, setDegraded] = useState(null);
+  // Set when the query was a country name and we searched its tech brands.
+  const [country, setCountry] = useState(null);
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState('default');
   const [minPrice, setMinPrice] = useState('');
@@ -144,7 +146,7 @@ export default function Search() {
   async function doSearch(q) {
     if (!q?.trim()) return;
     const seq = ++searchSeq.current;
-    setLoading(true); setError(null); setDiagnostic(null); setDegraded(null); setSearched(true);
+    setLoading(true); setError(null); setDiagnostic(null); setDegraded(null); setCountry(null); setSearched(true);
     setResults([]); setFiltered([]);
     try {
       const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
@@ -153,6 +155,10 @@ export default function Search() {
       // A 200 can still be a degraded answer: the backend serves cached rows
       // when the live provider fails, and says why in these headers.
       setDegraded(res.headers['x-search-degraded'] ? (res.headers['x-search-reason'] || null) : null);
+      // A country name was recognised and answered with that country's brands.
+      setCountry(res.headers['x-search-country']
+        ? { country: res.headers['x-search-country'], brands: res.headers['x-search-brands'] || '' }
+        : null);
       setDiagnostic(decodeDiagnostic(res.headers['x-search-diagnostic']));
     } catch (err) {
       if (seq !== searchSeq.current) return;
@@ -269,6 +275,15 @@ export default function Search() {
           <p className="text-danger text-sm bg-danger-soft p-3 rounded-xl">{error}</p>
           <AdminDiagnostic diagnostic={diagnostic} />
         </div>
+      )}
+
+      {!loading && country && (
+        <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">
+          <strong className="text-app">{country.country}</strong> is a country, so this shows tech products from
+          brands headquartered there{country.brands ? ` — ${country.brands}` : ''}. Manufacturing location is not
+          shown: almost all consumer electronics are assembled in the same few countries, and no price source
+          reports it. Search a product name instead for a normal search.
+        </p>
       )}
 
       {!loading && filtered.length > 0 && filtered.some(p => p.stale) && (

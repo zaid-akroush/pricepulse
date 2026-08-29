@@ -340,3 +340,54 @@ describe('validateNoteText', () => {
     });
   });
 });
+
+describe('country search', () => {
+  const { matchCountry } = require('../services/countryBrands');
+
+  it('resolves a country name and its demonyms', () => {
+    expect(matchCountry('china').country).toBe('China');
+    expect(matchCountry('  Japan ').country).toBe('Japan');
+    expect(matchCountry('korean').country).toBe('South Korea');
+    expect(matchCountry('USA').country).toBe('United States');
+  });
+
+  it('returns brands for a country', () => {
+    expect(matchCountry('taiwan').brands).toEqual(expect.arrayContaining(['ASUS', 'Acer', 'MSI']));
+  });
+
+  // A country word inside a longer query is the user's own search, and
+  // rewriting it would take away their control of it.
+  it('does not match a country word inside a longer query', () => {
+    expect(matchCountry('chinese phone case')).toBeNull();
+    expect(matchCountry('made in japan headphones')).toBeNull();
+    expect(matchCountry('')).toBeNull();
+  });
+});
+
+describe('non-tech filtering', () => {
+  const { isTechProduct } = require('../services/productClassifier');
+
+  // The bug this was written for: 'pc' matched the "5-pc" in a porcelain
+  // dinner service, so a $550 place setting was a search result for "china".
+  it('does not treat a piece count as a PC', () => {
+    expect(isTechProduct('Mottahedeh Chinoise Blue 5-pc Place Setting')).toBe(false);
+    expect(isTechProduct('Wedgwood China Dinner Service 20-piece')).toBe(false);
+    expect(isTechProduct('Porcelain Tea Set 12 pcs')).toBe(false);
+  });
+
+  it('still accepts real computers and ambiguous-but-tech titles', () => {
+    expect(isTechProduct('Gaming PC RTX 4070')).toBe(true);
+    expect(isTechProduct('Dell Desktop PC')).toBe(true);
+    expect(isTechProduct('Apple Watch Series 9')).toBe(true);
+  });
+
+  it('accepts model families that carry no category word', () => {
+    expect(isTechProduct('Lenovo ThinkPad X1 Carbon')).toBe(true);
+    expect(isTechProduct('Huawei MateBook D16')).toBe(true);
+  });
+
+  it('rejects tableware and jewellery', () => {
+    expect(isTechProduct('Herend Porcelain Figurine')).toBe(false);
+    expect(isTechProduct('Silver Necklace with Charm')).toBe(false);
+  });
+});

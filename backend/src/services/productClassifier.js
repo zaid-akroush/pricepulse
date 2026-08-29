@@ -47,6 +47,16 @@ const TECH_TERMS = [
   'powercore', 'soundcore', 'airtag', 'chromecast', 'roku', 'fire stick',
   'forerunner', 'venu', 'vivoactive', 'instinct', 'galaxy watch',
   'apple watch', 'quest', 'shield tv', 'homepod', 'macbook air',
+  // Laptop and phone model families. A listing is often just a brand and a
+  // model name ("Lenovo ThinkPad X1 Carbon", "Redmi Note 13") with no
+  // category word anywhere, and those were being dropped as non-tech.
+  'thinkpad', 'ideapad', 'legion', 'yoga', 'thinkbook', 'matebook',
+  'zenbook', 'vivobook', 'rog', 'tuf', 'predator', 'nitro', 'aspire',
+  'swift', 'latitude', 'inspiron', 'xps', 'alienware', 'precision',
+  'pavilion', 'envy', 'spectre', 'omen', 'victus', 'elitebook', 'probook',
+  'surface pro', 'surface laptop', 'framework laptop',
+  'redmi', 'poco', 'oneplus', 'nothing phone', 'moto g', 'moto edge',
+  'zenfone', 'xperia', 'reno', 'find x', 'magic v', 'mate xt',
   // accessories
   'charger', 'charging', 'power bank', 'usb', 'usb-c', 'hdmi', 'ethernet',
   'adapter', 'docking station', 'hub', 'cable', 'battery', 'sd card',
@@ -69,7 +79,31 @@ const NON_TECH_TERMS = [
   'book', 'novel', 'paperback', 'hardcover', 'cookbook',
   'garden', 'lawn mower', 'fertilizer', 'seeds', 'plant pot',
   'tire', 'motor oil', 'windshield', 'car seat',
+  // Tableware and decor, the categories a country name pulls in hardest:
+  // "china" is both a country and a word for porcelain.
+  'place setting', 'dinner plate', 'salad plate', 'tableware', 'glassware',
+  'teapot', 'tea set', 'coffee set', 'serving bowl', 'platter', 'tureen',
+  'vase', 'candle', 'ornament', 'figurine', 'tablecloth', 'napkin',
+  'jewelry', 'necklace', 'bracelet', 'earrings', 'watch band', 'watch strap',
 ];
+
+// Terms that are real electronics vocabulary but also appear in ordinary
+// English about non-tech goods. On their own they are not enough to call
+// something a gadget: "5-pc Place Setting" matched 'pc', which is how a
+// $550 porcelain dinner service ended up in a search for "china".
+//
+// A title carried by one of these alone is only accepted when nothing marks
+// it as another category — see isTechProduct.
+const AMBIGUOUS_TECH_TERMS = new Set([
+  'pc', 'watch', 'switch', 'hub', 'cable', 'battery', 'adapter', 'charger',
+  'charging', 'memory', 'display', 'speaker', 'lens', 'usb', 'set', 'case',
+  'controller', 'gaming', 'computer',
+]);
+
+// "5-pc", "12 pc", "20-piece" are counts of dinnerware and cutlery, never a
+// reference to a personal computer. Removed before matching so 'pc' cannot
+// fire on them at all.
+const PIECE_COUNT_RE = /\b\d+\s*-?\s*(pc|pcs|piece|pieces)\b/gi;
 
 function wordRe(term) {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -86,12 +120,19 @@ const NON_TECH_RES = NON_TECH_TERMS.map(wordRe);
  */
 function isTechProduct(title) {
   if (!title || typeof title !== 'string') return false;
-  const hasTech = TECH_RES.some(re => re.test(title));
-  if (hasTech) return true;
-  // No tech signal at all — reject, whether or not it also matched a
-  // non-tech category. (The non-tech list exists to document what we're
-  // filtering out and to keep the rule readable, not as the deciding test.)
-  return false;
+
+  const cleaned = title.replace(PIECE_COUNT_RE, ' ');
+
+  const matched = TECH_TERMS.filter((term, i) => TECH_RES[i].test(cleaned));
+  if (matched.length === 0) return false;
+
+  // A strong term (one that only ever describes electronics) is decisive.
+  if (matched.some(term => !AMBIGUOUS_TECH_TERMS.has(term))) return true;
+
+  // Only ambiguous terms matched. Now the non-tech list decides: it is the
+  // difference between "Apple Watch Series 9" (keep) and "Porcelain Tea Set"
+  // or a dinnerware place setting (drop).
+  return !isClearlyNonTech(cleaned);
 }
 
 /** True when the title is clearly a non-tech category. Used for messaging. */
