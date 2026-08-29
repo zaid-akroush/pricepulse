@@ -69,6 +69,17 @@ router.get('/search', async (req, res) => {
       } catch (_) { /* DB fallback is best-effort; fall through to the 503 below if it fails too */ }
 
       if (fallback.length > 0) {
+        // The body is a plain results array (the frontend's contract), so the
+        // reason we are serving cached rows travels in headers. Without this
+        // the UI could only say "temporarily unavailable", which hid the fact
+        // that live search stays down until the provider account is topped up.
+        res.set('X-Search-Degraded', '1');
+        res.set('X-Search-Reason', String(err.message).replace(/[\r\n]+/g, ' '));
+        if (req.isAdmin) {
+          const d = diagnose(err, { method: req.method, path: req.originalUrl, query: q });
+          res.set('X-Search-Diagnostic', Buffer.from(JSON.stringify(d)).toString('base64'));
+        }
+        res.set('Access-Control-Expose-Headers', 'X-Search-Degraded, X-Search-Reason, X-Search-Diagnostic');
         return res.json(fallback);
       }
       // 4xx from the upstream provider (bad key, out of credits, rate limit)
