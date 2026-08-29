@@ -88,6 +88,57 @@ async function brightDataShopping(query) {
 }
 
 // ---------------------------------------------------------------------------
+// SerpApi — 250 searches/month on the free tier, renewed monthly.
+// GET https://serpapi.com/search?engine=google_shopping&q=…&api_key=…
+// Items come back under `shopping_results`, already parsed.
+// ---------------------------------------------------------------------------
+const SERPAPI_URL = 'https://serpapi.com/search';
+
+async function serpApiShopping(query) {
+  const key = process.env.SERPAPI_KEY;
+  if (!key) throw new ProviderError('Product search is not configured (missing API key).', 500, 'serpapi');
+
+  const { data } = await axios.get(SERPAPI_URL, {
+    params: {
+      engine: 'google_shopping',
+      q: query,
+      gl: process.env.SERPAPI_COUNTRY || 'us',
+      hl: process.env.SERPAPI_LANGUAGE || 'en',
+      api_key: key,
+    },
+    timeout: TIMEOUT_MS,
+  });
+
+  // SerpApi answers 200 with an `error` field for a bad key or an exhausted
+  // plan, so a failure here never reaches the axios catch. Surface it as the
+  // provider error it is instead of returning zero results, which would look
+  // like "nothing matched your search".
+  if (data?.error) {
+    const text = String(data.error);
+    const outOfQuota = /run out|exhausted|limit|plan|credits/i.test(text);
+    throw new ProviderError(
+      outOfQuota
+        ? `Product search is unavailable: the SerpApi account has no searches left this month (${text}). Cached prices are still shown.`
+        : `Product search failed (SerpApi: ${text}).`,
+      outOfQuota ? 402 : 502,
+      'serpapi'
+    );
+  }
+
+  return (data.shopping_results || []).map(item => ({
+    title: item.title || null,
+    // `price` is the formatted string ("$1,099.99"); parsePrice in serpApi
+    // handles it, and extracted_price is the fallback when it is absent.
+    price: item.price ?? item.extracted_price ?? null,
+    url: item.product_link || item.link || null,
+    imageUrl: item.thumbnail || null,
+    source: item.source || null,
+    rating: item.rating ?? null,
+    reviews: item.reviews ?? null,
+  }));
+}
+
+// ---------------------------------------------------------------------------
 // Serper.dev — kept so an existing key keeps working. Free allowance is a
 // one-time 2,500 credits, so this is no longer the default.
 // ---------------------------------------------------------------------------
@@ -115,20 +166,23 @@ async function serperShopping(query) {
 }
 
 const PROVIDERS = {
+  serpapi: { label: 'SerpApi', fetch: serpApiShopping },
   brightdata: { label: 'Bright Data SERP API', fetch: brightDataShopping },
   serper: { label: 'Serper.dev', fetch: serperShopping },
 };
 
 /**
  * Which provider is active. SEARCH_PROVIDER wins; otherwise whichever key is
- * present, preferring Bright Data because its free tier renews monthly.
+ * present, preferring the providers whose free tier renews monthly over
+ * Serper, whose free allowance is a one-time grant.
  */
 function activeProviderName() {
   const explicit = (process.env.SEARCH_PROVIDER || '').trim().toLowerCase();
   if (explicit && PROVIDERS[explicit]) return explicit;
+  if (process.env.SERPAPI_KEY) return 'serpapi';
   if (process.env.BRIGHTDATA_API_KEY) return 'brightdata';
   if (process.env.SERP_API_KEY) return 'serper';
-  return 'brightdata'; // so the "not configured" error names the intended one
+  return 'serpapi'; // so the "not configured" error names the intended one
 }
 
 function activeProvider() {
