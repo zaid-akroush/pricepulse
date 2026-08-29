@@ -36,11 +36,12 @@ const DIAGNOSES = [
   },
   {
     code: 'SEARCH_PROVIDER_OUT_OF_CREDITS',
-    match: (err) => err.status === 402,
+    match: (err) => err.status === 402 || /not enough credits|insufficient credits|out of credits|quota exceeded/i.test(err.message || ''),
     title: 'The search provider is out of credits',
-    detail: 'The provider returned 402 Payment Required. Live pricing stays unavailable until the plan is topped up; cached prices are still served.',
+    detail: 'The provider says the account has no credits left (Serper sends this as HTTP 400 "Not enough credits", other providers as 402). Live pricing stays unavailable until the plan is topped up; cached prices are still served.',
     steps: [
-      'Top up or upgrade the plan in the search provider\'s dashboard.',
+      'Open https://serper.dev/dashboard and check the remaining credit balance for the key in SERP_API_KEY.',
+      'Top up or upgrade the plan there — nothing in this codebase can work around an empty balance.',
       'Consider raising the cache TTLs in routes/products.js if quota runs out regularly.',
     ],
   },
