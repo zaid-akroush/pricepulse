@@ -62,6 +62,17 @@ async function searchProducts(query, opts = {}) {
     if (status === 402) {
       throw new SerpApiError('Product search is temporarily unavailable (search provider is out of credits). Please try again later.', 402);
     }
+    // Serper reports an exhausted plan as 400 "Not enough credits", not the
+    // 402 the code originally assumed. Match on the message too, so an
+    // out-of-credits account is diagnosed as such whatever status carries it.
+    const rawMsg = err.response?.data?.message || err.response?.data?.error || '';
+    if (/not enough credits|insufficient credits|out of credits|quota exceeded/i.test(rawMsg)) {
+      throw new SerpApiError(
+        'Product search is unavailable: the search provider account is out of credits. Cached prices are still shown.',
+        402
+      );
+    }
+
     // Anything else: name what actually happened rather than the old blanket
     // "try again later", which was indistinguishable from a rejected key.
     const providerMsg =
