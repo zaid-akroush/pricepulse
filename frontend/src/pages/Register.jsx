@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
+import { describeApiError } from '../api/errorMessage';
 
 export default function Register() {
   const { register } = useAuth();
@@ -19,7 +20,7 @@ export default function Register() {
       await register(form.name, form.email, form.password);
       navigate('/wishlist');
     } catch (err) {
-      setError(err.response?.data?.error || 'Registration failed. Please try again.');
+      setError(describeApiError(err, 'Registration failed. Please try again.'));
     } finally { setLoading(false); }
   }
 
