@@ -11,14 +11,17 @@
 // Nothing here is ever sent to a non-admin: routes attach `diagnostic` only
 // when the requester is an admin (see middleware/attachDiagnostics).
 
+const { activeProviderName } = require('./searchProviders');
+
 const DIAGNOSES = [
   {
     code: 'SEARCH_PROVIDER_UNCONFIGURED',
     match: (err) => /not configured|missing api key/i.test(err.message || ''),
     title: 'Product search is not configured',
-    detail: 'The server started without a search-provider API key, so no live product data can be fetched.',
+    detail: 'The server started without a usable search-provider configuration, so no live product data can be fetched. The active provider is chosen by SEARCH_PROVIDER, defaulting to Bright Data when BRIGHTDATA_API_KEY is present.',
     steps: [
-      'Set SERP_API_KEY in the backend environment (.env locally, or the service\'s environment variables in production).',
+      'Bright Data (default): set BRIGHTDATA_API_KEY and BRIGHTDATA_SERP_ZONE (the name of your SERP zone) in the backend environment.',
+      'Serper (legacy): set SEARCH_PROVIDER=serper and SERP_API_KEY instead.',
       'Restart the backend so the new value is read at boot.',
       'Confirm with GET /api/health/diagnostics that the key is now detected.',
     ],
@@ -40,7 +43,7 @@ const DIAGNOSES = [
     title: 'The search provider is out of credits',
     detail: 'The provider says the account has no credits left (Serper sends this as HTTP 400 "Not enough credits", other providers as 402). Live pricing stays unavailable until the plan is topped up; cached prices are still served.',
     steps: [
-      'Open https://serper.dev/dashboard and check the remaining credit balance for the key in SERP_API_KEY.',
+      'Check the remaining balance in the active provider\'s dashboard: brightdata.com for BRIGHTDATA_API_KEY, serper.dev for SERP_API_KEY.',
       'Top up or upgrade the plan there — nothing in this codebase can work around an empty balance.',
       'Consider raising the cache TTLs in routes/products.js if quota runs out regularly.',
     ],
@@ -154,8 +157,13 @@ function environmentReport() {
       'Set DATABASE_URL to the Postgres connection string and restart the backend.'),
     check('JWT_SECRET', Boolean(process.env.JWT_SECRET),
       'Set JWT_SECRET to a long random string. Without it, login cannot issue tokens.'),
-    check('SERP_API_KEY (product search)', Boolean(process.env.SERP_API_KEY),
-      'Set SERP_API_KEY to enable live product search and price refreshes.'),
+    check(`Search provider (${activeProviderName()})`,
+      activeProviderName() === 'brightdata'
+        ? Boolean(process.env.BRIGHTDATA_API_KEY && process.env.BRIGHTDATA_SERP_ZONE)
+        : Boolean(process.env.SERP_API_KEY),
+      activeProviderName() === 'brightdata'
+        ? 'Set BRIGHTDATA_API_KEY and BRIGHTDATA_SERP_ZONE to enable live product search and price refreshes.'
+        : 'Set SERP_API_KEY to enable live product search and price refreshes.'),
     check('SMTP / mailer', Boolean(process.env.SMTP_HOST || process.env.SMTP_URL),
       'Set the SMTP variables to enable price-drop emails. In-app notifications work without it.'),
     check('VAPID push keys', Boolean(process.env.VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),

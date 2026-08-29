@@ -1,7 +1,4 @@
-const axios = require('axios');
-
-const SERP_API_KEY = process.env.SERP_API_KEY;
-const SERPER_SHOPPING_URL = 'https://google.serper.dev/shopping';
+const { fetchShopping, activeProvider, ProviderError } = require('./searchProviders');
 
 /**
  * Thrown for problems talking to the search provider (bad/expired key, out
@@ -14,6 +11,84 @@ class SerpApiError extends Error {
     this.name = 'SerpApiError';
     this.status = status;
   }
+}
+
+// Search results are cached in memory and shared by every caller — the search
+// page, compare, the image gallery and the price cron all funnel through
+// searchProducts. Every live call spends a request from a metered plan, and
+// the same query arrives repeatedly (category chips, back-navigation, a user
+// retrying). Without this the free monthly allowance was being spent on
+// answers we already had. Prices do not move minute to minute, so a
+// medium-length TTL costs nothing in accuracy.
+const SEARCH_CACHE_TTL_MS = Number(process.env.SEARCH_CACHE_TTL_MS || 6 * 60 * 60 * 1000); // 6h
+const SEARCH_CACHE_MAX = 500;
+const searchCache = new Map(); // query -> { at, items }
+
+// Once the provider says the plan is exhausted or the key is bad, every
+// further call fails the same way and still counts as an attempt. Stop
+// calling out for a while and fail fast from here instead.
+const BREAKER_MS = 10 * 60 * 1000;
+let breakerUntil = 0;
+let breakerError = null;
+
+function cacheKey(query) {
+  return String(query || '').trim().toLowerCase();
+}
+
+function cachePut(key, items) {
+  searchCache.delete(key);
+  searchCache.set(key, { at: Date.now(), items });
+  while (searchCache.size > SEARCH_CACHE_MAX) searchCache.delete(searchCache.keys().next().value);
+}
+
+function cacheTake(key) {
+  const hit = searchCache.get(key);
+  if (!hit) return null;
+  if (Date.now() - hit.at >= SEARCH_CACHE_TTL_MS) { searchCache.delete(key); return null; }
+  return hit.items;
+}
+
+/** Test/ops hook — drops every cached query and re-arms the breaker. */
+function resetSearchCache() {
+  searchCache.clear();
+  breakerUntil = 0;
+  breakerError = null;
+}
+
+// Map a provider failure onto the SerpApiError the rest of the app expects,
+// naming the real cause. Serper reports an exhausted plan as HTTP 400
+// "Not enough credits", others as 402, so the message is matched too.
+function toSerpApiError(err, providerLabel) {
+  if (err instanceof ProviderError) return new SerpApiError(err.message, err.status);
+
+  const status = err.response?.status;
+  const rawMsg = err.response?.data?.message || err.response?.data?.error || '';
+  const text = typeof rawMsg === 'string' ? rawMsg : JSON.stringify(rawMsg);
+
+  if (/not enough credits|insufficient credits|out of credits|quota exceeded|limit reached/i.test(text)) {
+    return new SerpApiError(
+      `Product search is unavailable: the ${providerLabel} account is out of credits for this period. Cached prices are still shown.`,
+      402
+    );
+  }
+  if (status === 401 || status === 403) {
+    return new SerpApiError(
+      `Product search is unavailable: ${providerLabel} rejected our API key (HTTP ${status}). Check the key and the account's balance.`,
+      status
+    );
+  }
+  if (status === 402) {
+    return new SerpApiError(`Product search is unavailable: the ${providerLabel} account is out of credits.`, 402);
+  }
+  if (status === 429) {
+    return new SerpApiError(`Product search is rate limited by ${providerLabel} right now. Please try again shortly.`, 429);
+  }
+
+  const detail = text || err.code || err.message;
+  const cause = status
+    ? `${providerLabel} returned HTTP ${status}${detail ? `: ${detail}` : ''}`
+    : `could not reach ${providerLabel}${detail ? `: ${detail}` : ''}`;
+  return new SerpApiError(`Product search failed (${cause}).`, status || 502);
 }
 
 /**
@@ -35,55 +110,34 @@ const { parsePrice, isRecurringPrice } = require('./priceParse');
  */
 async function searchProducts(query, opts = {}) {
   const { techOnly = true } = opts;
-  if (!SERP_API_KEY) throw new SerpApiError('Product search is not configured (missing API key).', 500);
+  const key = cacheKey(query);
+  const cached = cacheTake(key);
+  const provider = activeProvider();
 
-  let data;
-  try {
-    ({ data } = await axios.post(
-      SERPER_SHOPPING_URL,
-      { q: query },
-      {
-        headers: {
-          'X-API-KEY': SERP_API_KEY,
-          'Content-Type': 'application/json',
-        },
+  let results;
+  if (cached) {
+    results = cached;
+  } else {
+    if (Date.now() < breakerUntil && breakerError) {
+      // Short-circuit while the provider is known to be refusing us.
+      throw new SerpApiError(breakerError.message, breakerError.status);
+    }
+    try {
+      const { items } = await fetchShopping(query);
+      results = items;
+      cachePut(key, items);
+      breakerUntil = 0;
+      breakerError = null;
+    } catch (err) {
+      const mapped = toSerpApiError(err, provider.label);
+      if ([401, 402, 403, 429].includes(mapped.status)) {
+        breakerUntil = Date.now() + BREAKER_MS;
+        breakerError = mapped;
       }
-    ));
-  } catch (err) {
-    const status = err.response?.status;
-    if (status === 403 || status === 401) {
-      // Serper returns 401/403 for a bad key, and 403 also when the
-      // account is out of credits, not something a retry will fix.
-      throw new SerpApiError('Product search is temporarily unavailable (search provider rejected the request, check the API key or credit balance).', status);
+      throw mapped;
     }
-    if (status === 429) {
-      throw new SerpApiError('Product search is rate limited right now. Please try again shortly.', 429);
-    }
-    if (status === 402) {
-      throw new SerpApiError('Product search is temporarily unavailable (search provider is out of credits). Please try again later.', 402);
-    }
-    // Serper reports an exhausted plan as 400 "Not enough credits", not the
-    // 402 the code originally assumed. Match on the message too, so an
-    // out-of-credits account is diagnosed as such whatever status carries it.
-    const rawMsg = err.response?.data?.message || err.response?.data?.error || '';
-    if (/not enough credits|insufficient credits|out of credits|quota exceeded/i.test(rawMsg)) {
-      throw new SerpApiError(
-        'Product search is unavailable: the search provider account is out of credits. Cached prices are still shown.',
-        402
-      );
-    }
-
-    // Anything else: name what actually happened rather than the old blanket
-    // "try again later", which was indistinguishable from a rejected key.
-    const providerMsg =
-      err.response?.data?.message || err.response?.data?.error || err.code || err.message;
-    const cause = status
-      ? `search provider returned HTTP ${status}${providerMsg ? `: ${providerMsg}` : ''}`
-      : `could not reach the search provider${providerMsg ? `: ${providerMsg}` : ''}`;
-    throw new SerpApiError(`Product search failed (${cause}).`, status || 502);
   }
 
-  const results = data.shopping || [];
 
   // Two site-wide rules, applied at this single choke point so every feature
   // that reads shopping data (search, compare, image gallery, price refresh)
@@ -105,27 +159,27 @@ async function searchProducts(query, opts = {}) {
     { pattern: /tv|television|\d{2,3}"/i,                   min: 100 },
   ];
 
-  // Serper shopping items look like:
-  // { title, source, link, price: "$1,099.99", delivery, imageUrl, rating, ratingCount, position, productId }
+  // Providers hand back a common raw shape (see services/searchProviders):
+  // { title, price: "$1,099.99", url, imageUrl, source, rating, reviews }
   const normalized = results.map((item) => {
     // See services/priceParse. The previous inline parse stripped everything
     // except digits and dots, which turned "US$ 1 099,99" into 109999 and
     // "€1.299,00" into 1.299 — silently, with no way to tell afterwards.
     const price = parsePrice(item.price);
     const recurring = isRecurringPrice(item.price);
-    const title = item.title || item.name;
+    const title = item.title;
     const release = getReleaseStatus(title);
     return {
       title,
       price,
       currency: 'USD',
-      originalPrice: null, // Serper's shopping endpoint doesn't return a pre-discount price
-      url: item.link || item.url || null,
-      imageUrl: item.imageUrl || item.thumbnail || null,
+      originalPrice: null, // no provider returns a reliable pre-discount price
+      url: item.url || null,
+      imageUrl: item.imageUrl || null,
       source: item.source || null,
       serpApiQuery: query,
       rating: item.rating || null,
-      reviews: item.ratingCount || null,
+      reviews: item.reviews || null,
       released: release.released,
       releaseLabel: release.label,
       releaseReason: release.reason,
@@ -212,4 +266,4 @@ async function fetchCurrentPrice(serpApiQuery, productTitle) {
   return scored.length > 0 ? scored[0].price : null;
 }
 
-module.exports = { searchProducts, fetchCurrentPrice, SerpApiError };
+module.exports = { searchProducts, fetchCurrentPrice, SerpApiError, resetSearchCache };
