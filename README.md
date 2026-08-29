@@ -51,9 +51,10 @@ Fill in the values in `.env`:
 
 | Variable | Where to get it |
 |----------|----------------|
+| `SERPAPI_KEY` | [serpapi.com](https://serpapi.com) — private API key. Free tier is 250 searches/month, renewed monthly. This is the default provider. |
+| `SEARCH_PROVIDER` | `serpapi` (default), `brightdata`, or `serper`. |
 | `BRIGHTDATA_API_KEY` | [brightdata.com](https://brightdata.com) — account API token. The SERP API free tier is 5,000 requests/month, renewed monthly. |
 | `BRIGHTDATA_SERP_ZONE` | The **name** of the SERP zone you create in the Bright Data control panel (not the token). |
-| `SEARCH_PROVIDER` | `brightdata` (default) or `serper`. Chooses which provider live search uses. |
 | `SERP_API_KEY` | [serper.dev](https://serper.dev) — legacy provider, only used when `SEARCH_PROVIDER=serper`. Its free tier is a one-time 2,500 credits. |
 | `RESEND_API_KEY` | [resend.com/api-keys](https://resend.com/api-keys) |
 | `JWT_SECRET` | Any long random string |
