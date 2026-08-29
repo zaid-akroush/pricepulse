@@ -55,6 +55,17 @@ const DIAGNOSES = [
     ],
   },
   {
+    code: 'SEARCH_PROVIDER_UNAVAILABLE',
+    match: (err) => err.name === 'SerpApiError' && Number(err.status) >= 500,
+    title: 'The search provider returned a server error',
+    detail: 'The provider answered with a 5xx (or was unreachable). Nothing is wrong with our key or credits — the upstream service itself is failing.',
+    steps: [
+      'Check the provider\'s status page; a 5xx on their side clears on its own.',
+      'Retry the search in a few minutes — cached prices are still served meanwhile.',
+      'If it persists for hours, confirm the server has outbound network access to google.serper.dev.',
+    ],
+  },
+  {
     code: 'DATABASE_UNREACHABLE',
     match: (err) => /P1001|Can't reach database|ECONNREFUSED.*5432|database server/i.test(err.message || ''),
     title: 'The database is unreachable',

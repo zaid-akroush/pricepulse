@@ -6,6 +6,7 @@ const { searchProducts, fetchCurrentPrice, SerpApiError } = require('../services
 const { getReleaseStatus } = require('../services/productClassifier');
 const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
+const { diagnose } = require('../services/diagnostics');
 
 // Cooldown between paid-API price refreshes for the same product, prevents
 // looping this endpoint across all product IDs to burn SerpApi quota.
@@ -69,7 +70,16 @@ router.get('/search', async (req, res) => {
       // 4xx from the upstream provider (bad key, out of credits, rate limit)
       // is a service outage from our users' perspective, not a client error.
       // Surface it as 503 with a clean message instead of the raw axios text.
-      return res.status(503).json({ error: err.message });
+      //
+      // This route catches SerpApiError itself, so it never reaches the global
+      // error handler and has to attach the admin diagnostic itself: without
+      // this, an admin saw the same "try again later" line as everyone else
+      // and had to read the server log to find out the key was rejected.
+      const body = { error: err.message };
+      if (req.isAdmin) {
+        body.diagnostic = diagnose(err, { method: req.method, path: req.originalUrl, query: q });
+      }
+      return res.status(503).json(body);
     }
     res.status(500).json({ error: err.message });
   }
