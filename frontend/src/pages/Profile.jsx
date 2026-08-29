@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import PageHeader from '../components/PageHeader';
 import { FadeIn } from '../components/motion';
+import { describeApiError } from '../api/errorMessage';
 
 export default function Profile() {
   const { user, logout } = useAuth();
@@ -30,7 +31,7 @@ export default function Profile() {
       await api.patch('/auth/profile', { name: form.name, email: form.email });
       setMsg({ type: 'success', text: 'Profile updated successfully.' });
     } catch (err) {
-      setMsg({ type: 'error', text: err.response?.data?.error || 'Failed to update profile.' });
+      setMsg({ type: 'error', text: describeApiError(err, 'Failed to update profile.') });
     } finally { setSaving(false); }
   }
 
@@ -70,7 +71,7 @@ export default function Profile() {
       setPwMsg({ type: 'success', text: 'Password changed successfully.' });
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
     } catch (err) {
-      setPwMsg({ type: 'error', text: err.response?.data?.error || 'Failed to change password.' });
+      setPwMsg({ type: 'error', text: describeApiError(err, 'Failed to change password.') });
     } finally { setPwSaving(false); }
   }
 
@@ -81,7 +82,7 @@ export default function Profile() {
       await api.delete('/auth/account', { data: { password: deletePassword } });
       logout();
     } catch (err) {
-      setDeleteMsg(err.response?.data?.error || 'Failed to delete account.');
+      setDeleteMsg(describeApiError(err, 'Failed to delete account.'));
       setDeleting(false);
     }
   }

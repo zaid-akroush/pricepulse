@@ -27,8 +27,12 @@ const prisma = new PrismaClient();
 // GET /api/products/search?q=<query>
 // Searches Google Shopping via SerpApi and returns results (no auth required)
 router.get('/search', async (req, res) => {
+  // Declared outside the try: the catch below reads it for the DB fallback and
+  // for the admin diagnostic's context, and a `const` inside the try is not in
+  // scope there — referencing it threw a ReferenceError from inside the error
+  // handler, which crashed the process instead of answering the request.
+  const { q } = req.query;
   try {
-    const { q } = req.query;
     if (!q) return res.status(400).json({ error: 'Query parameter q is required' });
 
     const results = await searchProducts(q);

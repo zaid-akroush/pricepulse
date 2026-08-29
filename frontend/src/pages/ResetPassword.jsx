@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../api/axios';
 import AuthLayout from '../components/AuthLayout';
+import { describeApiError } from '../api/errorMessage';
 
 export default function ResetPassword() {
   const [params] = useSearchParams();
@@ -25,7 +26,7 @@ export default function ResetPassword() {
       setDone(true);
       setTimeout(() => navigate('/login'), 2500);
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not reset your password. Please try again.');
+      setError(describeApiError(err, 'Could not reset your password. Please try again.'));
     } finally { setLoading(false); }
   }
 

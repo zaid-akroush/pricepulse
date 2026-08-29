@@ -6,6 +6,7 @@ import ProductImage from './ProductImage';
 import Price from './Price';
 import { detectBrand, brandLogoUrl } from '../utils/brand';
 import { getRepairabilityGrade, getEuEnergyGrade, repairabilityTier, euEnergyTier } from './ProductSpecs';
+import { describeApiError } from '../api/errorMessage';
 
 export default function ProductCard({ product }) {
   const { user } = useAuth();
@@ -44,7 +45,7 @@ export default function ProductCard({ product }) {
       });
       setAdded(true);
     } catch (err) {
-      setError(err.response?.data?.error || 'Failed to add');
+      setError(describeApiError(err, 'Failed to add'));
     } finally { setLoading(false); }
   }
 

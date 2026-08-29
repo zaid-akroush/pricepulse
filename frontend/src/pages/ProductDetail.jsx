@@ -13,6 +13,7 @@ import PriceCompare from '../components/PriceCompare';
 import ProductSpecs from '../components/ProductSpecs';
 import Price from '../components/Price';
 import { FadeIn } from '../components/motion';
+import { describeApiError } from '../api/errorMessage';
 
 // Helpers
 
@@ -101,7 +102,7 @@ function CommentsSection({ productId }) {
     } catch (err) {
       // The server returns a specific, user-facing reason (which rule was
       // broken); show it rather than a generic failure message.
-      setError(err.response?.data?.error || 'Could not post your note. Please try again.');
+      setError(describeApiError(err, 'Could not post your note. Please try again.'));
     } finally { setPosting(false); }
   }
 
@@ -125,7 +126,7 @@ function CommentsSection({ productId }) {
         : c));
     } catch (err) {
       setComments(prev => prev.map(c => c.id === comment.id ? comment : c));
-      setError(err.response?.data?.error || 'Could not register your vote.');
+      setError(describeApiError(err, 'Could not register your vote.'));
     }
   }
 
@@ -451,7 +452,7 @@ export default function ProductDetail() {
         setRefreshMsg(data.message || 'No live price available right now.');
       }
     } catch (err) {
-      setRefreshMsg(err.response?.data?.error || 'Could not refresh right now.');
+      setRefreshMsg(describeApiError(err, 'Could not refresh right now.'));
     } finally {
       setRefreshing(false);
       setTimeout(() => setRefreshMsg(''), 3000);

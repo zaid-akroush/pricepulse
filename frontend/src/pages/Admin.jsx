@@ -5,6 +5,7 @@ import api from '../api/axios';
 import PageHeader from '../components/PageHeader';
 import Price from '../components/Price';
 import { Stagger, StaggerItem } from '../components/motion';
+import { describeApiError } from '../api/errorMessage';
 
 function StatCard({ label, value }) {
   return (
@@ -37,7 +38,7 @@ export default function Admin() {
       api.get('/admin/users').then(r => setUsers(r.data)),
       api.get('/admin/products').then(r => setProducts(r.data)),
     ])
-      .catch(err => setError(err.response?.data?.error || 'Failed to load admin data.'))
+      .catch(err => setError(describeApiError(err, 'Failed to load admin data.')))
       .finally(() => setLoading(false));
   }, [user]);
 
@@ -63,7 +64,7 @@ export default function Admin() {
       setStats(s => s ? { ...s, users: s.users - 1 } : s);
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not delete user.');
+      setError(describeApiError(err, 'Could not delete user.'));
     } finally {
       setDeletingId(null);
     }
@@ -76,7 +77,7 @@ export default function Admin() {
       setUsers(prev => prev.map(x => x.id === u.id ? { ...x, wishlistPublic: res.data.wishlistPublic } : x));
       setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || 'Could not update visibility.');
+      setError(describeApiError(err, 'Could not update visibility.'));
     } finally {
       setTogglingId(null);
     }
@@ -89,7 +90,7 @@ export default function Admin() {
       const res = await api.post('/admin/check-prices');
       setCheckMessage(res.data.message);
     } catch (err) {
-      setCheckMessage(err.response?.data?.error || 'Could not start price check.');
+      setCheckMessage(describeApiError(err, 'Could not start price check.'));
     } finally {
       setCheckingPrices(false);
     }
