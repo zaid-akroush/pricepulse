@@ -54,6 +54,13 @@ const SORTS = [
   { label: 'Price: High to Low', value: 'price_desc' },
 ];
 
+// The admin diagnostic rides along as base64 JSON in a response header
+// (the success body is a plain array and has nowhere to put it).
+function decodeDiagnostic(header) {
+  if (!header) return null;
+  try { return JSON.parse(atob(header)); } catch { return null; }
+}
+
 export default function Search() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -65,6 +72,8 @@ export default function Search() {
   const [error, setError] = useState(null);
   // Present only for admins — the backend attaches it to failure responses.
   const [diagnostic, setDiagnostic] = useState(null);
+  // Why the results are cached rather than live, when the backend says so.
+  const [degraded, setDegraded] = useState(null);
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState('default');
   const [minPrice, setMinPrice] = useState('');
@@ -135,12 +144,16 @@ export default function Search() {
   async function doSearch(q) {
     if (!q?.trim()) return;
     const seq = ++searchSeq.current;
-    setLoading(true); setError(null); setDiagnostic(null); setSearched(true);
+    setLoading(true); setError(null); setDiagnostic(null); setDegraded(null); setSearched(true);
     setResults([]); setFiltered([]);
     try {
-      const { data } = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
+      const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
       if (seq !== searchSeq.current) return; // superseded by a newer search
-      setResults(data);
+      setResults(res.data);
+      // A 200 can still be a degraded answer: the backend serves cached rows
+      // when the live provider fails, and says why in these headers.
+      setDegraded(res.headers['x-search-degraded'] ? (res.headers['x-search-reason'] || null) : null);
+      setDiagnostic(decodeDiagnostic(res.headers['x-search-diagnostic']));
     } catch (err) {
       if (seq !== searchSeq.current) return;
       // A body with no `error` field means no response came back at all —
@@ -259,9 +272,17 @@ export default function Search() {
       )}
 
       {!loading && filtered.length > 0 && filtered.some(p => p.stale) && (
-        <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">
-          Live search is temporarily unavailable, showing last-known prices from products already tracked on PricePulse.
-        </p>
+        <div className="mb-4">
+          <p className="text-xs text-muted bg-app-subtle p-3 rounded-xl">
+            {/* The backend's own reason, when it sent one — "temporarily
+                unavailable" was wrong for a failure that persists until
+                someone acts, such as an exhausted provider plan. */}
+            {degraded
+              ? `${degraded} Showing last-known prices from products already tracked on PricePulse.`
+              : 'Live search is unavailable right now, showing last-known prices from products already tracked on PricePulse.'}
+          </p>
+          <AdminDiagnostic diagnostic={diagnostic} />
+        </div>
       )}
 
       <div>
