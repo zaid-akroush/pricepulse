@@ -8,6 +8,7 @@ import Dashboard from './Dashboard';
 import ProductImage from '../components/ProductImage';
 import Price from '../components/Price';
 import { useCurrency } from '../context/CurrencyContext';
+import { describeApiError } from '../api/errorMessage';
 
 function WishlistTab({ active, onClick, label }) {
   return (
@@ -232,7 +233,7 @@ export default function Wishlist() {
   useEffect(() => {
     api.get('/wishlist')
       .then(res => setItems(res.data))
-      .catch(err => setError(err.response?.data?.error || 'Failed to load wishlist'))
+      .catch(err => setError(describeApiError(err, 'Failed to load wishlist')))
       .finally(() => setLoading(false));
   }, []);
 

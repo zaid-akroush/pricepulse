@@ -6,6 +6,7 @@ import api from '../api/axios';
 import ProductCard from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { Stagger, StaggerItem } from '../components/motion';
+import { describeApiError } from '../api/errorMessage';
 
 const CATEGORIES = [
   { label: 'All',         q: '' },
@@ -142,7 +143,9 @@ export default function Search() {
       setResults(data);
     } catch (err) {
       if (seq !== searchSeq.current) return;
-      setError(err.response?.data?.error || 'Search failed. Please try again.');
+      // A body with no `error` field means no response came back at all —
+      // API down, wrong VITE_API_URL, or a CORS block — not a failed search.
+      setError(describeApiError(err, 'Search failed. Please try again.'));
       setDiagnostic(err.response?.data?.diagnostic || null);
     } finally {
       if (seq === searchSeq.current) setLoading(false);
