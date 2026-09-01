@@ -217,7 +217,7 @@ async function searchProducts(query, opts = {}) {
 // costs nothing.
 const COUNTRY_BRAND_LIMIT = Number(process.env.COUNTRY_BRAND_LIMIT || 3);
 // Per brand, so one brand cannot fill the whole page.
-const COUNTRY_PER_BRAND = 8;
+const COUNTRY_PER_BRAND = Number(process.env.COUNTRY_PER_BRAND || 16);
 
 /**
  * Products from a country's tech brands.

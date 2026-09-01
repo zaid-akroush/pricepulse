@@ -67,7 +67,7 @@ router.get('/search', async (req, res) => {
           where: words.length
             ? { OR: words.map(w => ({ title: { contains: w, mode: 'insensitive' } })) }
             : {},
-          take: 20,
+          take: 60,
         });
         fallback = rows.map(p => ({
           title: p.title,

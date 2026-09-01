@@ -14,6 +14,13 @@ const axios = require('axios');
 
 const TIMEOUT_MS = 20000;
 
+// How many listings to ask the provider for. The default page is small, and
+// our own rules (tech-only, price floors, carrier offers, instalment prices)
+// discard a large share of what comes back — asking for one page then
+// filtering it left a handful of cards on screen. One request returns up to
+// 100 whatever this is set to, so a bigger page costs no extra quota.
+const RESULTS_PER_SEARCH = Math.min(Number(process.env.RESULTS_PER_SEARCH || 60), 100);
+
 /** Thrown for provider-level problems (bad key, no credits, rate limit). */
 class ProviderError extends Error {
   constructor(message, status, provider) {
@@ -56,7 +63,7 @@ async function brightDataShopping(query) {
     );
   }
 
-  const target = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop&brd_json=1`;
+  const target = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop&num=${RESULTS_PER_SEARCH}&brd_json=1`;
   const { data } = await axios.post(
     BRIGHTDATA_URL,
     { zone, url: target, format: 'raw' },
@@ -102,6 +109,7 @@ async function serpApiShopping(query) {
     params: {
       engine: 'google_shopping',
       q: query,
+      num: RESULTS_PER_SEARCH,
       gl: process.env.SERPAPI_COUNTRY || 'us',
       hl: process.env.SERPAPI_LANGUAGE || 'en',
       api_key: key,
@@ -150,7 +158,7 @@ async function serperShopping(query) {
 
   const { data } = await axios.post(
     SERPER_URL,
-    { q: query },
+    { q: query, num: RESULTS_PER_SEARCH },
     { headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' }, timeout: TIMEOUT_MS }
   );
 
