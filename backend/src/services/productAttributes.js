@@ -125,22 +125,69 @@ function detectBrand(title) {
   return null;
 }
 
+// ── Carrier / leased listings ─────────────────────────────────────────────
+//
+// A "Motorola Moto G stylus 2025 — $29.99, Cricket Wireless" is not a phone
+// for $29.99. It is the price of taking a plan: the handset is subsidised,
+// locked to that carrier, and often leased rather than sold, with the rest
+// paid monthly. Tracking it as the product's price makes every real listing
+// look like a rip-off and poisons the price history with a number nobody can
+// actually pay for the device alone.
+//
+// These listings are still real offers, so they are labelled rather than
+// deleted, and the search sidebar decides whether to show them.
+
+// Sellers whose shopping listings are plan prices by construction.
+const CARRIER_SELLERS = [
+  'cricket wireless', 'cricket', 'boost mobile', 'boost infinite',
+  'metro by t-mobile', 'metropcs', 'straight talk', 'total wireless',
+  'total by verizon', 'tracfone', 'simple mobile', 'net10', 'visible',
+  'mint mobile', 'xfinity mobile', 'spectrum mobile', 'consumer cellular',
+  'verizon', 'at&t', 'att', 't-mobile', 'us cellular', 'ultra mobile',
+  'h2o wireless', 'page plus', 'gen mobile', 'red pocket',
+];
+
+// Phrases that mark a plan, lease or contract price in the title itself.
+const CARRIER_TITLE_RE = /\b(prepaid|pre[\s-]?paid|with (activation|service|plan)|requires? (activation|a plan|new line)|activation required|new line|line required|carrier[\s-]?locked|locked to|contract|on contract|w\/ (plan|activation)|lease|leased|leasing|rent[\s-]?to[\s-]?own|installment plan|monthly plan|trade[\s-]?in required|bill credits?)\b/i;
+
 /**
- * Every facet for one listing, from its title.
+ * Is this listing a carrier / leased / contract offer rather than an
+ * outright purchase of the device?
+ *
  * @param {string} title
+ * @param {string|null} source retailer name
+ * @returns {{carrier: boolean, reason: string|null}}
+ */
+function detectCarrierDeal(title, source) {
+  const seller = String(source || '').toLowerCase().trim();
+  if (seller && CARRIER_SELLERS.some(c => seller === c || seller.startsWith(`${c} `) || seller.includes(c))) {
+    return { carrier: true, reason: 'seller' };
+  }
+  if (CARRIER_TITLE_RE.test(String(title || ''))) {
+    return { carrier: true, reason: 'title' };
+  }
+  return { carrier: false, reason: null };
+}
+
+/**
+ * Every facet for one listing.
+ * @param {string} title
+ * @param {string|null} [source] retailer, used to spot carrier/lease offers
  * @returns {{condition: string|null, conditionLabel: string|null, storageGb: number|null, storageLabel: string|null, ramGb: number|null, color: string|null, screenInches: number|null, brand: string|null}}
  */
-function extractAttributes(title) {
+function extractAttributes(title, source = null) {
   const t = String(title || '');
   if (!t) {
     return {
       condition: null, conditionLabel: null, storageGb: null, storageLabel: null,
       ramGb: null, color: null, screenInches: null, brand: null,
+      carrierDeal: false, carrierReason: null,
     };
   }
   const condition = detectCondition(t);
   const storage = detectStorage(t);
   const ram = detectRam(t);
+  const carrier = detectCarrierDeal(t, source);
   return {
     condition: condition.value,
     conditionLabel: condition.label,
@@ -150,7 +197,9 @@ function extractAttributes(title) {
     color: detectColour(t),
     screenInches: detectScreenInches(t),
     brand: detectBrand(t),
+    carrierDeal: carrier.carrier,
+    carrierReason: carrier.reason,
   };
 }
 
-module.exports = { extractAttributes, CONDITION_RULES, COLOURS, BRANDS };
+module.exports = { extractAttributes, detectCarrierDeal, CONDITION_RULES, COLOURS, BRANDS, CARRIER_SELLERS };

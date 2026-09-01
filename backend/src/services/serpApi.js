@@ -152,6 +152,9 @@ async function searchProducts(query, opts = {}) {
   // Minimum plausible price by keyword, catches monthly-plan prices
   const PRICE_FLOORS = [
     { pattern: /iphone|samsung galaxy|pixel \d|oneplus/i,   min: 200 },
+    // Budget handsets: the floor has to be low enough to admit a genuine
+    // cheap phone, but above the $20-$40 activation prices carriers list.
+    { pattern: /moto g|moto e|galaxy a\d|redmi|poco|nokia [gc]\d/i, min: 60 },
     { pattern: /macbook|xps|thinkpad|surface laptop/i,       min: 400 },
     { pattern: /ipad|galaxy tab|surface pro/i,               min: 150 },
     { pattern: /playstation|xbox|nintendo switch/i,          min: 150 },
@@ -188,7 +191,7 @@ async function searchProducts(query, opts = {}) {
       recurring,
       // Facets for the search sidebar (condition, storage, colour, brand…).
       // Derived here so every consumer of shopping data sees the same values.
-      ...extractAttributes(title),
+      ...extractAttributes(title, item.source || null),
     };
   });
 

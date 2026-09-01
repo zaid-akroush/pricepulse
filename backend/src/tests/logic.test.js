@@ -422,3 +422,28 @@ describe('listing attributes (search sidebar facets)', () => {
     expect(extractAttributes('Some Unbranded Gadget').brand).toBeNull();
   });
 });
+
+describe('carrier / leased listings', () => {
+  const { extractAttributes, detectCarrierDeal } = require('../services/productAttributes');
+
+  // The listing this was written for: a $29.99 "Motorola Moto G stylus 2025"
+  // from Cricket Wireless, which is the price of taking a plan.
+  it('flags carrier sellers', () => {
+    expect(detectCarrierDeal('Motorola Moto G stylus 2025', 'Cricket Wireless').carrier).toBe(true);
+    expect(detectCarrierDeal('Moto G', 'Boost Mobile').carrier).toBe(true);
+    expect(detectCarrierDeal('Moto G', 'Best Buy').carrier).toBe(false);
+  });
+
+  it('flags plan, prepaid and lease wording in the title', () => {
+    expect(detectCarrierDeal('Samsung Galaxy A15 Prepaid', 'Walmart').carrier).toBe(true);
+    expect(detectCarrierDeal('Pixel 8 - requires new line', 'Amazon').carrier).toBe(true);
+    expect(detectCarrierDeal('iPhone 15 with activation', 'Target').carrier).toBe(true);
+    expect(detectCarrierDeal('Lease to own laptop', 'Acme').carrier).toBe(true);
+  });
+
+  it('leaves ordinary listings alone', () => {
+    const a = extractAttributes('Apple iPhone 15 128GB Blue', 'Best Buy');
+    expect(a.carrierDeal).toBe(false);
+    expect(a.carrierReason).toBeNull();
+  });
+});
