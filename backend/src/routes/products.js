@@ -4,6 +4,7 @@ const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
 const { searchProducts, searchByBrands, fetchCurrentPrice, SerpApiError } = require('../services/serpApi');
 const { matchCountry } = require('../services/countryBrands');
+const { extractAttributes } = require('../services/productAttributes');
 const { getReleaseStatus } = require('../services/productClassifier');
 const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
@@ -80,6 +81,9 @@ router.get('/search', async (req, res) => {
           rating: null,
           reviews: null,
           stale: true,
+          // Cached rows go through the same facet extraction as live ones,
+          // so the sidebar filters work identically when search is degraded.
+          ...extractAttributes(p.title),
         }));
       } catch (_) { /* DB fallback is best-effort; fall through to the 503 below if it fails too */ }
 
