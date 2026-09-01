@@ -1,6 +1,6 @@
 {
   "name": "pricepulse",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "private": true,
   "description": "Root scripts to launch PricePulse backend + frontend together",
   "scripts": {

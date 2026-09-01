@@ -1,6 +1,6 @@
 {
   "name": "pricepulse-backend",
-  "version": "1.6.4",
+  "version": "1.6.5",
   "description": "PricePulse backend - price tracking and notification API",
   "main": "src/server.js",
   "scripts": {

@@ -7,7 +7,14 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
+  // Runtime queries go through the TRANSACTION pooler (port 6543). Supabase's
+  // session pooler allows only 15 clients in total, and Prisma opens its own
+  // pool per instance, so the app hit "max clients reached in session mode"
+  // on ordinary page loads.
+  url       = env("DATABASE_URL")
+  // Migrations cannot run over the transaction pooler, so they use the
+  // session pooler (port 5432) directly.
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
