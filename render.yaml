@@ -25,7 +25,11 @@ services:
     rootDir: backend
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: sh -c "npx prisma migrate deploy && node src/server.js"
+    # Render passes this straight to the container, and the quoted `sh -c "..."`
+    # form came back as `sh: ...: not found` — the whole string was taken as one
+    # program name. An npm script keeps the chaining inside package.json where
+    # no quoting survives the trip.
+    dockerCommand: npm run start:prod
     healthCheckPath: /api/health
     autoDeployTrigger: commit
     envVars:

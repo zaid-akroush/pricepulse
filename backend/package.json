@@ -1,10 +1,11 @@
 {
   "name": "pricepulse-backend",
-  "version": "1.6.3",
+  "version": "1.6.4",
   "description": "PricePulse backend - price tracking and notification API",
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "start:prod": "prisma migrate deploy && node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --runInBand --forceExit",
     "test:watch": "jest --watch",
