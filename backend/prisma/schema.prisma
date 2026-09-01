@@ -28,6 +28,7 @@ model User {
   following     Follow[]       @relation("Follower")
   likes         ProductLike[]
   comments      Comment[]
+  commentLikes  CommentLike[]
   savedSearches SavedSearch[]
   notifications Notification[]
   pushSubscriptions PushSubscription[]
@@ -51,7 +52,6 @@ model Product {
   priceHistory  PriceHistory[]
   likes         ProductLike[]
   comments      Comment[]
-  commentLikes  CommentLike[]
   notifications Notification[]
 }
 
