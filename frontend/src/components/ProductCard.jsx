@@ -77,6 +77,14 @@ export default function ProductCard({ product }) {
         {discount && discount > 0 && (
           <div className="absolute top-2.5 left-2.5 badge badge-solid shadow-[var(--shadow-sm)]">-{discount}%</div>
         )}
+        {/* A carrier price is the cost of taking a plan, not of the device.
+            Shown only when the shopper has asked to see these listings, so
+            the number on the card is never mistaken for the phone's price. */}
+        {product.carrierDeal && (
+          <div className="absolute bottom-2.5 right-2.5 badge badge-orange text-[10px]" title="Carrier, prepaid or lease offer — the price requires a plan or activation, it is not the price of buying the device outright.">
+            Plan price
+          </div>
+        )}
         {product.stale && (
           <div className="absolute bottom-2.5 left-2.5 badge bg-black/70 text-white text-[10px]">Cached price</div>
         )}

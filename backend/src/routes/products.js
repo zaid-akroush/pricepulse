@@ -83,7 +83,7 @@ router.get('/search', async (req, res) => {
           stale: true,
           // Cached rows go through the same facet extraction as live ones,
           // so the sidebar filters work identically when search is degraded.
-          ...extractAttributes(p.title),
+          ...extractAttributes(p.title, p.source),
         }));
       } catch (_) { /* DB fallback is best-effort; fall through to the 503 below if it fails too */ }
 
