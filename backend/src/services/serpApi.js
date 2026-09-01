@@ -97,6 +97,7 @@ function toSerpApiError(err, providerLabel) {
  */
 const { isTechProduct, getReleaseStatus } = require('./productClassifier');
 const { parsePrice, isRecurringPrice } = require('./priceParse');
+const { extractAttributes } = require('./productAttributes');
 
 /**
  * @param {string} query
@@ -185,6 +186,9 @@ async function searchProducts(query, opts = {}) {
       releaseReason: release.reason,
       // A per-month instalment figure is not this product's price.
       recurring,
+      // Facets for the search sidebar (condition, storage, colour, brand…).
+      // Derived here so every consumer of shopping data sees the same values.
+      ...extractAttributes(title),
     };
   });
 

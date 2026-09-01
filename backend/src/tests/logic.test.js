@@ -391,3 +391,34 @@ describe('non-tech filtering', () => {
     expect(isTechProduct('Silver Necklace with Charm')).toBe(false);
   });
 });
+
+describe('listing attributes (search sidebar facets)', () => {
+  const { extractAttributes } = require('../services/productAttributes');
+
+  it('reads condition, and never assumes unstated means new', () => {
+    expect(extractAttributes('iPhone 15 128GB - Renewed').condition).toBe('refurbished');
+    expect(extractAttributes('Used Google Pixel 8').condition).toBe('used');
+    expect(extractAttributes('Open Box Sony WH-1000XM5').condition).toBe('open_box');
+    expect(extractAttributes('Apple iPhone 15 Pro').condition).toBeNull();
+  });
+
+  it('normalises storage to GB and ignores RAM figures', () => {
+    expect(extractAttributes('ThinkPad 16GB RAM 1TB SSD').storageGb).toBe(1024);
+    expect(extractAttributes('ThinkPad 16GB RAM 1TB SSD').ramGb).toBe(16);
+    expect(extractAttributes('Pixel 8 128GB').storageLabel).toBe('128GB');
+    expect(extractAttributes('SanDisk 8GB card').storageGb).toBeNull();
+  });
+
+  // List order must not decide the colour: 'titanium' maps to Silver and is
+  // listed before Blue, so "Blue Titanium" was coming back Silver.
+  it('takes the colour word that appears first in the title', () => {
+    expect(extractAttributes('iPhone 15 Pro Blue Titanium').color).toBe('Blue');
+    expect(extractAttributes('iPhone 15 Natural Titanium').color).toBe('Silver');
+  });
+
+  it('reads screen size and brand', () => {
+    expect(extractAttributes('Samsung 65" QLED TV').screenInches).toBe(65);
+    expect(extractAttributes('Samsung 65" QLED TV').brand).toBe('Samsung');
+    expect(extractAttributes('Some Unbranded Gadget').brand).toBeNull();
+  });
+});

@@ -7,6 +7,7 @@ import ProductCard from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/Skeleton';
 import { Stagger, StaggerItem } from '../components/motion';
 import { describeApiError } from '../api/errorMessage';
+import SearchFilters, { EMPTY_FILTERS, applyFilters } from '../components/SearchFilters';
 
 const CATEGORIES = [
   { label: 'All',         q: '' },
@@ -79,6 +80,9 @@ export default function Search() {
   const [searched, setSearched] = useState(false);
   const [sort, setSort] = useState('default');
   const [minPrice, setMinPrice] = useState('');
+  // Sidebar facets (condition, brand, storage, colour, screen, seller).
+  const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
   const [maxPrice, setMaxPrice] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
   const [savedMsg, setSavedMsg] = useState('');
@@ -129,12 +133,13 @@ export default function Search() {
   // Apply sort + filter whenever they change
   useEffect(() => {
     let out = [...results];
+    out = applyFilters(out, filters);
     if (minPrice !== '') out = out.filter(p => p.price >= parseFloat(minPrice));
     if (maxPrice !== '') out = out.filter(p => p.price <= parseFloat(maxPrice));
     if (sort === 'price_asc') out.sort((a, b) => (a.price ?? 0) - (b.price ?? 0));
     if (sort === 'price_desc') out.sort((a, b) => (b.price ?? 0) - (a.price ?? 0));
     setFiltered(out);
-  }, [results, sort, minPrice, maxPrice]);
+  }, [results, sort, minPrice, maxPrice, filters]);
 
   // Which search is the current one. Clicking "Laptops" then "Cameras" fires
   // two overlapping requests, and whichever resolved last used to win — so
@@ -147,6 +152,7 @@ export default function Search() {
     if (!q?.trim()) return;
     const seq = ++searchSeq.current;
     setLoading(true); setError(null); setDiagnostic(null); setDegraded(null); setCountry(null); setSearched(true);
+    setFilters(EMPTY_FILTERS); // facets describe the previous result set
     setResults([]); setFiltered([]);
     try {
       const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
@@ -256,6 +262,12 @@ export default function Search() {
             <input type="number" placeholder="Max $" value={maxPrice} onChange={e => setMaxPrice(e.target.value)}
               className="input py-1.5 text-xs w-24" />
           </div>
+          <button
+            onClick={() => setFiltersOpen(o => !o)}
+            className="lg:hidden text-xs font-semibold text-brand hover:underline"
+          >
+            {filtersOpen ? 'Hide filters' : 'Filters'}
+          </button>
           {(minPrice || maxPrice || sort !== 'default') && (
             <button onClick={() => { setSort('default'); setMinPrice(''); setMaxPrice(''); }}
               className="text-xs text-danger hover:underline">Clear filters</button>
@@ -300,7 +312,22 @@ export default function Search() {
         </div>
       )}
 
-      <div>
+      <div className="flex flex-col lg:flex-row gap-6">
+        {/* Facets. Hidden on small screens until asked for, so the results
+            stay the first thing on the page on a phone. */}
+        {!loading && results.length > 0 && (
+          <aside className={`${filtersOpen ? 'block' : 'hidden'} lg:block w-full lg:w-60 shrink-0`}>
+            <div className="lg:sticky lg:top-24">
+              <SearchFilters
+                results={results}
+                value={filters}
+                onChange={setFilters}
+                onClear={() => setFilters(EMPTY_FILTERS)}
+              />
+            </div>
+          </aside>
+        )}
+
         <div className="flex-1 min-w-0">
           {/* Empty state */}
           {searched && !loading && filtered.length === 0 && !error && (
@@ -310,8 +337,18 @@ export default function Search() {
                   <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
                 </svg>
               </div>
-              <p className="font-semibold text-app">No results found for "{query}"</p>
-              <p className="text-sm mt-1">Try a different search term or category.</p>
+              <p className="font-semibold text-app">
+                {results.length > 0 ? 'No results match your filters' : `No results found for "${query}"`}
+              </p>
+              <p className="text-sm mt-1">
+                {results.length > 0
+                  ? `${results.length} products were found for "${query}" — clear a filter to see them.`
+                  : 'Try a different search term or category.'}
+              </p>
+              {results.length > 0 && (
+                <button onClick={() => { setFilters(EMPTY_FILTERS); setMinPrice(''); setMaxPrice(''); }}
+                  className="btn-secondary mt-4 text-sm">Clear all filters</button>
+              )}
             </div>
           )}
 
