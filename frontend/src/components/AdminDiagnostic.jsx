@@ -41,7 +41,7 @@ export default function AdminDiagnostic({ diagnostic }) {
 
       {diagnostic.raw && (
         <p className="text-[10px] font-data mt-3 break-words" style={{ color: 'var(--text-muted)' }}>
-          {diagnostic.context?.method} {diagnostic.context?.path} — {diagnostic.raw}
+          {diagnostic.context?.method} {diagnostic.context?.path}: {diagnostic.raw}
         </p>
       )}
     </div>

@@ -604,7 +604,7 @@ export default function Home() {
         ) : !dealOfDay ? (
           <EmptyGrid
             icon={<Icon.bolt className="w-5 h-5" />}
-            message="No standout deal yet — deals surface once enough people are tracking a price drop. Check back soon."
+            message="No standout deal yet. Deals surface once enough people are tracking a price drop, so check back soon."
             cta={<Link to="/search" className="text-sm text-brand font-semibold">Browse products &rarr;</Link>}
           />
         ) : (
@@ -780,8 +780,8 @@ export default function Home() {
               </span>
               <h3 className="text-xl font-bold text-app mb-2">Buy now, or wait?</h3>
               <p className="text-sm text-muted leading-relaxed max-w-md">
-                Every tracked product gets a price forecast — 7 and 30 days out, built from its
-                own history — with a plain-language recommendation and a confidence score, so
+                Every tracked product gets a price forecast for 7 and 30 days out, built from its
+                own history, with a plain-language recommendation and a confidence score, so
                 you're not guessing whether a "deal" is really the bottom.
               </p>
             </div>
@@ -844,7 +844,7 @@ export default function Home() {
               </span>
               <h3 className="text-lg font-bold text-app mb-2">Share your wishlist</h3>
               <p className="text-sm text-muted leading-relaxed">
-                Turn your wishlist into a public, read-only link — for a gift registry, a group
+                Turn your wishlist into a public, read-only link, handy for a gift registry, a group
                 chat, or just showing off what you're tracking. No account needed to view it.
               </p>
             </div>

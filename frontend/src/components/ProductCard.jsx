@@ -81,7 +81,7 @@ export default function ProductCard({ product }) {
             Shown only when the shopper has asked to see these listings, so
             the number on the card is never mistaken for the phone's price. */}
         {product.carrierDeal && (
-          <div className="absolute bottom-2.5 right-2.5 badge badge-orange text-[10px]" title="Carrier, prepaid or lease offer — the price requires a plan or activation, it is not the price of buying the device outright.">
+          <div className="absolute bottom-2.5 right-2.5 badge badge-orange text-[10px]" title="Carrier, prepaid or lease offer. The price requires a plan or activation, it is not the price of buying the device outright.">
             Plan price
           </div>
         )}

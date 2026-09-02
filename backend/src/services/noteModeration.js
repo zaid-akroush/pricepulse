@@ -108,14 +108,14 @@ function validateNoteText(raw) {
 
   if (!text) return { ok: false, error: 'Note text is required.' };
   if (text.length < MIN_LENGTH) {
-    return { ok: false, error: `Notes must be at least ${MIN_LENGTH} characters — add a little detail so it's useful to others.` };
+    return { ok: false, error: `Notes must be at least ${MIN_LENGTH} characters, add a little detail so it's useful to others.` };
   }
   if (text.length > MAX_LENGTH) {
     return { ok: false, error: `Notes must be ${MAX_LENGTH} characters or fewer (yours is ${text.length}).` };
   }
 
   if (containsBannedWord(text)) {
-    return { ok: false, error: 'Please keep notes civil — that wording isn\'t allowed here.' };
+    return { ok: false, error: 'Please keep notes civil, that wording isn\'t allowed here.' };
   }
 
   if (URL_RE.test(text)) {
@@ -163,7 +163,7 @@ function validateNoteText(raw) {
 // than only as an error after.
 const NOTE_GUIDELINES = [
   `Between ${MIN_LENGTH} and ${MAX_LENGTH} characters.`,
-  'Be helpful and civil — no profanity, slurs or personal attacks.',
+  'Be helpful and civil, with no profanity, slurs or personal attacks.',
   'No links, phone numbers or contact details.',
   'No spam: no all-caps, repeated characters or repeated words.',
   `Up to ${RATE_LIMIT_MAX} notes every ${RATE_LIMIT_WINDOW_MS / 60000} minutes, and no duplicate notes.`,

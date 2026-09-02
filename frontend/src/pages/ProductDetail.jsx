@@ -197,7 +197,7 @@ function CommentsSection({ productId }) {
           <ul id="note-rules" className="mt-2 space-y-1 text-[11px] leading-relaxed pl-4 list-disc" style={{ color: 'var(--text-muted)' }}>
             {(guidelines?.rules || [
               `Between ${minLength} and ${maxLength} characters.`,
-              'Be helpful and civil — no profanity, slurs or personal attacks.',
+              'Be helpful and civil, with no profanity, slurs or personal attacks.',
               'No links, phone numbers or contact details.',
               'No spam: no all-caps, repeated characters or repeated words.',
             ]).map(rule => <li key={rule}>{rule}</li>)}

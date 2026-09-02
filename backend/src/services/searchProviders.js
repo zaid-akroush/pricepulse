@@ -58,7 +58,7 @@ async function brightDataShopping(query) {
   if (!token) throw new ProviderError('Product search is not configured (missing API key).', 500, 'brightdata');
   if (!zone) {
     throw new ProviderError(
-      'Product search is not configured (BRIGHTDATA_SERP_ZONE is not set — Bright Data requires the name of your SERP zone).',
+      'Product search is not configured (BRIGHTDATA_SERP_ZONE is not set, Bright Data requires the name of your SERP zone).',
       500, 'brightdata'
     );
   }

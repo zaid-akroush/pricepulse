@@ -23,7 +23,7 @@ export function describeApiError(err, fallback = 'The request failed.') {
   if (!err?.response) {
     const where = apiBaseUrl();
     if (err?.code === 'ECONNABORTED' || /timeout/i.test(err?.message || '')) {
-      return `The server at ${where} did not respond in time. It may be starting up — try again in a moment.`;
+      return `The server at ${where} did not respond in time. It may be starting up, so try again in a moment.`;
     }
     return `Could not reach the server at ${where}. It is either not running, or it refused the response because this site's address is not in the backend's CLIENT_URL allow-list (a CORS block). Your credentials were never checked. The browser console shows which of the two it is.`;
   }
@@ -33,9 +33,9 @@ export function describeApiError(err, fallback = 'The request failed.') {
 
   if (message) return message;
   if (status === 401 || status === 403) return 'Those credentials were not accepted.';
-  if (status === 404) return `The API responded 404 — ${apiBaseUrl()} is reachable but this endpoint does not exist there. Check VITE_API_URL points at the backend.`;
+  if (status === 404) return `The API responded 404. ${apiBaseUrl()} is reachable but this endpoint does not exist there. Check VITE_API_URL points at the backend.`;
   if (status === 429) return 'Too many attempts. Wait a few minutes and try again.';
-  if (status >= 500) return `The server failed with HTTP ${status}. This is a backend fault, not your credentials — check the backend log.`;
+  if (status >= 500) return `The server failed with HTTP ${status}. This is a backend fault, not your credentials. Check the backend log.`;
   return fallback;
 }
 
