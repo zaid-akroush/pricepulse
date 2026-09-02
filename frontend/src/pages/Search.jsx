@@ -292,7 +292,7 @@ export default function Search() {
       {!loading && country && (
         <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">
           <strong className="text-app">{country.country}</strong> is a country, so this shows tech products from
-          brands headquartered there{country.brands ? ` — ${country.brands}` : ''}. Manufacturing location is not
+          brands headquartered there{country.brands ? `: ${country.brands}` : ''}. Manufacturing location is not
           shown: almost all consumer electronics are assembled in the same few countries, and no price source
           reports it. Search a product name instead for a normal search.
         </p>
@@ -342,7 +342,7 @@ export default function Search() {
               </p>
               <p className="text-sm mt-1">
                 {results.length > 0
-                  ? `${results.length} products were found for "${query}" — clear a filter to see them.`
+                  ? `${results.length} products were found for "${query}". Clear a filter to see them.`
                   : 'Try a different search term or category.'}
               </p>
               {results.length > 0 && (

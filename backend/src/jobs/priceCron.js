@@ -92,7 +92,7 @@ async function checkPrices() {
   }
 
   const seconds = Math.round((Date.now() - startedAt) / 1000);
-  console.log(`[cron] Price check completed in ${seconds}s — ${checked} checked, ${updated} updated, ${alerts} alerts sent`);
+  console.log(`[cron] Price check completed in ${seconds}s, ${checked} checked, ${updated} updated, ${alerts} alerts sent`);
   return { ran: true, checked, updated, alerts };
 }
 

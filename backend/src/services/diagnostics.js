@@ -31,10 +31,10 @@ const DIAGNOSES = [
     code: 'SEARCH_PROVIDER_REJECTED',
     match: (err) => err.status === 401 || err.status === 403,
     title: 'The search provider rejected our API key',
-    detail: 'The provider returned 401/403. That is either an invalid key or an account with no remaining credits — it will not fix itself on retry.',
+    detail: 'The provider returned 401/403. That is either an invalid key or an account with no remaining credits, it will not fix itself on retry.',
     steps: [
       'Check the key in the provider dashboard is still active and matches SERP_API_KEY.',
-      'Check the account\'s remaining credit balance — an exhausted plan also returns 403.',
+      'Check the account\'s remaining credit balance, an exhausted plan also returns 403.',
       'Rotate the key if it was leaked or revoked, then redeploy the backend.',
     ],
   },
@@ -45,7 +45,7 @@ const DIAGNOSES = [
     detail: 'The provider says the account has no credits left (Serper sends this as HTTP 400 "Not enough credits", other providers as 402). Live pricing stays unavailable until the plan is topped up; cached prices are still served.',
     steps: [
       'Check the remaining balance in the active provider\'s dashboard: serpapi.com/dashboard for SERPAPI_KEY, brightdata.com for BRIGHTDATA_API_KEY, serper.dev for SERP_API_KEY.',
-      'Top up or upgrade the plan there — nothing in this codebase can work around an empty balance.',
+      'Top up or upgrade the plan there, nothing in this codebase can work around an empty balance.',
       'Consider raising the cache TTLs in routes/products.js if quota runs out regularly.',
     ],
   },
@@ -55,7 +55,7 @@ const DIAGNOSES = [
     title: 'The search provider is rate limiting us',
     detail: 'Too many requests in a short window (429). This is usually temporary and recovers on its own.',
     steps: [
-      'Wait a few minutes and retry — no config change is needed for a one-off spike.',
+      'Wait a few minutes and retry, no config change is needed for a one-off spike.',
       'If it is constant, raise the cache TTLs or lower the price-refresh cron frequency.',
     ],
   },
@@ -63,10 +63,10 @@ const DIAGNOSES = [
     code: 'SEARCH_PROVIDER_UNAVAILABLE',
     match: (err) => err.name === 'SerpApiError' && Number(err.status) >= 500,
     title: 'The search provider returned a server error',
-    detail: 'The provider answered with a 5xx (or was unreachable). Nothing is wrong with our key or credits — the upstream service itself is failing.',
+    detail: 'The provider answered with a 5xx (or was unreachable). Nothing is wrong with our key or credits, the upstream service itself is failing.',
     steps: [
       'Check the provider\'s status page; a 5xx on their side clears on its own.',
-      'Retry the search in a few minutes — cached prices are still served meanwhile.',
+      'Retry the search in a few minutes, cached prices are still served meanwhile.',
       'If it persists for hours, confirm the server has outbound network access to google.serper.dev.',
     ],
   },
@@ -77,7 +77,7 @@ const DIAGNOSES = [
     detail: 'Prisma could not open a connection. Nothing that reads or writes data will work until this is resolved.',
     steps: [
       'Check the database service is running (docker compose ps, or the provider\'s dashboard).',
-      'Verify DATABASE_URL — host, port, credentials and the sslmode the provider requires.',
+      'Verify DATABASE_URL, host, port, credentials and the sslmode the provider requires.',
       'Check the database allows connections from this server\'s IP.',
     ],
   },
@@ -98,7 +98,7 @@ const DIAGNOSES = [
     title: 'An upstream request timed out',
     detail: 'A retailer page or the search provider did not respond in time. Usually transient, but a persistent timeout points at network egress.',
     steps: [
-      'Retry — a single slow retailer page is normal and is handled gracefully.',
+      'Retry, a single slow retailer page is normal and is handled gracefully.',
       'If every upstream call times out, check the server\'s outbound network access and any egress firewall rules.',
     ],
   },
@@ -153,7 +153,7 @@ function diagnose(err, context = {}) {
 const PROVIDER_REQUIREMENTS = {
   serpapi: {
     vars: ['SERPAPI_KEY'],
-    fix: 'Set SERPAPI_KEY (serpapi.com — free tier is 250 searches/month) to enable live product search and price refreshes.',
+    fix: 'Set SERPAPI_KEY (serpapi.com, free tier is 250 searches/month) to enable live product search and price refreshes.',
   },
   brightdata: {
     vars: ['BRIGHTDATA_API_KEY', 'BRIGHTDATA_SERP_ZONE'],

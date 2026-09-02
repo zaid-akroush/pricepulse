@@ -176,7 +176,7 @@ function getReleaseStatus(title, now = new Date()) {
     return {
       released: false,
       reason: 'preorder',
-      label: 'Not released yet — pre-order',
+      label: 'Not released yet (pre-order)',
     };
   }
 
@@ -185,7 +185,7 @@ function getReleaseStatus(title, now = new Date()) {
     return {
       released: false,
       reason: 'future_model_year',
-      label: `Not released yet — ${year} model`,
+      label: `Not released yet (${year} model)`,
     };
   }
 

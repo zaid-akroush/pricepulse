@@ -196,7 +196,7 @@ export default function Admin() {
                     {p.imageUrl && <img src={p.imageUrl} alt={p.title} className="w-12 h-12 object-contain rounded-lg surface-2" />}
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-app font-medium truncate">{p.title}</p>
-                      <p className="text-xs text-muted font-data">{p.currentPrice != null ? <Price amount={p.currentPrice} currency={p.currency} /> : '—'}</p>
+                      <p className="text-xs text-muted font-data">{p.currentPrice != null ? <Price amount={p.currentPrice} currency={p.currency} /> : 'N/A'}</p>
                     </div>
                     <span className="text-sm font-bold font-data text-brand shrink-0">{p.wishlistCount} ♥</span>
                   </div>
@@ -238,7 +238,7 @@ export default function Admin() {
               </p>
               {build.ok === false && (
                 <p className="text-xs mt-1" style={{ color: 'var(--danger)' }}>
-                  {build.checks.filter(c => !c.ok).length} integration(s) not configured — see the checks below.
+                  {build.checks.filter(c => !c.ok).length} integration(s) not configured. See the checks below.
                 </p>
               )}
               {build.checks?.some(c => !c.ok) && (

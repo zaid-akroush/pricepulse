@@ -60,7 +60,7 @@ export function CurrencyProvider({ children }) {
 
   const format = useCallback((amount, fromCurrency = 'USD') => {
     const { amount: converted, currency } = convert(amount, fromCurrency);
-    if (converted == null || Number.isNaN(converted)) return '—';
+    if (converted == null || Number.isNaN(converted)) return 'N/A';
     try {
       return new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: 2 }).format(converted);
     } catch {
