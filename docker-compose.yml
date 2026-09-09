@@ -30,6 +30,7 @@ services:
         condition: service_healthy
     environment:
       DATABASE_URL: postgresql://postgres:password@db:5432/pricepulse
+      DIRECT_URL: postgresql://postgres:password@db:5432/pricepulse
       JWT_SECRET: ${JWT_SECRET}
       ADMIN_EMAILS: ${ADMIN_EMAILS}
       SEARCH_PROVIDER: ${SEARCH_PROVIDER:-serpapi}
@@ -54,7 +55,7 @@ services:
     depends_on:
       - backend
     ports:
-      - '80:80'
+      - '8080:80'
 
 volumes:
   pgdata:
