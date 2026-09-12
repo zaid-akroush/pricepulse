@@ -3,6 +3,8 @@ const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
 const adminOnly = require('../middleware/admin');
 const { checkPrices } = require('../jobs/priceCron');
+const { looksLikeUnlabelledPayment } = require('../services/paymentTerms');
+const { reconcileAggregates } = require('../services/productPrice');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -166,6 +168,74 @@ router.post('/check-prices', async (req, res) => {
     const all = req.body && req.body.all === true;
     checkPrices({ all }).catch(err => console.error('[admin] manual price check failed:', err.message));
     res.json({ message: `Price check started (${all ? 'all products' : 'due products only'}). Check the server logs and your notifications shortly.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/admin/repair-prices
+//
+// Deletes history rows that are instalment figures rather than prices, and
+// recomputes each affected product's aggregates from what is left.
+//
+// The guard in services/productPrice stops new ones being written, but rows
+// recorded before it existed are still there, and they are permanent damage
+// on their own: lowestPrice is a number nobody can buy the product for, and
+// "% below peak" and the deal score are computed from it, so the product sits
+// at the top of every deal list forever.
+//
+// Dry run by default. Pass { apply: true } to actually delete.
+router.post('/repair-prices', async (req, res) => {
+  try {
+    const apply = req.body && req.body.apply === true;
+    const products = await prisma.product.findMany({
+      select: { id: true, title: true, currentPrice: true },
+    });
+
+    const repaired = [];
+    for (const product of products) {
+      const rows = await prisma.priceHistory.findMany({
+        where: { productId: product.id },
+        select: { id: true, price: true },
+        orderBy: { createdAt: 'asc' },
+      });
+      if (rows.length < 4) continue;
+
+      // Each row is judged against the others, so a single outlier cannot
+      // defend itself by being in its own reference set.
+      const bad = [];
+      for (const row of rows) {
+        const others = rows.filter(r => r.id !== row.id).map(r => r.price);
+        const check = looksLikeUnlabelledPayment(row.price, others);
+        if (check.implausible) bad.push({ id: row.id, price: row.price, median: check.reference });
+      }
+      if (bad.length === 0) continue;
+
+      // Never delete every row: if most readings look implausible, the
+      // reference is the broken thing, not the rows.
+      if (bad.length > rows.length / 2) continue;
+
+      if (apply) {
+        await prisma.priceHistory.deleteMany({ where: { id: { in: bad.map(b => b.id) } } });
+        await reconcileAggregates(prisma, product.id);
+      }
+      repaired.push({
+        productId: product.id,
+        title: product.title,
+        removed: bad.map(b => b.price),
+        median: bad[0].median,
+      });
+    }
+
+    res.json({
+      applied: apply,
+      productsAffected: repaired.length,
+      rowsRemoved: repaired.reduce((n, r) => n + r.removed.length, 0),
+      details: repaired,
+      message: apply
+        ? 'Instalment rows deleted and price aggregates recomputed.'
+        : 'Dry run. Nothing was changed. Send { "apply": true } to delete these rows.',
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

@@ -120,6 +120,7 @@ function toSerpApiError(err, providerLabel) {
  */
 const { isTechProduct, getReleaseStatus } = require('./productClassifier');
 const { parsePrice, isRecurringPrice } = require('./priceParse');
+const { detectPaymentTerms, totalOverTerm } = require('./paymentTerms');
 const { extractAttributes } = require('./productAttributes');
 
 /**
@@ -200,8 +201,14 @@ async function searchProducts(query, opts = {}) {
     // except digits and dots, which turned "US$ 1 099,99" into 109999 and
     // "€1.299,00" into 1.299 — silently, with no way to tell afterwards.
     const price = parsePrice(item.price);
-    const recurring = isRecurringPrice(item.price);
     const title = item.title;
+    // What the number means, decided from the price string, the title AND the
+    // provider's side fields, where the financing terms actually live.
+    // isRecurringPrice only ever saw the price string, so an instalment
+    // advertised as "$39.00" with "for 12 mo." beside it read as a one-time
+    // price and got tracked as the product's price.
+    const terms = detectPaymentTerms({ price: item.price, title, extras: item.extras });
+    const recurring = terms.recurring || isRecurringPrice(item.price);
     const release = getReleaseStatus(title);
     return {
       title,
@@ -222,6 +229,12 @@ async function searchProducts(query, opts = {}) {
       releaseReason: release.reason,
       // A per-month instalment figure is not this product's price.
       recurring,
+      paymentType: terms.type,
+      paymentLabel: terms.label,
+      termMonths: terms.months,
+      // What the shopper would pay in total at this instalment, when the
+      // listing states a term. Shown for proportion, never tracked as a price.
+      termTotal: totalOverTerm(price, terms.months),
       // Facets for the search sidebar (condition, storage, colour, brand…).
       // Derived here so every consumer of shopping data sees the same values.
       ...extractAttributes(title, item.source || null),
@@ -230,7 +243,9 @@ async function searchProducts(query, opts = {}) {
 
   return normalized.filter(item => {
     if (!item.price || item.price <= 0) return false;
-    // Instalment/subscription pricing: "$10.42/mo" for a $599 phone.
+    // Instalment, lease or subscription pricing: "$10.42/mo" for a $599
+    // phone, or "$39.00 for 12 mo." for a $469 watch. Not this product's
+    // price, so it never reaches search results or price history.
     if (item.recurring) return false;
     // Discovery only — see the techOnly note on this function.
     if (techOnly && !isTechProduct(item.title)) return false;

@@ -91,6 +91,7 @@ async function brightDataShopping(query, market) {
     source: item.seller || item.source || item.merchant || item.store || null,
     rating: item.rating ?? null,
     reviews: item.reviews ?? item.reviews_cnt ?? item.ratingCount ?? null,
+    extras: [item.extensions, item.snippet, item.delivery].flat().filter(Boolean).map(String),
   }));
 }
 
@@ -145,6 +146,12 @@ async function serpApiShopping(query, market) {
     source: item.source || null,
     rating: item.rating ?? null,
     reviews: item.reviews ?? null,
+    // Financing terms ("or $33.25/mo. for 12 mo.", "Lease from ...") live in
+    // these side fields, never in `price`. services/paymentTerms reads them.
+    extras: [item.extensions, item.snippet, item.delivery, item.second_hand_condition]
+      .flat()
+      .filter(Boolean)
+      .map(String),
   }));
 }
 
@@ -172,6 +179,7 @@ async function serperShopping(query, market) {
     source: item.source || null,
     rating: item.rating ?? null,
     reviews: item.ratingCount ?? null,
+    extras: [item.delivery, item.snippet].filter(Boolean).map(String),
   }));
 }
 

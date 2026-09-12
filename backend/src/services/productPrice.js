@@ -1,3 +1,5 @@
+const { looksLikeUnlabelledPayment, PAYMENT_TYPES } = require('./paymentTerms');
+
 // Keeping a product's price aggregates honest.
 //
 // currentPrice / lowestPrice / highestPrice were maintained purely as a
@@ -24,8 +26,37 @@
  * @param {number} price
  * @returns {Promise<{currentPrice: number, lowestPrice: number, highestPrice: number}|null>}
  */
-async function recordPrice(prisma, product, price) {
+async function recordPrice(prisma, product, price, options = {}) {
   if (!(price > 0) || !Number.isFinite(price)) return null;
+
+  // A payment is not a price. Callers that know the listing's payment type
+  // pass it; anything that is not an outright purchase is refused outright.
+  if (options.paymentType && options.paymentType !== PAYMENT_TYPES.ONE_TIME) {
+    console.warn(
+      `[price] Refusing ${options.paymentType} price ${price} for product ${product.id} (${product.title || 'untitled'}).`
+    );
+    return null;
+  }
+
+  // And the unlabelled case: a reading far below what this product has always
+  // cost is almost never a real sale, it is a monthly figure that lost its
+  // "/mo" on the way to us. Recording it would set a lowestPrice nobody can
+  // pay and mark the product a blazing deal forever, so it is dropped with a
+  // log line instead of quietly poisoning the history.
+  const past = await prisma.priceHistory.findMany({
+    where: { productId: product.id },
+    select: { price: true },
+    orderBy: { createdAt: 'desc' },
+    take: 30,
+  });
+  const check = looksLikeUnlabelledPayment(price, past.map(r => r.price));
+  if (check.implausible) {
+    console.warn(
+      `[price] Refusing implausible price ${price} for product ${product.id}: ` +
+      `${Math.round(check.ratio * 100)}% of its median ${check.reference}. Looks like an instalment, not a price.`
+    );
+    return null;
+  }
 
   await prisma.priceHistory.create({
     data: { productId: product.id, price },
