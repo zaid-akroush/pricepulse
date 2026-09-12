@@ -260,6 +260,52 @@ function CommentsSection({ productId }) {
   );
 }
 
+// The signed-in user's own alerts for this product (price drops and target
+// hits), newest first. Answers "did it ever hit my target, and when?" without
+// digging through the notification inbox.
+function AlertHistory({ productId }) {
+  const { user } = useAuth();
+  const [alerts, setAlerts] = useState(null);
+  useEffect(() => {
+    if (!user) { setAlerts(null); return; }
+    let alive = true;
+    api.get(`/products/${productId}/alerts`)
+      .then(r => { if (alive) setAlerts(r.data); })
+      .catch(() => { if (alive) setAlerts([]); });
+    return () => { alive = false; };
+  }, [productId, user]);
+  if (!user || !alerts) return null;
+  return (
+    <div className="card p-6 mb-6">
+      <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--text)' }}>Your Alert History</h2>
+      <p className="text-xs mb-4" style={{ color: 'var(--text-muted)' }}>
+        Every time PricePulse alerted you about this product.
+      </p>
+      {alerts.length === 0 ? (
+        <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+          No alerts yet. Add it to your wishlist with a target price and you will be told the moment it drops.
+        </p>
+      ) : (
+        <ul className="space-y-2">
+          {alerts.map(a => (
+            <li key={a.id} className="flex items-start gap-3 text-sm">
+              <span className={`badge shrink-0 ${a.type === 'target_hit' ? 'badge-green' : 'badge-orange'}`}>
+                {a.type === 'target_hit' ? 'Target hit' : 'Price drop'}
+              </span>
+              <div className="min-w-0">
+                <p style={{ color: 'var(--text)' }}>{a.message}</p>
+                <p className="text-xs" style={{ color: 'var(--text-faint)' }}>
+                  {new Date(a.createdAt).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' })}
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 function RelatedProducts({ productId }) {
   const [related, setRelated] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -412,8 +458,11 @@ export default function ProductDetail() {
     setAddLoading(true);
     try {
       await api.post('/wishlist', {
+        // This product already exists: track it by id so the server never has
+        // to re-resolve it by title/query/market (and cannot create a twin).
+        productId: product.id,
         title: product.title, url: product.url, imageUrl: product.imageUrl,
-        currentPrice: product.currentPrice, currency: product.currency,
+        currentPrice: product.currentPrice, country: product.country,
         serpApiQuery: product.serpApiQuery,
         // The user types a target in whatever currency the page is DISPLAYING,
         // but the backend compares it against the price in the product's OWN
@@ -660,6 +709,9 @@ export default function ProductDetail() {
 
       {/* Compare Prices Across Retailers */}
       <PriceCompare productId={product.id} currentPrice={product.currentPrice} currency={product.currency} currentUrl={product.url} />
+
+      {/* Alert history for the signed-in user */}
+      <AlertHistory productId={product.id} />
 
       {/* Comments */}
       <CommentsSection productId={product.id} />

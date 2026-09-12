@@ -58,7 +58,7 @@ export default function PrivacyPolicy() {
             <p>We use the information above to:</p>
             <ul className="list-disc pl-5 space-y-1">
               <li>Operate your account, wishlist, and saved searches</li>
-              <li>Check tracked product prices roughly every six hours and record price history</li>
+              <li>Check tracked product prices automatically (between every 3 and 48 hours per product) and record price history</li>
               <li>Send email or push alerts when a tracked product hits your target price</li>
               <li>Show community features like leaderboards and shared wishlists, when you choose to use them</li>
               <li>Protect the service against abuse, such as excessive login attempts</li>

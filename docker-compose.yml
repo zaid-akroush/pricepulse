@@ -42,7 +42,7 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:alerts@pricepulse.app}
-      CLIENT_URL: https://pricepulse-cw6.pages.dev,https://b163b7a0.pricepulse-cw6.pages.dev,http://localhost:3000,http://localhost,http://localhost:5173,http://localhost:4173
+      CLIENT_URL: https://pricepulse-cw6.pages.dev,https://b163b7a0.pricepulse-cw6.pages.dev,http://localhost:3000,http://localhost,http://localhost:8080,http://localhost:5173,http://localhost:4173
       PORT: 5000
     ports:
       - '5050:5000'

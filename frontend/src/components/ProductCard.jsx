@@ -24,7 +24,7 @@ export default function ProductCard({ product }) {
     try {
       const { data } = await api.post('/products/from-search', {
         title: product.title, url: product.url, imageUrl: product.imageUrl,
-        price: product.price, currency: product.currency, serpApiQuery: product.serpApiQuery,
+        price: product.price, serpApiQuery: product.serpApiQuery, country: product.country,
       });
       navigate(`/product/${data.id}`);
     } catch {
@@ -39,7 +39,7 @@ export default function ProductCard({ product }) {
     try {
       await api.post('/wishlist', {
         title: product.title, url: product.url, imageUrl: product.imageUrl,
-        currentPrice: product.price, currency: product.currency,
+        currentPrice: product.price, country: product.country,
         serpApiQuery: product.serpApiQuery,
         targetPrice: targetPrice ? parseFloat(targetPrice) : null,
       });

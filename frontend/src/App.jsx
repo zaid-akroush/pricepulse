@@ -18,6 +18,7 @@ import SharedWishlist from './pages/SharedWishlist';
 import Help from './pages/Help';
 import Notifications from './pages/Notifications';
 import Events from './pages/Events';
+import Trends from './pages/Trends';
 import Admin from './pages/Admin';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 import NotFound from './pages/NotFound';
@@ -60,6 +61,7 @@ export default function App() {
           <Route path="/admin" element={<PrivateRoute><Admin /></PrivateRoute>} />
           <Route path="/shared/:token" element={<SharedWishlist />} />
           <Route path="/events" element={<Events />} />
+          <Route path="/trends" element={<Trends />} />
           <Route path="/help" element={<Help />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="*" element={<NotFound />} />

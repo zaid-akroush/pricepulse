@@ -11,7 +11,7 @@ const STEPS = [
   },
   {
     title: 'Track it and set a target price',
-    body: 'Add a product to your Wishlist with an optional target price. We check the price every 6 hours automatically.',
+    body: 'Add a product to your Wishlist with an optional target price. We re-check the price automatically, more often when it is moving or close to your target.',
   },
   {
     title: 'Get alerted the moment it drops',

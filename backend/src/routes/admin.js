@@ -15,7 +15,7 @@ const ALERT_TYPES = ['price_drop', 'target_hit', 'deal_alert'];
 // GET /api/admin/stats, headline numbers + recent signups
 router.get('/stats', async (req, res) => {
   try {
-    const [users, products, wishlistItems, alertsSent, recentSignups] = await Promise.all([
+    const [users, products, wishlistItems, alertsSent, recentSignups, dueNow, intervals] = await Promise.all([
       prisma.user.count(),
       prisma.product.count(),
       prisma.wishlistItem.count(),
@@ -25,8 +25,17 @@ router.get('/stats', async (req, res) => {
         take: 5,
         select: { id: true, name: true, email: true, createdAt: true },
       }),
+      prisma.product.count({ where: { nextCheckAt: { lte: new Date() } } }),
+      prisma.product.groupBy({ by: ['checkIntervalHours'], _count: { _all: true }, orderBy: { checkIntervalHours: 'asc' } }),
     ]);
-    res.json({ users, products, wishlistItems, alertsSent, recentSignups });
+    // Expected provider requests per day under the adaptive schedule, versus
+    // the old fixed six-hourly sweep, so the saving is visible on the dashboard.
+    const schedule = intervals.map(g => ({ hours: g.checkIntervalHours, products: g._count._all }));
+    const requestsPerDay = Math.round(schedule.reduce((sum, g) => sum + g.products * (24 / g.hours), 0));
+    res.json({
+      users, products, wishlistItems, alertsSent, recentSignups,
+      schedule: { dueNow, intervals: schedule, requestsPerDay, fixedSixHourlyRequestsPerDay: products * 4 },
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -152,8 +161,11 @@ router.post('/check-prices', async (req, res) => {
   try {
     // Don't block the request on the full sweep (it can take a while and
     // hits an external API per product) — kick it off and report started.
-    checkPrices().catch(err => console.error('[admin] manual price check failed:', err.message));
-    res.json({ message: 'Price check started. Check the server logs and your notifications shortly.' });
+    // `all` re-checks every product regardless of its schedule (costs one
+    // provider request per distinct query); the default only runs what is due.
+    const all = req.body && req.body.all === true;
+    checkPrices({ all }).catch(err => console.error('[admin] manual price check failed:', err.message));
+    res.json({ message: `Price check started (${all ? 'all products' : 'due products only'}). Check the server logs and your notifications shortly.` });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

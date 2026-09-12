@@ -10,6 +10,7 @@ import Wordmark from './Wordmark';
 const LINKS = [
   { to: '/search', label: 'Search' },
   { to: '/events', label: 'Deals' },
+  { to: '/trends', label: 'Trends' },
 ];
 
 const THEME_OPTIONS = [

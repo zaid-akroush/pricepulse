@@ -33,7 +33,7 @@ const FAQS = [
       },
       {
         q: 'How often are prices checked?',
-        a: 'Prices are checked every 6 hours automatically. You can also view the full price history chart on any product\'s detail page.',
+        a: 'Automatically, between every 3 and 48 hours per product. Products that many people track, whose price has moved recently, or that are close to someone\'s target price are checked most often; products nobody tracks are checked about once every two days. Opening a product page also refreshes its price if it has not been checked for a while, and you can press "Check price now" on any product page.',
       },
       {
         q: 'Can I update or remove my target price?',
@@ -50,7 +50,7 @@ const FAQS = [
     items: [
       {
         q: 'How do price drop email alerts work?',
-        a: 'Once you set a target price, our system checks the product price every 6 hours. When the current price falls to or below your target, we send an email to your registered address with a direct link to the product.',
+        a: 'Once you set a target price, our system re-checks the product price automatically (every 3 to 48 hours, more often when the price is moving or close to your target). When the current price falls to or below your target, we send an email to your registered address with a direct link to the product.',
       },
       {
         q: 'I set a target price but haven\'t received an alert. Why?',
@@ -80,11 +80,11 @@ const FAQS = [
     items: [
       {
         q: 'Where does the price data come from?',
-        a: 'Search results are powered by Google Shopping via SerpApi, giving you real-time prices from all major retailers. Once a product is added to any wishlist, we store and periodically re-check its price to build a price history.',
+        a: 'Search results are powered by Google Shopping, giving you real-time prices from the retailers of the country you choose next to the search box (for example Hungary in forint or Germany in euro). Once a product is added to any wishlist, we store and periodically re-check its price in that same country to build a price history. The Trends page shows what all tracked products have been doing.',
       },
       {
         q: 'Why does the same product have different prices in search results vs my wishlist?',
-        a: 'Search results show live prices from Google Shopping at that moment. Your wishlist stores the price at the time you added the product and updates it every 6 hours. Small differences are normal due to timing.',
+        a: 'Search results show live prices from Google Shopping at that moment. Your wishlist stores the price at the time you added the product and updates it at every automatic check. Small differences are normal due to timing.',
       },
     ],
   },

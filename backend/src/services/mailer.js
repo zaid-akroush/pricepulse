@@ -1,6 +1,18 @@
 const { Resend } = require('resend');
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// Created on first use rather than at import time. The Resend constructor
+// throws when the key is missing, and because every route file imports this
+// module the whole API (and the test suite) refused to start without an
+// e-mail key configured, even though e-mail is only needed when an alert or
+// a reset actually has to be sent.
+let client = null;
+function resendClient() {
+  if (!client) {
+    if (!process.env.RESEND_API_KEY) throw new Error('E-mail is not configured (RESEND_API_KEY is not set).');
+    client = new Resend(process.env.RESEND_API_KEY);
+  }
+  return client;
+}
 
 // title/imageUrl/url ultimately originate from unauthenticated/user-supplied
 // input (products.js POST /from-search, wishlist.js POST /), so they must be
@@ -42,7 +54,7 @@ async function sendPriceDropEmail(to, product) {
     </div>
   `;
 
-  const { error } = await resend.emails.send({
+  const { error } = await resendClient().emails.send({
     from: 'PricePulse <onboarding@resend.dev>',
     to,
     subject: `Price Drop: ${title}`,
@@ -74,7 +86,7 @@ async function sendPasswordResetEmail(to, resetUrl) {
     </div>
   `;
 
-  const { error } = await resend.emails.send({
+  const { error } = await resendClient().emails.send({
     from: 'PricePulse <onboarding@resend.dev>',
     to,
     subject: 'Reset your PricePulse password',
