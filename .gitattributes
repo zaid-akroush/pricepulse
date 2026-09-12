@@ -1,0 +1,17 @@
+# Keep every text file LF in the repository.
+#
+# Without this, files kept turning up CRLF in the working tree while HEAD was
+# LF, so `git status` showed 40+ files as fully rewritten when nothing had
+# actually changed, and real diffs were impossible to read.
+* text=auto eol=lf
+
+# Genuinely binary, never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
