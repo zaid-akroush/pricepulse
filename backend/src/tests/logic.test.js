@@ -447,3 +447,44 @@ describe('carrier / leased listings', () => {
     expect(a.carrierReason).toBeNull();
   });
 });
+
+describe('payment terms (instalment vs one-time)', () => {
+  const { detectPaymentTerms, totalOverTerm, looksLikeUnlabelledPayment } = require('../services/paymentTerms');
+
+  it('reads a per-period suffix in the price', () => {
+    expect(detectPaymentTerms({ price: '$39.00/mo.' }).type).toBe('installment');
+    expect(detectPaymentTerms({ price: '$12.50 per month' }).type).toBe('installment');
+  });
+
+  // The listing that prompted this: "$39.00" with the term stated beside the
+  // price, which read as an outright price and became a $469 watch's history.
+  it('reads a term stated outside the price field', () => {
+    const t = detectPaymentTerms({ price: '$39.00', title: 'Apple Watch Series 9 45mm', extras: ['for 12 mo.'] });
+    expect(t.type).toBe('installment');
+    expect(t.months).toBe(12);
+  });
+
+  it('separates leases and subscriptions from instalments', () => {
+    expect(detectPaymentTerms({ price: '$11.99', extras: ['Lease from $11.99/mo. for 24 mo.'] }).type).toBe('lease');
+    expect(detectPaymentTerms({ price: '$9.99', extras: ['billed monthly'] }).type).toBe('subscription');
+  });
+
+  it('leaves an ordinary price alone', () => {
+    const t = detectPaymentTerms({ price: '$399.00', title: 'Apple Watch Series 12 GPS' });
+    expect(t.type).toBe('one_time');
+    expect(t.recurring).toBe(false);
+  });
+
+  it('computes what the term would cost in total', () => {
+    expect(totalOverTerm(39, 12)).toBe(468);
+    expect(totalOverTerm(39, null)).toBeNull();
+  });
+
+  it('flags an unlabelled monthly figure against the product history', () => {
+    expect(looksLikeUnlabelledPayment(39, [499, 469, 479, 489]).implausible).toBe(true);
+    // A real sale is not flagged.
+    expect(looksLikeUnlabelledPayment(380, [499, 469, 479, 489]).implausible).toBe(false);
+    // Too little history to judge against.
+    expect(looksLikeUnlabelledPayment(39, [499]).implausible).toBe(false);
+  });
+});

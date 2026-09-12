@@ -603,6 +603,19 @@ export default function ProductDetail() {
             </p>
           )}
 
+          {/* What the tracked number actually is. Only outright prices are ever
+              recorded, so this states that plainly: a shopper looking at a
+              figure far below the retail price should be able to tell at a
+              glance whether they are reading a price or a monthly payment. */}
+          <p className="text-xs font-medium px-3 py-2 rounded-xl flex items-center gap-1.5"
+             style={{ color: 'var(--text-muted)', backgroundColor: 'var(--bg)' }}
+             title="PricePulse only tracks outright purchase prices. Monthly instalment, lease and carrier-plan listings are excluded, so this figure is what the product costs to buy in full.">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 shrink-0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2" /><path d="M2 10h20" />
+            </svg>
+            <span>One-time purchase price, not a monthly instalment</span>
+          </p>
+
           {/* Actions row */}
           <div className="flex gap-2 flex-wrap">
             {product.url && (
