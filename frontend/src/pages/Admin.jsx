@@ -83,11 +83,11 @@ export default function Admin() {
     }
   }
 
-  async function handleCheckPrices() {
+  async function handleCheckPrices(all = false) {
     setCheckingPrices(true);
     setCheckMessage(null);
     try {
-      const res = await api.post('/admin/check-prices');
+      const res = await api.post('/admin/check-prices', { all });
       setCheckMessage(res.data.message);
     } catch (err) {
       setCheckMessage(describeApiError(err, 'Could not start price check.'));
@@ -107,9 +107,16 @@ export default function Admin() {
         className="mb-8"
         action={
           <div className="flex flex-col items-end gap-1.5">
-            <button onClick={handleCheckPrices} disabled={checkingPrices} className="btn-secondary text-sm disabled:opacity-50">
-              {checkingPrices ? 'Starting…' : 'Run price check now'}
-            </button>
+            <div className="flex gap-2">
+              <button onClick={() => handleCheckPrices(false)} disabled={checkingPrices} className="btn-secondary text-sm disabled:opacity-50"
+                title="Re-check only the products whose next check is due">
+                {checkingPrices ? 'Starting…' : 'Run price check now'}
+              </button>
+              <button onClick={() => handleCheckPrices(true)} disabled={checkingPrices} className="btn-ghost text-sm disabled:opacity-50"
+                title="Re-check every product regardless of schedule (one provider request per distinct search)">
+                Check everything
+              </button>
+            </div>
             {checkMessage && <p className="text-xs text-muted max-w-xs text-right">{checkMessage}</p>}
           </div>
         }
@@ -127,6 +134,26 @@ export default function Admin() {
             <StaggerItem><StatCard label="Wishlist items" value={stats?.wishlistItems} /></StaggerItem>
             <StaggerItem><StatCard label="Alerts sent" value={stats?.alertsSent} /></StaggerItem>
           </Stagger>
+
+          {/* Adaptive schedule */}
+          {stats?.schedule && (
+            <section className="mb-10">
+              <h2 className="text-xl font-bold text-app mb-3">Price-check schedule</h2>
+              <div className="card p-5">
+                <p className="text-sm text-muted mb-3">
+                  Products are re-checked every 3 to 48 hours depending on how much their price moves and how many
+                  people track them. <strong className="text-app">{stats.schedule.dueNow}</strong> due right now.
+                  Expected provider requests: about <strong className="text-app">{stats.schedule.requestsPerDay}</strong> per day,
+                  versus {stats.schedule.fixedSixHourlyRequestsPerDay} with a fixed six-hourly sweep.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {stats.schedule.intervals.map(g => (
+                    <span key={g.hours} className="badge badge-neutral">every {g.hours} h: {g.products} product{g.products === 1 ? '' : 's'}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Users */}
           <section className="mb-10">

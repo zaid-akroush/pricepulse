@@ -52,7 +52,17 @@ model Product {
   currency      String         @default("USD")
   source        String
   serpApiQuery  String
+  // Google Shopping market the query was run in (SerpApi/Serper `gl`). The
+  // price history of a product is only meaningful within one market, so the
+  // scheduler re-queries with the same country the listing was found in.
+  country       String         @default("us")
   lastChecked   DateTime       @default(now())
+  // Adaptive schedule (see services/scheduling.js). The sweep runs hourly and
+  // only re-checks products whose nextCheckAt has passed; the interval is
+  // recomputed after every observation from how volatile the price is and
+  // how many people are tracking it.
+  checkIntervalHours Int       @default(6)
+  nextCheckAt   DateTime       @default(now())
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   wishlistItems WishlistItem[]
@@ -60,6 +70,8 @@ model Product {
   likes         ProductLike[]
   comments      Comment[]
   notifications Notification[]
+
+  @@index([nextCheckAt])
 }
 
 model WishlistItem {

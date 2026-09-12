@@ -3,6 +3,10 @@ const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
 const { searchProducts } = require('../services/serpApi');
 const { validateExternalUrl } = require('../utils/urlSafety');
+const { savingsTimeline, toUsd } = require('../services/analytics');
+const { getRates } = require('../services/currency');
+const { resolveMarket, isValidMarket } = require('../services/markets');
+const { rescheduleProduct } = require('../jobs/priceCron');
 
 const router = express.Router();
 
@@ -29,6 +33,12 @@ router.get('/analytics', async (req, res) => {
       where: { userId: req.userId },
       include: { product: { include: { priceHistory: { orderBy: { recordedAt: 'asc' } } } } },
     });
+    // Products can now live in different markets (USD, HUF, EUR...). Totals
+    // are summed in USD and reported as such; the client converts to the
+    // display currency like any other price. Per-item figures stay in the
+    // item's own currency.
+    let rates = null;
+    try { rates = (await getRates('USD')).rates; } catch (_) { /* sum unconverted */ }
 
     // Mirrors getDealScore in frontend/src/components/DealScore.jsx — keep the
     // two in step. Returns null (not a number) when there is no observed price
@@ -66,8 +76,9 @@ router.get('/analytics', async (req, res) => {
       };
     });
 
-    const totalCurrentValue = detailed.reduce((s, d) => s + d.currentPrice, 0);
-    const totalSavedVsPeak = detailed.reduce((s, d) => s + d.savedVsPeak, 0);
+    const totalCurrentValue = detailed.reduce((s, d) => s + toUsd(d.currentPrice, d.currency, rates), 0);
+    const totalSavedVsPeak = detailed.reduce((s, d) => s + toUsd(d.savedVsPeak, d.currency, rates), 0);
+    const savings = savingsTimeline(items.map(i => i.product), 90, rates);
     const alertsSet = detailed.filter(d => d.targetPrice != null).length;
     const targetsMet = detailed.filter(d => d.targetMet).length;
     // Average only over products that HAVE a score. Including the nulls (or,
@@ -85,8 +96,10 @@ router.get('/analytics', async (req, res) => {
 
     res.json({
       totalTracked: detailed.length,
+      totalsCurrency: 'USD',
       totalCurrentValue: parseFloat(totalCurrentValue.toFixed(2)),
       totalSavedVsPeak: parseFloat(totalSavedVsPeak.toFixed(2)),
+      savingsTimeline: savings,
       alertsSet,
       targetsMet,
       targetsHit,
@@ -120,20 +133,43 @@ router.get('/', async (req, res) => {
 // Adds a product to the wishlist (creates product record if it doesn't exist)
 router.post('/', async (req, res) => {
   try {
-    const { title, url, imageUrl, currentPrice, currency, serpApiQuery, targetPrice } = req.body;
-    if (!title || currentPrice == null || !serpApiQuery)
-      return res.status(400).json({ error: 'title, currentPrice, and serpApiQuery are required' });
-    if (String(title).length > MAX_TITLE_LENGTH)
+    const { title, url, imageUrl, serpApiQuery, targetPrice } = req.body;
+    const currentPrice = Number(req.body.currentPrice);
+    // Tracking a product that already exists (from its detail page) is done by
+    // id, so it is never re-resolved by title/query/market and cannot end up
+    // as a second row in a different market.
+    const productId = req.body.productId != null ? Number(req.body.productId) : null;
+    if (productId != null && (!Number.isInteger(productId) || productId <= 0))
+      return res.status(400).json({ error: 'Invalid productId' });
+    // Plain strings only: an object here would be passed to Prisma as a
+    // filter ({ contains: '' }) and match an arbitrary product.
+    // With a productId nothing else about the product is taken from the
+    // client, so the listing fields are only required (and validated) when
+    // the product has to be created from them.
+    if (productId == null) {
+      if (typeof title !== 'string' || typeof serpApiQuery !== 'string'
+          || (url != null && typeof url !== 'string') || (imageUrl != null && typeof imageUrl !== 'string'))
+        return res.status(400).json({ error: 'title, url, imageUrl and serpApiQuery must be strings' });
+      if (!title || !Number.isFinite(currentPrice) || currentPrice <= 0 || !serpApiQuery)
+        return res.status(400).json({ error: 'title, currentPrice, and serpApiQuery are required' });
+      if (serpApiQuery.length > MAX_TITLE_LENGTH)
+        return res.status(400).json({ error: `serpApiQuery must be ${MAX_TITLE_LENGTH} characters or fewer` });
+    }
+    // Currency follows the market the listing came from; see products.js.
+    if (req.body.country != null && !isValidMarket(req.body.country))
+      return res.status(400).json({ error: 'Unknown country' });
+    const market = resolveMarket(req.body.country);
+    if (productId == null && title.length > MAX_TITLE_LENGTH)
       return res.status(400).json({ error: `title must be ${MAX_TITLE_LENGTH} characters or fewer` });
 
     // SSRF guard: reject urls/imageUrls that point at internal/private
     // network addresses before they can ever be persisted and later
     // fetched server-side (og-image fallback, price-drop emails).
-    if (url) {
+    if (productId == null && url) {
       const check = await validateExternalUrl(url);
       if (!check.valid) return res.status(400).json({ error: `Invalid url: ${check.reason}` });
     }
-    if (imageUrl) {
+    if (productId == null && imageUrl) {
       // The `data:` exemption that used to sit here let an unauthenticated
       // caller store an arbitrary, unvalidated data: URI of any size and any
       // type, which was then served to every viewer as an <img src>. The
@@ -153,7 +189,10 @@ router.post('/', async (req, res) => {
     }
 
     // Upsert the product
-    let product = await prisma.product.findFirst({ where: { serpApiQuery, title } });
+    let product = productId != null
+      ? await prisma.product.findUnique({ where: { id: productId } })
+      : await prisma.product.findFirst({ where: { serpApiQuery, title, country: market.code } });
+    if (productId != null && !product) return res.status(404).json({ error: 'Product not found' });
     if (!product) {
       product = await prisma.product.create({
         data: {
@@ -163,7 +202,8 @@ router.post('/', async (req, res) => {
           currentPrice,
           lowestPrice: currentPrice,
           highestPrice: currentPrice,
-          currency: currency || 'USD',
+          currency: market.currency,
+          country: market.code,
           source: 'google_shopping',
           serpApiQuery,
         },
@@ -197,6 +237,9 @@ router.post('/', async (req, res) => {
       create: { userId: req.userId, productId: product.id, targetPrice: targetPrice || null },
       include: { product: true },
     });
+
+    // A new tracker changes how often the product should be checked.
+    if (!alreadyTracked) await rescheduleProduct(product.id).catch(() => {});
 
     res.status(201).json(item);
   } catch (err) {
@@ -239,6 +282,8 @@ router.delete('/:id', async (req, res) => {
     if (!item) return res.status(404).json({ error: 'Wishlist item not found' });
 
     await prisma.wishlistItem.delete({ where: { id: item.id } });
+    // Fewer trackers may mean the product no longer needs frequent checks.
+    await rescheduleProduct(item.productId).catch(() => {});
     res.json({ message: 'Removed from wishlist' });
   } catch (err) {
     res.status(500).json({ error: err.message });

@@ -2,13 +2,16 @@ const express = require('express');
 const axios = require('axios');
 const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
-const { searchProducts, searchByBrands, fetchCurrentPrice, SerpApiError } = require('../services/serpApi');
+const { searchProducts, searchByBrands, SerpApiError } = require('../services/serpApi');
 const { matchCountry } = require('../services/countryBrands');
+const { resolveMarket, isValidMarket, MARKETS } = require('../services/markets');
 const { extractAttributes } = require('../services/productAttributes');
 const { getReleaseStatus } = require('../services/productClassifier');
 const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
 const { diagnose } = require('../services/diagnostics');
+const { computeTrends } = require('../services/trends');
+const { observePrice } = require('../jobs/priceCron');
 
 // Cooldown between paid-API price refreshes for the same product, prevents
 // looping this endpoint across all product IDs to burn SerpApi quota.
@@ -26,16 +29,26 @@ const DATA_IMAGE_RE = /^data:image\/(png|jpeg|jpg|gif|webp|svg\+xml)(;charset=[\
 
 const prisma = new PrismaClient();
 
-// GET /api/products/search?q=<query>
-// Searches Google Shopping via SerpApi and returns results (no auth required)
+// GET /api/products/markets
+// The shopping markets a search can run in (country code, name, currency).
+router.get('/markets', (req, res) => {
+  res.json(MARKETS.map(m => ({ code: m.code, name: m.name, currency: m.currency })));
+});
+
+// GET /api/products/search?q=<query>&country=<market>
+// Searches Google Shopping via the configured provider and returns results
+// (no auth required). `country` picks the Google Shopping market (default
+// us); listings come back priced in that market's currency.
 router.get('/search', async (req, res) => {
   // Declared outside the try: the catch below reads it for the DB fallback and
   // for the admin diagnostic's context, and a `const` inside the try is not in
   // scope there — referencing it threw a ReferenceError from inside the error
   // handler, which crashed the process instead of answering the request.
   const { q } = req.query;
+  const market = resolveMarket(req.query.country);
   try {
     if (!q) return res.status(400).json({ error: 'Query parameter q is required' });
+    res.set('X-Search-Market', market.code);
 
     // A bare country name is a question about origin, not a product search.
     // Passed through literally it returns whatever the word also means —
@@ -44,14 +57,15 @@ router.get('/search', async (req, res) => {
     // match is rewritten; "chinese phone case" stays the user's own query.
     const country = matchCountry(q);
     if (country) {
-      const { results, brandsSearched } = await searchByBrands(country.brands);
+      const { results, brandsSearched } = await searchByBrands(country.brands, { country: market.code });
       res.set('X-Search-Country', country.country);
       res.set('X-Search-Brands', brandsSearched.join(', '));
-      res.set('Access-Control-Expose-Headers', 'X-Search-Country, X-Search-Brands');
+      res.set('Access-Control-Expose-Headers', 'X-Search-Country, X-Search-Brands, X-Search-Market');
       return res.json(results);
     }
 
-    const results = await searchProducts(q);
+    const results = await searchProducts(q, { country: market.code });
+    res.set('Access-Control-Expose-Headers', 'X-Search-Market');
     res.json(results);
   } catch (err) {
     if (err instanceof SerpApiError) {
@@ -64,9 +78,10 @@ router.get('/search', async (req, res) => {
       try {
         const words = q.split(' ').filter(w => w.length > 2).slice(0, 4);
         const rows = await prisma.product.findMany({
-          where: words.length
-            ? { OR: words.map(w => ({ title: { contains: w, mode: 'insensitive' } })) }
-            : {},
+          where: {
+            country: market.code,
+            ...(words.length ? { OR: words.map(w => ({ title: { contains: w, mode: 'insensitive' } })) } : {}),
+          },
           take: 60,
         });
         fallback = rows.map(p => ({
@@ -78,6 +93,7 @@ router.get('/search', async (req, res) => {
           imageUrl: p.imageUrl,
           source: p.source,
           serpApiQuery: p.serpApiQuery,
+          country: p.country,
           rating: null,
           reviews: null,
           stale: true,
@@ -98,7 +114,7 @@ router.get('/search', async (req, res) => {
           const d = diagnose(err, { method: req.method, path: req.originalUrl, query: q });
           res.set('X-Search-Diagnostic', Buffer.from(JSON.stringify(d)).toString('base64'));
         }
-        res.set('Access-Control-Expose-Headers', 'X-Search-Degraded, X-Search-Reason, X-Search-Diagnostic');
+        res.set('Access-Control-Expose-Headers', 'X-Search-Degraded, X-Search-Reason, X-Search-Diagnostic, X-Search-Market');
         return res.json(fallback);
       }
       // 4xx from the upstream provider (bad key, out of credits, rate limit)
@@ -195,6 +211,38 @@ router.get('/top-drops', async (req, res) => {
       .slice(0, 24);
 
     res.json(withDrops);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET /api/products/trends?days=7|30|90
+// Public aggregate of the collected price history: what fell, what rose,
+// what is volatile, what sits at its all-time low. Cached briefly because it
+// walks every product's recent history.
+const TRENDS_TTL_MS = 10 * 60 * 1000;
+const trendsCache = new Map(); // days -> { at, data }
+const TREND_WINDOWS = new Set([7, 30, 90]);
+
+router.get('/trends', async (req, res) => {
+  try {
+    const days = TREND_WINDOWS.has(Number(req.query.days)) ? Number(req.query.days) : 7;
+    const cached = cacheGet(trendsCache, days, TRENDS_TTL_MS);
+    if (cached) return res.json(cached.data);
+
+    // One extra observation before the window is needed for the start price.
+    const since = new Date(Date.now() - (days + 14) * 24 * 60 * 60 * 1000);
+    const products = await prisma.product.findMany({
+      where: { priceHistory: { some: { recordedAt: { gte: since } } } },
+      include: {
+        priceHistory: { where: { recordedAt: { gte: since } }, orderBy: { recordedAt: 'asc' }, select: { price: true, recordedAt: true } },
+        _count: { select: { wishlistItems: true } },
+      },
+      take: 500,
+    });
+    const data = computeTrends(products.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })), days);
+    cacheSet(trendsCache, days, { at: Date.now(), data });
+    res.json(data);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -359,6 +407,26 @@ function cacheGet(map, key, ttlMs) {
 const COMPARE_CACHE_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const compareCache = new Map(); // productId -> { at, listings }
 
+// GET /api/products/:id/alerts
+// The signed-in user's own alert history for this product: every price-drop
+// and target-hit notification, newest first. Private to the caller; the
+// price at the time is carried in the message text.
+router.get('/:id/alerts', authMiddleware, async (req, res) => {
+  try {
+    const productId = parseInt(req.params.id);
+    if (!Number.isFinite(productId)) return res.status(400).json({ error: 'Invalid product id' });
+    const alerts = await prisma.notification.findMany({
+      where: { userId: req.userId, productId, type: { in: ['price_drop', 'target_hit'] } },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: { id: true, type: true, message: true, read: true, createdAt: true },
+    });
+    res.json(alerts);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 router.get('/:id/compare', async (req, res) => {
   try {
     const id = parseInt(req.params.id);
@@ -370,7 +438,7 @@ router.get('/:id/compare', async (req, res) => {
 
     let results = [];
     // techOnly:false — this product is already tracked (see searchProducts).
-    try { results = await searchProducts(product.serpApiQuery, { techOnly: false }); } catch (_) { /* fall through with empty */ }
+    try { results = await searchProducts(product.serpApiQuery, { techOnly: false, country: product.country }); } catch (_) { /* fall through with empty */ }
 
     // Exclude the exact listing already being tracked (same url, or same
     // title+price already shown as "currentPrice" above), dedupe by
@@ -598,6 +666,51 @@ router.get('/:id/forecast', async (req, res) => {
   }
 });
 
+// Background refresh of a product that is being viewed and has not been
+// checked for a while. See GET /:id.
+//
+// This spends a paid provider request on an unauthenticated page view, so
+// it is bounded three ways: only products somebody actually tracks qualify
+// (anyone can create a product row anonymously via /from-search, so an
+// untracked product must never cost anything to look at); one refresh per
+// product per VIEW_REFRESH_STALE_MS; and a global budget of
+// VIEW_REFRESH_PER_HOUR across all products. In-flight ids stop a burst of
+// views from starting the same search twice.
+const VIEW_REFRESH_STALE_MS = Number(process.env.VIEW_REFRESH_STALE_MS || 12 * 60 * 60 * 1000); // 12 hours
+const VIEW_REFRESH_PER_HOUR = Number(process.env.VIEW_REFRESH_PER_HOUR || 30);
+const viewRefreshInFlight = new Set();
+let viewRefreshWindowStart = Date.now();
+let viewRefreshCount = 0;
+
+function viewRefreshBudgetOk() {
+  const now = Date.now();
+  if (now - viewRefreshWindowStart >= 60 * 60 * 1000) { viewRefreshWindowStart = now; viewRefreshCount = 0; }
+  if (viewRefreshCount >= VIEW_REFRESH_PER_HOUR) return false;
+  viewRefreshCount++;
+  return true;
+}
+
+function maybeRefreshOnView(product) {
+  if (VIEW_REFRESH_STALE_MS <= 0) return;
+  if (!(product._count && product._count.wishlistItems > 0)) return;
+  if (Date.now() - new Date(product.lastChecked).getTime() < VIEW_REFRESH_STALE_MS) return;
+  if (viewRefreshInFlight.has(product.id)) return;
+  if (!viewRefreshBudgetOk()) return;
+  viewRefreshInFlight.add(product.id);
+  (async () => {
+    try {
+      // observePrice stamps lastChecked itself on a miss; on a thrown error
+      // stamp it here so a transient failure is not retried by every viewer.
+      await observePrice(product.id);
+    } catch (err) {
+      console.error(`[view-refresh] product ${product.id}: ${err.message}`);
+      await prisma.product.update({ where: { id: product.id }, data: { lastChecked: new Date() } }).catch(() => {});
+    } finally {
+      viewRefreshInFlight.delete(product.id);
+    }
+  })();
+}
+
 // GET /api/products/:id
 // Returns a single product with its price history
 router.get('/:id', async (req, res) => {
@@ -610,6 +723,12 @@ router.get('/:id', async (req, res) => {
       },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    // Opportunistic observation: a tracked product that somebody is looking
+    // at is worth a fresh price, so a stale one is re-checked in the
+    // background (the response is not delayed). Only tracked products, one
+    // refresh per product per VIEW_REFRESH_STALE_MS, and a global hourly
+    // budget; see maybeRefreshOnView.
+    maybeRefreshOnView(product);
     // Derived on read rather than stored: a pre-order becomes a released
     // product without anything about the row changing, so a persisted flag
     // would go stale silently. See services/productClassifier.
@@ -719,7 +838,7 @@ function extractOgImage(html, baseUrl) {
 async function resolveFromShopping(product) {
   try {
     const query = product.serpApiQuery || product.title;
-    const results = await searchProducts(query, { techOnly: false });
+    const results = await searchProducts(query, { techOnly: false, country: product.country });
     // Prefer a result whose title resembles the product, else first with image.
     const key = product.title.toLowerCase().slice(0, 15);
     const match =
@@ -852,7 +971,7 @@ router.get('/:id/images', async (req, res) => {
     add(product.imageUrl);
 
     let results = [];
-    try { results = await searchProducts(product.serpApiQuery || product.title, { techOnly: false }); } catch (_) { /* ignore */ }
+    try { results = await searchProducts(product.serpApiQuery || product.title, { techOnly: false, country: product.country }); } catch (_) { /* ignore */ }
     for (const r of results) {
       if (!r.imageUrl) continue;
       if (compareMatchScore(product.title, r.title) < COMPARE_MIN_SCORE) continue;
@@ -919,13 +1038,14 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
       return res.status(429).json({ error: `This product was checked recently. Try again in ${waitSec}s.` });
     }
 
+    // Same path as the scheduled sweep: record, alert trackers, reschedule.
+    // The cooldown above is the freshness bound: a result cached within it
+    // is acceptable, anything older is re-fetched.
     let newPrice = null;
-    try { newPrice = await fetchCurrentPrice(product.serpApiQuery, product.title); } catch (_) {}
+    try { ({ price: newPrice } = await observePrice(product.id, { maxAgeMs: REFRESH_COOLDOWN_MS })); } catch (_) {}
     if (newPrice == null) {
       return res.status(200).json({ updated: false, message: 'Could not fetch a live price right now.' });
     }
-
-    await recordPrice(prisma, product, newPrice);
 
     const fresh = await prisma.product.findUnique({
       where: { id: product.id },
@@ -957,10 +1077,23 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
 // would then request server-side (SSRF).
 router.post('/from-search', async (req, res) => {
   try {
-    const { title, url, imageUrl, serpApiQuery, currency } = req.body || {};
-    const price = req.body.currentPrice ?? req.body.price;
-    if (!title || price == null || !serpApiQuery)
+    const { title, url, imageUrl, serpApiQuery } = req.body || {};
+    const price = Number(req.body.currentPrice ?? req.body.price);
+    // Plain strings only: an object here would reach Prisma as a filter
+    // ({ contains: '' }) and match, then overwrite, an arbitrary product.
+    if (typeof title !== 'string' || typeof serpApiQuery !== 'string'
+        || (url != null && typeof url !== 'string') || (imageUrl != null && typeof imageUrl !== 'string'))
+      return res.status(400).json({ error: 'title, url, imageUrl and serpApiQuery must be strings' });
+    if (!title || !Number.isFinite(price) || price <= 0 || !serpApiQuery)
       return res.status(400).json({ error: 'title, price, and serpApiQuery are required' });
+    if (serpApiQuery.length > MAX_TITLE_LENGTH)
+      return res.status(400).json({ error: `serpApiQuery must be ${MAX_TITLE_LENGTH} characters or fewer` });
+    // The market decides the currency; a client-supplied currency code is
+    // not trusted (it was stored verbatim before, so any string could end up
+    // in Product.currency and break conversion for every viewer).
+    if (req.body.country != null && !isValidMarket(req.body.country))
+      return res.status(400).json({ error: 'Unknown country' });
+    const market = resolveMarket(req.body.country);
     if (String(title).length > MAX_TITLE_LENGTH)
       return res.status(400).json({ error: `title must be ${MAX_TITLE_LENGTH} characters or fewer` });
 
@@ -987,7 +1120,7 @@ router.post('/from-search', async (req, res) => {
       }
     }
 
-    let product = await prisma.product.findFirst({ where: { serpApiQuery, title } });
+    let product = await prisma.product.findFirst({ where: { serpApiQuery, title, country: market.code } });
     if (!product) {
       product = await prisma.product.create({
         data: {
@@ -997,7 +1130,8 @@ router.post('/from-search', async (req, res) => {
           currentPrice: price,
           lowestPrice: price,
           highestPrice: price,
-          currency: currency || 'USD',
+          currency: market.currency,
+          country: market.code,
           source: 'google_shopping',
           serpApiQuery,
         },

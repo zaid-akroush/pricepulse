@@ -6,6 +6,7 @@ import ProductImage from '../components/ProductImage';
 import PageHeader from '../components/PageHeader';
 import PriceChart from '../components/PriceChart';
 import Price from '../components/Price';
+import SavingsChart from '../components/SavingsChart';
 import { useCurrency } from '../context/CurrencyContext';
 import { Stagger, StaggerItem } from '../components/motion';
 
@@ -136,6 +137,15 @@ export default function Dashboard() {
             </div>
           </Link>
         )}
+      </div>
+
+      {/* Savings over time */}
+      <div className="card p-6 mb-6">
+        <h2 className="text-lg font-bold mb-1" style={{ color: 'var(--text)' }}>Savings Over Time</h2>
+        <p className="text-xs mb-3" style={{ color: 'var(--text-muted)' }}>
+          How far below their peak your tracked products have been, day by day, over the last 90 days.
+        </p>
+        <SavingsChart timeline={data.savingsTimeline} currency={data.totalsCurrency || 'USD'} />
       </div>
 
       {/* Savings bar chart */}

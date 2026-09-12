@@ -4,12 +4,14 @@ An intelligent electronics price tracking and alert system. Search for products 
 
 ## Features
 
-- Real-time product search powered by Google Shopping (ValueSerp API)
+- Real-time product search powered by Google Shopping (SerpApi, Bright Data or Serper.dev), in the country you choose (US, UK, Germany, Hungary, Jordan and more), priced in that country's currency
 - User registration and login with JWT authentication
-- Personal wishlist with target price per product
-- Automated price monitoring every 6 hours via node-cron
-- Email alerts via Resend when a product hits your target price
-- Price history tracking for every monitored product
+- Personal wishlist with target price or target drop percentage per product
+- Adaptive price monitoring: each product is re-checked every 3 to 48 hours depending on how much its price moves and how many people track it, and products that share a search cost one provider request
+- Email, in-app and browser push alerts when a product hits your target or drops
+- Price history for every monitored product, with a buy-or-wait forecast, retailer comparison and your own alert history
+- Public Trends page: biggest drops, all-time lows and most volatile products, built from the collected history
+- Analytics tab with a savings-over-time chart
 - Fully containerised with Docker
 
 ## Tech Stack
@@ -20,7 +22,7 @@ An intelligent electronics price tracking and alert system. Search for products 
 | Backend | Node.js 20, Express.js 4 |
 | Database | PostgreSQL 16, Prisma ORM |
 | Auth | JWT, bcryptjs |
-| Price Data | ValueSerp (Google Shopping API) |
+| Price Data | SerpApi / Bright Data / Serper.dev (Google Shopping) |
 | Email | Resend |
 | Scheduling | node-cron |
 | Security | Helmet.js, express-rate-limit, express-validator |
@@ -113,7 +115,7 @@ cd backend
 npm test
 ```
 
-21 integration tests covering authentication, wishlist management, and product routes.
+Integration tests for authentication, wishlist and product routes, an integration test of the price sweep against a stubbed provider, and unit tests for the pure decision logic (price parsing, matching, classification, moderation, scheduling, trends, analytics).
 
 ## Hosting
 
@@ -156,8 +158,8 @@ and the backend, nothing needs to be started or run on a local machine.
 **4. Keep the free backend warm (optional but recommended)**
 
 Render's free web service spins down after about 15 minutes of no traffic,
-which adds a ~1 minute delay to the next request and can cause the 6-hourly
-price-check cron to be skipped while asleep. To avoid this, add a free
+which adds a ~1 minute delay to the next request and can cause the hourly
+price-check tick to be skipped while asleep. To avoid this, add a free
 monitor at [cron-job.org](https://cron-job.org) that pings
 `https://pricepulse-api.onrender.com/api/health` every 10 minutes. This
 keeps the service (and the database connection) warm at no cost.

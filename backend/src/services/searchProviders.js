@@ -52,7 +52,7 @@ function brightDataItems(data) {
   return [];
 }
 
-async function brightDataShopping(query) {
+async function brightDataShopping(query, market) {
   const token = process.env.BRIGHTDATA_API_KEY;
   const zone = process.env.BRIGHTDATA_SERP_ZONE;
   if (!token) throw new ProviderError('Product search is not configured (missing API key).', 500, 'brightdata');
@@ -63,7 +63,7 @@ async function brightDataShopping(query) {
     );
   }
 
-  const target = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop&num=${RESULTS_PER_SEARCH}&brd_json=1`;
+  const target = `https://www.google.com/search?q=${encodeURIComponent(query)}&tbm=shop&num=${RESULTS_PER_SEARCH}&gl=${market.code}&hl=${market.language}&brd_json=1`;
   const { data } = await axios.post(
     BRIGHTDATA_URL,
     { zone, url: target, format: 'raw' },
@@ -101,7 +101,7 @@ async function brightDataShopping(query) {
 // ---------------------------------------------------------------------------
 const SERPAPI_URL = 'https://serpapi.com/search';
 
-async function serpApiShopping(query) {
+async function serpApiShopping(query, market) {
   const key = process.env.SERPAPI_KEY;
   if (!key) throw new ProviderError('Product search is not configured (missing API key).', 500, 'serpapi');
 
@@ -110,8 +110,10 @@ async function serpApiShopping(query) {
       engine: 'google_shopping',
       q: query,
       num: RESULTS_PER_SEARCH,
-      gl: process.env.SERPAPI_COUNTRY || 'us',
-      hl: process.env.SERPAPI_LANGUAGE || 'en',
+      // The market is a per-search choice now; the env vars only set the
+      // default market (see services/markets.js).
+      gl: market.code,
+      hl: market.language,
       api_key: key,
     },
     timeout: TIMEOUT_MS,
@@ -152,13 +154,13 @@ async function serpApiShopping(query) {
 // ---------------------------------------------------------------------------
 const SERPER_URL = 'https://google.serper.dev/shopping';
 
-async function serperShopping(query) {
+async function serperShopping(query, market) {
   const key = process.env.SERP_API_KEY;
   if (!key) throw new ProviderError('Product search is not configured (missing API key).', 500, 'serper');
 
   const { data } = await axios.post(
     SERPER_URL,
-    { q: query, num: RESULTS_PER_SEARCH },
+    { q: query, num: RESULTS_PER_SEARCH, gl: market.code, hl: market.language },
     { headers: { 'X-API-KEY': key, 'Content-Type': 'application/json' }, timeout: TIMEOUT_MS }
   );
 
@@ -198,10 +200,14 @@ function activeProvider() {
   return { name, ...PROVIDERS[name] };
 }
 
-/** Raw shopping items for a query, from whichever provider is configured. */
-async function fetchShopping(query) {
+/**
+ * Raw shopping items for a query, from whichever provider is configured.
+ * @param {string} query
+ * @param {{code:string, language:string, currency:string}} market resolved by services/markets
+ */
+async function fetchShopping(query, market) {
   const provider = activeProvider();
-  return { provider: provider.name, items: await provider.fetch(query) };
+  return { provider: provider.name, items: await provider.fetch(query, market) };
 }
 
 module.exports = { fetchShopping, activeProvider, activeProviderName, ProviderError, PROVIDERS };

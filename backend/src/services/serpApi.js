@@ -1,4 +1,6 @@
 const { fetchShopping, activeProvider, ProviderError } = require('./searchProviders');
+const { resolveMarket } = require('./markets');
+const { getRates } = require('./currency');
 
 /**
  * Thrown for problems talking to the search provider (bad/expired key, out
@@ -31,8 +33,25 @@ const BREAKER_MS = 10 * 60 * 1000;
 let breakerUntil = 0;
 let breakerError = null;
 
-function cacheKey(query) {
-  return String(query || '').trim().toLowerCase();
+function cacheKey(query, market) {
+  // Results differ per market (different retailers, currency), so the market
+  // is part of the key: a Hungarian search must never be served a US answer.
+  return `${market.code}|${String(query || '').trim().toLowerCase()}`;
+}
+
+// Price floors below are written in US dollars. In another market they are
+// scaled by the current USD rate; if rates are unavailable the floors are
+// skipped for that market rather than applied in the wrong currency (which
+// would wrongly discard every listing in a weak currency such as HUF).
+async function usdToMarketFactor(market) {
+  if (market.currency === 'USD') return 1;
+  try {
+    const { rates } = await getRates('USD');
+    const r = rates && rates[market.currency];
+    return r > 0 ? r : null;
+  } catch (_) {
+    return null;
+  }
 }
 
 function cachePut(key, items) {
@@ -41,10 +60,14 @@ function cachePut(key, items) {
   while (searchCache.size > SEARCH_CACHE_MAX) searchCache.delete(searchCache.keys().next().value);
 }
 
-function cacheTake(key) {
+function cacheTake(key, maxAgeMs = SEARCH_CACHE_TTL_MS) {
   const hit = searchCache.get(key);
   if (!hit) return null;
   if (Date.now() - hit.at >= SEARCH_CACHE_TTL_MS) { searchCache.delete(key); return null; }
+  // A caller that is about to RECORD an observation can insist on a fresher
+  // answer than the general cache TTL, otherwise a product on a 3-hour
+  // schedule would "observe" the same 6-hour-old result twice.
+  if (Date.now() - hit.at > maxAgeMs) return null;
   return hit.items;
 }
 
@@ -102,6 +125,10 @@ const { extractAttributes } = require('./productAttributes');
 /**
  * @param {string} query
  * @param {object} [opts]
+ * @param {string} [opts.country='us'] Google Shopping market (see services/markets).
+ * @param {number} [opts.maxAgeMs] Reject cached results older than this (ms).
+ *   Observation paths (sweep, refresh) pass a small value; browsing uses the
+ *   full cache TTL.
  * @param {boolean} [opts.techOnly=true] Apply the electronics-only filter.
  *   MUST be false for callers that re-query an ALREADY TRACKED product
  *   (price refresh, compare, image gallery). The filter is a discovery rule:
@@ -111,8 +138,9 @@ const { extractAttributes } = require('./productAttributes');
  */
 async function searchProducts(query, opts = {}) {
   const { techOnly = true } = opts;
-  const key = cacheKey(query);
-  const cached = cacheTake(key);
+  const market = resolveMarket(opts.country);
+  const key = cacheKey(query, market);
+  const cached = cacheTake(key, opts.maxAgeMs);
   const provider = activeProvider();
 
   let results;
@@ -124,7 +152,7 @@ async function searchProducts(query, opts = {}) {
       throw new SerpApiError(breakerError.message, breakerError.status);
     }
     try {
-      const { items } = await fetchShopping(query);
+      const { items } = await fetchShopping(query, market);
       results = items;
       cachePut(key, items);
       breakerUntil = 0;
@@ -163,6 +191,8 @@ async function searchProducts(query, opts = {}) {
     { pattern: /tv|television|\d{2,3}"/i,                   min: 100 },
   ];
 
+  const floorFactor = await usdToMarketFactor(market);
+
   // Providers hand back a common raw shape (see services/searchProviders):
   // { title, price: "$1,099.99", url, imageUrl, source, rating, reviews }
   const normalized = results.map((item) => {
@@ -176,7 +206,10 @@ async function searchProducts(query, opts = {}) {
     return {
       title,
       price,
-      currency: 'USD',
+      // Listings are priced in the market's currency; the provider does not
+      // report a code per listing, so the market decides.
+      currency: market.currency,
+      country: market.code,
       originalPrice: null, // no provider returns a reliable pre-discount price
       url: item.url || null,
       imageUrl: item.imageUrl || null,
@@ -201,11 +234,13 @@ async function searchProducts(query, opts = {}) {
     if (item.recurring) return false;
     // Discovery only — see the techOnly note on this function.
     if (techOnly && !isTechProduct(item.title)) return false;
-    for (const { pattern, min } of PRICE_FLOORS) {
-      if (pattern.test(item.title) && item.price < min) return false;
+    if (floorFactor != null) {
+      for (const { pattern, min } of PRICE_FLOORS) {
+        if (pattern.test(item.title) && item.price < min * floorFactor) return false;
+      }
+      // Generic floor: drop anything under $3 (almost certainly a monthly plan)
+      if (item.price < 3 * floorFactor) return false;
     }
-    // Generic floor: drop anything under $3 (almost certainly a monthly plan)
-    if (item.price < 3) return false;
     return true;
   });
 }
@@ -230,10 +265,10 @@ const COUNTRY_PER_BRAND = Number(process.env.COUNTRY_PER_BRAND || 16);
  * @param {string[]} brands
  * @returns {Promise<{results: object[], brandsSearched: string[], failed: string[]}>}
  */
-async function searchByBrands(brands) {
+async function searchByBrands(brands, opts = {}) {
   const chosen = brands.slice(0, COUNTRY_BRAND_LIMIT);
 
-  const settled = await Promise.allSettled(chosen.map(b => searchProducts(b)));
+  const settled = await Promise.allSettled(chosen.map(b => searchProducts(b, opts)));
 
   const failed = [];
   const perBrand = [];
@@ -283,10 +318,32 @@ function matchTokens(title) {
     .filter(t => t.length >= 2 && !MATCH_STOPWORDS.has(t));
 }
 
+// Accessories FOR a product ("Case for iPhone 15", "Screen Protector
+// Compatible with Galaxy S24") share almost every token with the product
+// itself, including the model number, so they pass the token test below. A
+// $12 case was the cheapest "match" for a phone and would have been written
+// into the phone's price history.
+//
+// Only titles whose HEAD is the accessory are treated as one. Merely
+// containing an accessory word is not enough: "AirPods Pro 2 with MagSafe
+// Charging Case", "Apple Watch 45mm Aluminum Case with Sport Band" and
+// "Monitor with Adjustable Stand" are the products themselves, and a rule
+// that rejected them silently stopped their price tracking.
+const ACCESSORY_WORDS = 'cases?|covers?|sleeves?|skins?|screen protectors?|tempered glass|chargers?|charging cables?|cables?|adapters?|docks?|stands?|mounts?|straps?|bands?|bumpers?|holsters?|lens protectors?|carrying cases?';
+const ACCESSORY_HEAD_RE = new RegExp(
+  `^(?:[\\w'&+-]+\\s+){0,4}(?:${ACCESSORY_WORDS})\\b|\\b(?:${ACCESSORY_WORDS})\\s+(?:for|fits|compatible)\\b|\\b(?:for|fits|compatible with)\\s+(?:${ACCESSORY_WORDS})\\b`,
+  'i'
+);
+
+function isAccessoryListing(title) {
+  return ACCESSORY_HEAD_RE.test(String(title || ''));
+}
+
 function sameProduct(trackedTitle, candidateTitle) {
   const a = matchTokens(trackedTitle);
   const b = new Set(matchTokens(candidateTitle));
   if (a.length === 0 || b.size === 0) return false;
+  if (isAccessoryListing(candidateTitle) && !isAccessoryListing(trackedTitle)) return false;
 
   // Every model-identifying token must be present in the candidate.
   for (const token of a) {
@@ -300,13 +357,34 @@ function sameProduct(trackedTitle, candidateTitle) {
 }
 
 /**
- * Fetch the current price of a single tracked product by re-running its query
- * and finding the closest title match.
+ * Cheapest listing in `results` that is the same product as `productTitle`,
+ * or null. Split out of fetchCurrentPrice so the scheduler can run ONE search
+ * for every product that shares a query and match each of them against it.
  */
-async function fetchCurrentPrice(serpApiQuery, productTitle) {
+// A genuine listing for the same product is not a small fraction of its
+// known price. Whatever slips past the title rules at a tenth of the price
+// is an accessory, a part, or a plan, not the product.
+const MIN_PRICE_RATIO = 0.25;
+
+function pickPriceFor(results, productTitle, knownPrice = null) {
+  const scored = (results || [])
+    .filter(r => r.title && r.price > 0 && sameProduct(productTitle, r.title))
+    .filter(r => !(knownPrice > 0) || r.price >= knownPrice * MIN_PRICE_RATIO)
+    .sort((a, b) => a.price - b.price);
+  return scored.length > 0 ? scored[0].price : null;
+}
+
+/**
+ * Fetch the current price of a single tracked product by re-running its query
+ * in its own market and finding the closest title match.
+ * @param {string} serpApiQuery
+ * @param {string} productTitle
+ * @param {{country?: string}} [opts]
+ */
+async function fetchCurrentPrice(serpApiQuery, productTitle, opts = {}) {
   // techOnly:false — this product is already tracked; re-checking its price
   // must never depend on the discovery classifier recognising its title.
-  const results = await searchProducts(serpApiQuery, { techOnly: false });
+  const results = await searchProducts(serpApiQuery, { techOnly: false, country: opts.country, maxAgeMs: opts.maxAgeMs });
 
   // Matching used to be `title.includes(trackedTitle.slice(0, 20))` and took
   // the first hit. For "Samsung Galaxy S24 Ultra 512GB - Titanium Black" that
@@ -319,11 +397,7 @@ async function fetchCurrentPrice(serpApiQuery, productTitle) {
   // generation can no longer match. If nothing matches we return null and the
   // caller records no price, which is the correct outcome: no data is better
   // than the wrong product's data.
-  const scored = results
-    .filter(r => r.title && sameProduct(productTitle, r.title))
-    .sort((a, b) => a.price - b.price);
-
-  return scored.length > 0 ? scored[0].price : null;
+  return pickPriceFor(results, productTitle, opts.knownPrice);
 }
 
-module.exports = { searchProducts, searchByBrands, fetchCurrentPrice, SerpApiError, resetSearchCache };
+module.exports = { searchProducts, searchByBrands, fetchCurrentPrice, pickPriceFor, sameProduct, isAccessoryListing, SerpApiError, resetSearchCache };

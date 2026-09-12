@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import AdminDiagnostic from '../components/AdminDiagnostic';
 import { useSearchParams, useNavigate } from 'react-router-dom';
+import { MARKETS, getMarket, setMarket, marketInfo } from '../utils/market';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductCard from '../components/ProductCard';
@@ -65,6 +66,11 @@ function decodeDiagnostic(header) {
 export default function Search() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  // Which Google Shopping market to search. Remembered per browser so a
+  // student in Debrecen sees Hungarian shops and forint prices by default
+  // after choosing it once.
+  const [market, setMarketState] = useState(getMarket);
+  function changeMarket(code) { setMarket(code); setMarketState(code); }
   const navigate = useNavigate();
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [results, setResults] = useState([]);
@@ -128,7 +134,7 @@ export default function Search() {
       setActiveCategory(q);
       doSearch(q);
     }
-  }, [searchParams]);
+  }, [searchParams, market]);
 
   // Apply sort + filter whenever they change
   useEffect(() => {
@@ -155,7 +161,7 @@ export default function Search() {
     setFilters(EMPTY_FILTERS); // facets describe the previous result set
     setResults([]); setFiltered([]);
     try {
-      const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
+      const res = await api.get(`/products/search?q=${encodeURIComponent(q)}&country=${encodeURIComponent(market)}`);
       if (seq !== searchSeq.current) return; // superseded by a newer search
       setResults(res.data);
       // A 200 can still be a degraded answer: the backend serves cached rows
@@ -203,6 +209,14 @@ export default function Search() {
             placeholder='Search for any electronics… e.g. "Sony WH-1000XM5"'
             className="input text-sm py-3 pl-10" />
         </div>
+        <select value={market} onChange={e => changeMarket(e.target.value)}
+          aria-label="Shopping market"
+          title="Which country's shops to search; prices come back in that country's currency"
+          className="input text-sm py-3 w-auto shrink-0 pr-8">
+          {MARKETS.map(m => (
+            <option key={m.code} value={m.code}>{m.flag} {m.name} ({m.currency})</option>
+          ))}
+        </select>
         <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50 px-6">
           {loading ? 'Searching…' : 'Search'}
         </button>
@@ -289,6 +303,12 @@ export default function Search() {
         </div>
       )}
 
+      {!loading && searched && !error && (
+        <p className="text-xs text-faint mb-3">
+          Prices from shops in {marketInfo(market).flag} {marketInfo(market).name}, in {marketInfo(market).currency}.
+          Change the country next to the search box to see another market.
+        </p>
+      )}
       {!loading && country && (
         <p className="text-xs text-muted mb-4 bg-app-subtle p-3 rounded-xl">
           <strong className="text-app">{country.country}</strong> is a country, so this shows tech products from
