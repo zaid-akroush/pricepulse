@@ -27,6 +27,8 @@ export default function Admin() {
   const [togglingId, setTogglingId] = useState(null);
   const [checkingPrices, setCheckingPrices] = useState(false);
   const [checkMessage, setCheckMessage] = useState(null);
+  const [repairing, setRepairing] = useState(false);
+  const [repairResult, setRepairResult] = useState(null);
   // Which build is actually running. Served from /api/health/diagnostics,
   // which is admin-only, so this never reaches a normal user.
   const [build, setBuild] = useState(null);
@@ -96,6 +98,22 @@ export default function Admin() {
     }
   }
 
+  // Cleans instalment figures out of price history. Two clicks on purpose:
+  // the first only reports what would go, so nothing is deleted before it has
+  // been seen. Price history cannot be recovered once a row is gone.
+  async function handleRepairPrices(apply = false) {
+    setRepairing(true);
+    setRepairResult(null);
+    try {
+      const res = await api.post('/admin/repair-prices', { apply });
+      setRepairResult(res.data);
+    } catch (err) {
+      setRepairResult({ error: describeApiError(err, 'Could not run the price repair.') });
+    } finally {
+      setRepairing(false);
+    }
+  }
+
   const fmtDate = (d) => new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 
   return (
@@ -117,12 +135,50 @@ export default function Admin() {
                 Check everything
               </button>
             </div>
+            <button onClick={() => handleRepairPrices(false)} disabled={repairing} className="btn-ghost text-sm disabled:opacity-50"
+              title="Find price-history rows that are monthly instalments rather than prices. Reports first, deletes nothing.">
+              {repairing ? 'Checking…' : 'Check for instalment prices'}
+            </button>
             {checkMessage && <p className="text-xs text-muted max-w-xs text-right">{checkMessage}</p>}
           </div>
         }
       />
 
       {error && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl mb-6">{error}</p>}
+
+      {/* Price repair. A monthly instalment recorded as a price sets a
+          lowestPrice nobody can pay and keeps the product at the top of every
+          deal list, so it has to be removed rather than left to age out. */}
+      {repairResult && (
+        <div className="card p-4 mb-6">
+          {repairResult.error ? (
+            <p className="text-sm text-danger">{repairResult.error}</p>
+          ) : repairResult.productsAffected === 0 ? (
+            <p className="text-sm text-app">No instalment prices found. Price history is clean.</p>
+          ) : (
+            <>
+              <p className="text-sm text-app font-semibold">
+                {repairResult.rowsRemoved} suspect price{repairResult.rowsRemoved === 1 ? '' : 's'} across{' '}
+                {repairResult.productsAffected} product{repairResult.productsAffected === 1 ? '' : 's'}
+                {repairResult.applied ? ' removed.' : ' found.'}
+              </p>
+              <ul className="text-xs text-muted mt-2 space-y-1">
+                {repairResult.details?.slice(0, 10).map(d => (
+                  <li key={d.productId}>
+                    <strong className="text-app">{d.title}</strong>: {d.removed.join(', ')} against a typical {d.median}
+                  </li>
+                ))}
+              </ul>
+              {!repairResult.applied && (
+                <button onClick={() => handleRepairPrices(true)} disabled={repairing}
+                  className="btn-primary text-sm mt-3 disabled:opacity-50">
+                  {repairing ? 'Removing…' : 'Remove these and recalculate'}
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      )}
       {loading ? (
         <p className="text-muted">Loading…</p>
       ) : (
