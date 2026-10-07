@@ -95,6 +95,24 @@ app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/password', authLimiter);
 
+// Stricter limit on the endpoints that spend a real SerpApi/Bright Data
+// request on a cache miss (or, for from-search, write a new Product row that
+// a follow-up request can then spend a provider call against). SerpApi's
+// free tier is 250 searches per MONTH, so the 300-per-15-minutes global
+// limit above does nothing to stop one visitor from burning the whole
+// month's quota in minutes with unique, cache-missing queries.
+const searchLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 40,
+  keyGenerator: clientKey,
+  message: { error: 'Too many search requests, please try again later.' },
+});
+app.use('/api/products/search', searchLimiter);
+app.use('/api/products/from-search', searchLimiter);
+app.use('/api/products/:id/compare', searchLimiter);
+app.use('/api/products/:id/images', searchLimiter);
+app.use('/api/products/:id/og-image', searchLimiter);
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 

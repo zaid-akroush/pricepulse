@@ -39,7 +39,7 @@ router.get('/markets', (req, res) => {
 // Searches Google Shopping via the configured provider and returns results
 // (no auth required). `country` picks the Google Shopping market (default
 // us); listings come back priced in that market's currency.
-router.get('/search', async (req, res) => {
+router.get('/search', async (req, res, next) => {
   // Declared outside the try: the catch below reads it for the DB fallback and
   // for the admin diagnostic's context, and a `const` inside the try is not in
   // scope there — referencing it threw a ReferenceError from inside the error
@@ -131,13 +131,13 @@ router.get('/search', async (req, res) => {
       }
       return res.status(503).json(body);
     }
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/most-wishlisted
 // Returns products with the most wishlist additions
-router.get('/most-wishlisted', async (req, res) => {
+router.get('/most-wishlisted', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       include: {
@@ -149,13 +149,13 @@ router.get('/most-wishlisted', async (req, res) => {
     });
     res.json(products.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/newest
 // Returns the most recently added tracked products
-router.get('/newest', async (req, res) => {
+router.get('/newest', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       orderBy: { createdAt: 'desc' },
@@ -163,13 +163,13 @@ router.get('/newest', async (req, res) => {
     });
     res.json(products);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/best-value
 // Returns products with highest discount % from their peak price
-router.get('/best-value', async (req, res) => {
+router.get('/best-value', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       where: { highestPrice: { gt: 0 } },
@@ -186,13 +186,13 @@ router.get('/best-value', async (req, res) => {
       .slice(0, 24);
     res.json(withDiscount);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/top-drops
 // Returns tracked products with the biggest price drops (highest - current)
-router.get('/top-drops', async (req, res) => {
+router.get('/top-drops', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       where: { highestPrice: { gt: 0 } },
@@ -212,7 +212,7 @@ router.get('/top-drops', async (req, res) => {
 
     res.json(withDrops);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -224,7 +224,7 @@ const TRENDS_TTL_MS = 10 * 60 * 1000;
 const trendsCache = new Map(); // days -> { at, data }
 const TREND_WINDOWS = new Set([7, 30, 90]);
 
-router.get('/trends', async (req, res) => {
+router.get('/trends', async (req, res, next) => {
   try {
     const days = TREND_WINDOWS.has(Number(req.query.days)) ? Number(req.query.days) : 7;
     const cached = cacheGet(trendsCache, days, TRENDS_TTL_MS);
@@ -244,13 +244,13 @@ router.get('/trends', async (req, res) => {
     cacheSet(trendsCache, days, { at: Date.now(), data });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/deal-of-day
 // Returns today's best deal (biggest % drop among wishlisted products)
-router.get('/deal-of-day', async (req, res) => {
+router.get('/deal-of-day', async (req, res, next) => {
   try {
     const products = await prisma.product.findMany({
       where: { highestPrice: { gt: 0 }, wishlistItems: { some: {} } },
@@ -270,14 +270,14 @@ router.get('/deal-of-day', async (req, res) => {
       .sort((a, b) => b.score - a.score);
     res.json(scored[0] || null);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/public-stats
 // Aggregate, non-identifying counts for homepage social proof. No user
 // data, emails, or anything per-account — just totals.
-router.get('/public-stats', async (req, res) => {
+router.get('/public-stats', async (req, res, next) => {
   try {
     const [productsTracked, activeTrackers, priceChecks, priceFields] = await Promise.all([
       prisma.product.count(),
@@ -288,7 +288,7 @@ router.get('/public-stats', async (req, res) => {
     const dropsRecorded = priceFields.filter(p => p.currentPrice < p.highestPrice).length;
     res.json({ productsTracked, activeTrackers, priceChecks, dropsRecorded });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -411,7 +411,7 @@ const compareCache = new Map(); // productId -> { at, listings }
 // The signed-in user's own alert history for this product: every price-drop
 // and target-hit notification, newest first. Private to the caller; the
 // price at the time is carried in the message text.
-router.get('/:id/alerts', authMiddleware, async (req, res) => {
+router.get('/:id/alerts', authMiddleware, async (req, res, next) => {
   try {
     const productId = parseInt(req.params.id);
     if (!Number.isFinite(productId)) return res.status(400).json({ error: 'Invalid product id' });
@@ -423,11 +423,11 @@ router.get('/:id/alerts', authMiddleware, async (req, res) => {
     });
     res.json(alerts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
-router.get('/:id/compare', async (req, res) => {
+router.get('/:id/compare', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     const product = await prisma.product.findUnique({ where: { id } });
@@ -467,13 +467,13 @@ router.get('/:id/compare', async (req, res) => {
     cacheSet(compareCache, id, { at: Date.now(), listings });
     res.json({ listings, cached: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/:id/related
 // Returns products from same category/query
-router.get('/:id/related', async (req, res) => {
+router.get('/:id/related', async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!product) return res.status(404).json({ error: 'Not found' });
@@ -489,13 +489,13 @@ router.get('/:id/related', async (req, res) => {
     });
     res.json(related.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/products/:id/retailer-breakdown
 // Returns the price history grouped to show retailer info (from source/url)
-router.get('/:id/retailer-breakdown', async (req, res) => {
+router.get('/:id/retailer-breakdown', async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -507,7 +507,7 @@ router.get('/:id/retailer-breakdown', async (req, res) => {
     try { retailer = new URL(product.url || '').hostname.replace('www.', ''); } catch (_) {}
     res.json([{ retailer, currentPrice: product.currentPrice, lowestPrice: product.lowestPrice, currency: product.currency }]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -519,7 +519,7 @@ function dropFromHighPct(high, current) {
 // GET /api/products/:id/forecast
 // Predicts the near-term price using least-squares linear regression over the
 // product's price history and returns a buy-now-vs-wait recommendation.
-router.get('/:id/forecast', async (req, res) => {
+router.get('/:id/forecast', async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -662,7 +662,7 @@ router.get('/:id/forecast', async (req, res) => {
       points: hist.length,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -713,7 +713,7 @@ function maybeRefreshOnView(product) {
 
 // GET /api/products/:id
 // Returns a single product with its price history
-router.get('/:id', async (req, res) => {
+router.get('/:id', async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({
       where: { id: parseInt(req.params.id) },
@@ -743,7 +743,7 @@ router.get('/:id', async (req, res) => {
       releaseReason: release.reason,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -946,7 +946,7 @@ function imageDedupeKey(url) {
   }
 }
 
-router.get('/:id/images', async (req, res) => {
+router.get('/:id/images', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid product id' });
@@ -996,11 +996,11 @@ router.get('/:id/images', async (req, res) => {
 
     res.json({ images: capped, cached: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
-router.get('/:id/og-image', async (req, res) => {
+router.get('/:id/og-image', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid product id' });
@@ -1027,7 +1027,7 @@ router.get('/:id/og-image', async (req, res) => {
 // Requires auth and a per-product cooldown, both to attach abuse to an
 // account and to stop looping this across every product ID from burning
 // paid SerpApi quota.
-router.post('/:id/refresh', authMiddleware, async (req, res) => {
+router.post('/:id/refresh', authMiddleware, async (req, res, next) => {
   try {
     const product = await prisma.product.findUnique({ where: { id: parseInt(req.params.id) } });
     if (!product) return res.status(404).json({ error: 'Not found' });
@@ -1064,7 +1064,7 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -1075,7 +1075,7 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
 // but url/imageUrl are validated below to prevent this write path being used
 // to plant an internal/private-network URL that a later fetch (og-image)
 // would then request server-side (SSRF).
-router.post('/from-search', async (req, res) => {
+router.post('/from-search', async (req, res, next) => {
   try {
     const { title, url, imageUrl, serpApiQuery } = req.body || {};
     const price = Number(req.body.currentPrice ?? req.body.price);
@@ -1137,15 +1137,15 @@ router.post('/from-search', async (req, res) => {
         },
       });
       await prisma.priceHistory.create({ data: { productId: product.id, price } });
-    } else if (price > 0 && price !== product.currentPrice) {
-      // The product already exists, but this request carries a price observed
-      // just now by the live search. It used to be discarded: the detail page
-      // kept showing a months-old figure and the fresh observation was lost.
-      await recordPrice(prisma, product, price);
     }
+    // An existing product is never changed from here. This route is public, so
+    // letting a caller's price into history would let anyone rewrite what
+    // every tracker sees. Fresh prices come from the scheduler, the manual
+    // refresh (login required) and the background refresh when a stale
+    // product is viewed.
     res.status(201).json({ id: product.id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

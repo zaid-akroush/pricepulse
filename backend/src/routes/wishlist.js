@@ -27,7 +27,7 @@ router.use(authMiddleware);
 
 // GET /api/wishlist/analytics
 // Aggregate stats for the logged-in user's tracked products (dashboard).
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', async (req, res, next) => {
   try {
     const items = await prisma.wishlistItem.findMany({
       where: { userId: req.userId },
@@ -108,13 +108,13 @@ router.get('/analytics', async (req, res) => {
       items: detailed,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/wishlist
 // Returns all wishlist items for the logged-in user
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const items = await prisma.wishlistItem.findMany({
       where: { userId: req.userId },
@@ -125,13 +125,13 @@ router.get('/', async (req, res) => {
     });
     res.json(items);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /api/wishlist
 // Adds a product to the wishlist (creates product record if it doesn't exist)
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     const { title, url, imageUrl, serpApiQuery, targetPrice } = req.body;
     const currentPrice = Number(req.body.currentPrice);
@@ -243,13 +243,13 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(item);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PATCH /api/wishlist/:id
 // Updates target price for a wishlist item
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req, res, next) => {
   try {
     const { targetPrice } = req.body;
     const item = await prisma.wishlistItem.findFirst({
@@ -268,13 +268,13 @@ router.patch('/:id', async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // DELETE /api/wishlist/:id
 // Removes a product from the wishlist
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const item = await prisma.wishlistItem.findFirst({
       where: { id: parseInt(req.params.id), userId: req.userId },
@@ -286,7 +286,7 @@ router.delete('/:id', async (req, res) => {
     await rescheduleProduct(item.productId).catch(() => {});
     res.json({ message: 'Removed from wishlist' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
