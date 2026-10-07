@@ -22,12 +22,20 @@ function getFrontendUrl() {
 
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
+// Computed once at startup (not per request) so /login's "no such user"
+// branch can run a real bcrypt.compare against something, at the same cost
+// as a genuine password check below. Without this, "no such user" returns
+// as soon as the DB lookup misses while "wrong password" additionally pays
+// for a bcrypt.compare (tens of ms) — an attacker measuring response time
+// could tell the two apart even though both return the same generic body.
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync('timing-safety-dummy-password', 12);
+
 // POST /api/auth/register
 router.post('/register',
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password').isLength({ min: 10 }).withMessage('Password must be at least 10 characters'),
-  async (req, res) => {
+  async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
@@ -37,7 +45,7 @@ router.post('/register',
     const existing = await prisma.user.findUnique({ where: { email } });
     if (existing) return res.status(409).json({ error: 'Email already in use' });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     const user = await prisma.user.create({
       data: { name, email, password: hashed },
     });
@@ -48,7 +56,7 @@ router.post('/register',
 
     res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdminEmail(user.email) } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -56,7 +64,7 @@ router.post('/register',
 router.post('/login',
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   body('password').notEmpty().withMessage('Password is required'),
-  async (req, res) => {
+  async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
@@ -69,7 +77,10 @@ router.post('/login',
     const genericError = { error: 'Invalid email or password.', code: 'INVALID_CREDENTIALS' };
 
     const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) return res.status(401).json(genericError);
+    if (!user) {
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+      return res.status(401).json(genericError);
+    }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(401).json(genericError);
@@ -80,7 +91,7 @@ router.post('/login',
 
     res.json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdminEmail(user.email) } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -90,7 +101,7 @@ router.post('/login',
 // anti-enumeration protection for clearer UX during development/demoing.
 router.post('/forgot-password',
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  async (req, res) => {
+  async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
@@ -120,7 +131,7 @@ router.post('/forgot-password',
 
     res.json({ message: 'A reset link has been sent to your email.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -128,7 +139,7 @@ router.post('/forgot-password',
 router.post('/reset-password',
   body('token').notEmpty().withMessage('Reset token is required'),
   body('password').isLength({ min: 10 }).withMessage('Password must be at least 10 characters'),
-  async (req, res) => {
+  async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
@@ -143,7 +154,7 @@ router.post('/reset-password',
     });
     if (!user) return res.status(400).json({ error: 'This reset link is invalid or has expired.' });
 
-    const hashed = await bcrypt.hash(password, 10);
+    const hashed = await bcrypt.hash(password, 12);
     await prisma.user.update({
       where: { id: user.id },
       // Bump tokenVersion so any previously-issued JWT (e.g. a leaked 7-day
@@ -153,12 +164,12 @@ router.post('/reset-password',
 
     res.json({ message: 'Password has been reset. You can now log in.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/auth/me  (protected)
-router.get('/me', authMiddleware, async (req, res) => {
+router.get('/me', authMiddleware, async (req, res, next) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
@@ -166,7 +177,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     });
     res.json({ ...user, isAdmin: isAdminEmail(user.email) });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -175,7 +186,7 @@ router.patch('/profile',
   authMiddleware,
   body('name').trim().notEmpty().withMessage('Name is required'),
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
-  async (req, res) => {
+  async (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
@@ -222,12 +233,12 @@ router.patch('/profile',
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PATCH /api/auth/password  (protected), change password
-router.patch('/password', authMiddleware, async (req, res) => {
+router.patch('/password', authMiddleware, async (req, res, next) => {
   try {
     const { currentPassword, newPassword } = req.body;
     if (!currentPassword || !newPassword) return res.status(400).json({ error: 'Both passwords are required' });
@@ -237,7 +248,7 @@ router.patch('/password', authMiddleware, async (req, res) => {
     const match = await bcrypt.compare(currentPassword, user.password);
     if (!match) return res.status(401).json({ error: 'Current password is incorrect' });
 
-    const hashed = await bcrypt.hash(newPassword, 10);
+    const hashed = await bcrypt.hash(newPassword, 12);
     // Bump tokenVersion so a leaked long-lived JWT stops working the moment
     // the password changes, instead of staying valid until it expires.
     //
@@ -257,7 +268,7 @@ router.patch('/password', authMiddleware, async (req, res) => {
     });
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -266,7 +277,7 @@ router.patch('/password', authMiddleware, async (req, res) => {
 // session (e.g. a stolen JWT) can't wipe an account without knowing it.
 // Prisma cascades the delete to the user's wishlist items, notifications,
 // etc. the same way the admin delete-user route does.
-router.delete('/account', authMiddleware, async (req, res) => {
+router.delete('/account', authMiddleware, async (req, res, next) => {
   try {
     const { password } = req.body;
     if (!password) return res.status(400).json({ error: 'Password is required to delete your account' });
@@ -278,7 +289,7 @@ router.delete('/account', authMiddleware, async (req, res) => {
     await prisma.user.delete({ where: { id: req.userId } });
     res.json({ message: 'Account deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

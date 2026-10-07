@@ -15,7 +15,7 @@ router.use(authMiddleware, adminOnly);
 const ALERT_TYPES = ['price_drop', 'target_hit', 'deal_alert'];
 
 // GET /api/admin/stats, headline numbers + recent signups
-router.get('/stats', async (req, res) => {
+router.get('/stats', async (req, res, next) => {
   try {
     const [users, products, wishlistItems, alertsSent, recentSignups, dueNow, intervals] = await Promise.all([
       prisma.user.count(),
@@ -39,12 +39,12 @@ router.get('/stats', async (req, res) => {
       schedule: { dueNow, intervals: schedule, requestsPerDay, fixedSixHourlyRequestsPerDay: products * 4 },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/admin/users, every registered user with their wishlist size
-router.get('/users', async (req, res) => {
+router.get('/users', async (req, res, next) => {
   try {
     const users = await prisma.user.findMany({
       orderBy: { createdAt: 'desc' },
@@ -66,12 +66,12 @@ router.get('/users', async (req, res) => {
       wishlistCount: u._count.wishlistItems,
     })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // DELETE /api/admin/users/:id, remove a user (cascades to their data)
-router.delete('/users/:id', async (req, res) => {
+router.delete('/users/:id', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid user id' });
@@ -83,14 +83,14 @@ router.delete('/users/:id', async (req, res) => {
     await prisma.user.delete({ where: { id } });
     res.json({ message: 'User deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // PATCH /api/admin/users/:id/wishlist-visibility, hide/show a user from the public leaderboard & community wishlists
 // without deleting their account. Body may include { wishlistPublic: boolean } to set it explicitly,
 // otherwise the current value is toggled.
-router.patch('/users/:id/wishlist-visibility', async (req, res) => {
+router.patch('/users/:id/wishlist-visibility', async (req, res, next) => {
   try {
     const id = parseInt(req.params.id, 10);
     if (Number.isNaN(id)) return res.status(400).json({ error: 'Invalid user id' });
@@ -108,12 +108,12 @@ router.patch('/users/:id/wishlist-visibility', async (req, res) => {
 
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET /api/admin/products, most-wishlisted products + recent alerts
-router.get('/products', async (req, res) => {
+router.get('/products', async (req, res, next) => {
   try {
     const topProducts = await prisma.product.findMany({
       take: 10,
@@ -153,13 +153,13 @@ router.get('/products', async (req, res) => {
       recentAlerts,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /api/admin/check-prices, manually trigger the price-check cron job
 // right now instead of waiting for the next scheduled run (dev/testing aid).
-router.post('/check-prices', async (req, res) => {
+router.post('/check-prices', async (req, res, next) => {
   try {
     // Don't block the request on the full sweep (it can take a while and
     // hits an external API per product) — kick it off and report started.
@@ -169,7 +169,7 @@ router.post('/check-prices', async (req, res) => {
     checkPrices({ all }).catch(err => console.error('[admin] manual price check failed:', err.message));
     res.json({ message: `Price check started (${all ? 'all products' : 'due products only'}). Check the server logs and your notifications shortly.` });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
@@ -185,7 +185,7 @@ router.post('/check-prices', async (req, res) => {
 // at the top of every deal list forever.
 //
 // Dry run by default. Pass { apply: true } to actually delete.
-router.post('/repair-prices', async (req, res) => {
+router.post('/repair-prices', async (req, res, next) => {
   try {
     const apply = req.body && req.body.apply === true;
     const products = await prisma.product.findMany({
@@ -197,7 +197,7 @@ router.post('/repair-prices', async (req, res) => {
       const rows = await prisma.priceHistory.findMany({
         where: { productId: product.id },
         select: { id: true, price: true },
-        orderBy: { createdAt: 'asc' },
+        orderBy: { recordedAt: 'asc' },
       });
       if (rows.length < 4) continue;
 
@@ -237,7 +237,7 @@ router.post('/repair-prices', async (req, res) => {
         : 'Dry run. Nothing was changed. Send { "apply": true } to delete these rows.',
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
