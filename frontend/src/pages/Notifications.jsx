@@ -3,15 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductImage from '../components/ProductImage';
-import PushToggle from '../components/PushToggle';
 import PageHeader from '../components/PageHeader';
 
 const iconProps = { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', strokeWidth: 2, strokeLinecap: 'round', strokeLinejoin: 'round', className: 'w-4 h-4' };
 const TYPE_ICON = {
   price_drop:   { icon: <svg {...iconProps}><path d="M3 3v18h18" /><path d="M17 8l-6 6-3-3-4 4" /></svg>, color: 'text-success bg-success-soft' },
   target_hit:   { icon: <svg {...iconProps}><circle cx="12" cy="12" r="9" /><circle cx="12" cy="12" r="5" /><circle cx="12" cy="12" r="1" fill="currentColor" /></svg>, color: 'text-brand bg-brand-soft' },
-  new_follower: { icon: <svg {...iconProps}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.5-7 8-7s8 3 8 7" /></svg>, color: 'text-info bg-info-soft' },
-  deal_alert:   { icon: <svg {...iconProps} fill="currentColor" stroke="none"><path d="M13 2 3 14h7l-1 8 11-14h-7l1-6z" /></svg>, color: 'text-purple bg-purple-soft' },
 };
 const DEFAULT_ICON = <svg {...iconProps}><path d="M12 2a7 7 0 0 0-7 7v3.5L3 17h18l-2-4.5V9a7 7 0 0 0-7-7z" /><path d="M9 21a3 3 0 0 0 6 0" /></svg>;
 
@@ -20,13 +17,13 @@ export default function Notifications() {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  // A failed load is not "no notifications" — see Dashboard for the same bug.
+  // A failed load is not the same as "no notifications".
   const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate('/login'); return; }
     let active = true;
-    api.get('/social/notifications')
+    api.get('/notifications')
       .then(r => { if (active) { setNotifications(r.data); setLoadError(false); } })
       .catch(() => { if (active) setLoadError(true); })
       .finally(() => { if (active) setLoading(false); });
@@ -38,7 +35,7 @@ export default function Notifications() {
     // failed PATCH cleared the badge locally and the unread count reappeared
     // on the next page load, with nothing telling the user why.
     try {
-      await api.patch('/social/notifications/read-all');
+      await api.patch('/notifications/read-all');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     } catch {
       setLoadError(false);
@@ -46,7 +43,7 @@ export default function Notifications() {
   }
 
   async function markRead(id) {
-    await api.patch(`/social/notifications/${id}/read`);
+    await api.patch(`/notifications/${id}/read`);
     setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
   }
 
@@ -65,8 +62,6 @@ export default function Notifications() {
         )}
         className="mb-6"
       />
-
-      <PushToggle />
 
       {loading ? (
         <div className="space-y-3">

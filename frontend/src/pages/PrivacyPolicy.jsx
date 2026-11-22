@@ -33,19 +33,12 @@ export default function PrivacyPolicy() {
             </p>
             <p>
               <strong className="text-app">Wishlist and tracking activity.</strong> Products you
-              search for, add to your wishlist, target prices you set, likes, comments, and
-              searches you save are stored so we can show you your history and check prices on
-              your behalf.
+              add to your wishlist and the target prices you set are stored so we can check
+              prices on your behalf and show you their history.
             </p>
             <p>
-              <strong className="text-app">Social features.</strong> If you follow other users or
-              share a wishlist, we store that connection and generate a share link tied to your
-              account.
-            </p>
-            <p>
-              <strong className="text-app">Notifications.</strong> If you enable browser push
-              alerts, we store the push subscription your browser provides so we can deliver
-              price-drop notifications. In-app notifications are stored until you clear them.
+              <strong className="text-app">Notifications.</strong> In-app notifications are
+              stored until you clear them.
             </p>
             <p>
               <strong className="text-app">Technical data.</strong> Standard request metadata
@@ -57,10 +50,9 @@ export default function PrivacyPolicy() {
           <Section title="2. How We Use Your Information">
             <p>We use the information above to:</p>
             <ul className="list-disc pl-5 space-y-1">
-              <li>Operate your account, wishlist, and saved searches</li>
+              <li>Operate your account and wishlist</li>
               <li>Check tracked product prices automatically (between every 3 and 48 hours per product) and record price history</li>
-              <li>Send email or push alerts when a tracked product hits your target price</li>
-              <li>Show community features like leaderboards and shared wishlists, when you choose to use them</li>
+              <li>Send email and in-app alerts when a tracked product hits your target price</li>
               <li>Protect the service against abuse, such as excessive login attempts</li>
             </ul>
             <p>We do not sell your personal information to third parties.</p>
@@ -88,8 +80,8 @@ export default function PrivacyPolicy() {
           <Section title="5. Data Retention and Deletion">
             <p>
               We keep your account and activity data for as long as your account is active. You
-              can remove items from your wishlist, unfollow other users, and disable push
-              notifications at any time from your account settings. To request full deletion of
+              can remove items from your wishlist and turn off email alerts at any time from your
+              account settings. To request full deletion of
               your account and associated data, contact us using the details below.
             </p>
           </Section>
@@ -97,8 +89,8 @@ export default function PrivacyPolicy() {
           <Section title="6. Your Choices">
             <ul className="list-disc pl-5 space-y-1">
               <li>Update your name, email, or password from your profile page</li>
-              <li>Turn browser push alerts on or off at any time</li>
-              <li>Delete individual wishlist items, saved searches, or comments</li>
+              <li>Turn email alerts on or off at any time</li>
+              <li>Delete individual wishlist items</li>
               <li>Log out to clear your local session token</li>
             </ul>
           </Section>

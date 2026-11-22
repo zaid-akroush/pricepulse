@@ -1,4 +1,4 @@
-const { fetchShopping, activeProvider, ProviderError } = require('./searchProviders');
+const { fetchShopping, ProviderError } = require('./searchProviders');
 const { resolveMarket } = require('./markets');
 const { getRates } = require('./currency');
 
@@ -142,7 +142,6 @@ async function searchProducts(query, opts = {}) {
   const market = resolveMarket(opts.country);
   const key = cacheKey(query, market);
   const cached = cacheTake(key, opts.maxAgeMs);
-  const provider = activeProvider();
 
   let results;
   if (cached) {
@@ -159,7 +158,7 @@ async function searchProducts(query, opts = {}) {
       breakerUntil = 0;
       breakerError = null;
     } catch (err) {
-      const mapped = toSerpApiError(err, provider.label);
+      const mapped = toSerpApiError(err, 'SerpApi');
       if ([401, 402, 403, 429].includes(mapped.status)) {
         breakerUntil = Date.now() + BREAKER_MS;
         breakerError = mapped;

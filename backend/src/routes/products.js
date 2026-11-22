@@ -9,7 +9,6 @@ const { extractAttributes } = require('../services/productAttributes');
 const { getReleaseStatus } = require('../services/productClassifier');
 const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
-const { diagnose } = require('../services/diagnostics');
 const { computeTrends } = require('../services/trends');
 const { observePrice } = require('../jobs/priceCron');
 
@@ -40,8 +39,8 @@ router.get('/markets', (req, res) => {
 // (no auth required). `country` picks the Google Shopping market (default
 // us); listings come back priced in that market's currency.
 router.get('/search', async (req, res) => {
-  // Declared outside the try: the catch below reads it for the DB fallback and
-  // for the admin diagnostic's context, and a `const` inside the try is not in
+  // Declared outside the try: the catch below reads it for the DB fallback, and a
+  // `const` inside the try is not in
   // scope there — referencing it threw a ReferenceError from inside the error
   // handler, which crashed the process instead of answering the request.
   const { q } = req.query;
@@ -110,26 +109,13 @@ router.get('/search', async (req, res) => {
         // that live search stays down until the provider account is topped up.
         res.set('X-Search-Degraded', '1');
         res.set('X-Search-Reason', String(err.message).replace(/[\r\n]+/g, ' '));
-        if (req.isAdmin) {
-          const d = diagnose(err, { method: req.method, path: req.originalUrl, query: q });
-          res.set('X-Search-Diagnostic', Buffer.from(JSON.stringify(d)).toString('base64'));
-        }
-        res.set('Access-Control-Expose-Headers', 'X-Search-Degraded, X-Search-Reason, X-Search-Diagnostic, X-Search-Market');
+        res.set('Access-Control-Expose-Headers', 'X-Search-Degraded, X-Search-Reason, X-Search-Market');
         return res.json(fallback);
       }
       // 4xx from the upstream provider (bad key, out of credits, rate limit)
       // is a service outage from our users' perspective, not a client error.
       // Surface it as 503 with a clean message instead of the raw axios text.
-      //
-      // This route catches SerpApiError itself, so it never reaches the global
-      // error handler and has to attach the admin diagnostic itself: without
-      // this, an admin saw the same "try again later" line as everyone else
-      // and had to read the server log to find out the key was rejected.
-      const body = { error: err.message };
-      if (req.isAdmin) {
-        body.diagnostic = diagnose(err, { method: req.method, path: req.originalUrl, query: q });
-      }
-      return res.status(503).json(body);
+      return res.status(503).json({ error: err.message });
     }
     res.status(500).json({ error: err.message });
   }
@@ -254,7 +240,7 @@ router.get('/deal-of-day', async (req, res) => {
   try {
     const products = await prisma.product.findMany({
       where: { highestPrice: { gt: 0 }, wishlistItems: { some: {} } },
-      include: { _count: { select: { wishlistItems: true, likes: true } } },
+      include: { _count: { select: { wishlistItems: true } } },
       take: 100,
     });
     if (!products.length) return res.json(null);
@@ -263,7 +249,6 @@ router.get('/deal-of-day', async (req, res) => {
         ...p,
         dropPercent: Math.round(((p.highestPrice - p.currentPrice) / p.highestPrice) * 100),
         wishlistCount: p._count.wishlistItems,
-        likeCount: p._count.likes,
         score: ((p.highestPrice - p.currentPrice) / p.highestPrice) * 100 + p._count.wishlistItems * 5,
       }))
       .filter(p => p.dropPercent > 0)
@@ -719,7 +704,7 @@ router.get('/:id', async (req, res) => {
       where: { id: parseInt(req.params.id) },
       include: {
         priceHistory: { orderBy: { recordedAt: 'asc' } },
-        _count: { select: { wishlistItems: true, likes: true, comments: true } },
+        _count: { select: { wishlistItems: true } },
       },
     });
     if (!product) return res.status(404).json({ error: 'Product not found' });
@@ -736,8 +721,6 @@ router.get('/:id', async (req, res) => {
     res.json({
       ...product,
       wishlistCount: product._count.wishlistItems,
-      likeCount: product._count.likes,
-      commentCount: product._count.comments,
       released: release.released,
       releaseLabel: release.label,
       releaseReason: release.reason,
@@ -1051,7 +1034,7 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
       where: { id: product.id },
       include: {
         priceHistory: { orderBy: { recordedAt: 'asc' } },
-        _count: { select: { wishlistItems: true, likes: true, comments: true } },
+        _count: { select: { wishlistItems: true } },
       },
     });
     res.json({
@@ -1059,8 +1042,6 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
       product: {
         ...fresh,
         wishlistCount: fresh._count.wishlistItems,
-        likeCount: fresh._count.likes,
-        commentCount: fresh._count.comments,
       },
     });
   } catch (err) {

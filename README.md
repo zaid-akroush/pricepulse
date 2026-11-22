@@ -4,14 +4,13 @@ An intelligent electronics price tracking and alert system. Search for products 
 
 ## Features
 
-- Real-time product search powered by Google Shopping (SerpApi, Bright Data or Serper.dev), in the country you choose (US, UK, Germany, Hungary, Jordan and more), priced in that country's currency
+- Real-time product search powered by Google Shopping (SerpApi), in the country you choose (US, UK, Germany, Hungary, Jordan and more), priced in that country's currency
 - User registration and login with JWT authentication
 - Personal wishlist with target price or target drop percentage per product
 - Adaptive price monitoring: each product is re-checked every 3 to 48 hours depending on how much its price moves and how many people track it, and products that share a search cost one provider request
-- Email, in-app and browser push alerts when a product hits your target or drops
+- Email and in-app alerts when a product hits your target or drops
 - Price history for every monitored product, with a buy-or-wait forecast, retailer comparison and your own alert history
 - Public Trends page: biggest drops, all-time lows and most volatile products, built from the collected history
-- Analytics tab with a savings-over-time chart
 - Fully containerised with Docker
 
 ## Tech Stack
@@ -22,7 +21,7 @@ An intelligent electronics price tracking and alert system. Search for products 
 | Backend | Node.js 20, Express.js 4 |
 | Database | PostgreSQL 16, Prisma ORM |
 | Auth | JWT, bcryptjs |
-| Price Data | SerpApi / Bright Data / Serper.dev (Google Shopping) |
+| Price Data | SerpApi (Google Shopping) |
 | Email | Resend |
 | Scheduling | node-cron |
 | Security | Helmet.js, express-rate-limit, express-validator |
@@ -53,11 +52,7 @@ Fill in the values in `.env`:
 
 | Variable | Where to get it |
 |----------|----------------|
-| `SERPAPI_KEY` | [serpapi.com](https://serpapi.com) — private API key. Free tier is 250 searches/month, renewed monthly. This is the default provider. |
-| `SEARCH_PROVIDER` | `serpapi` (default), `brightdata`, or `serper`. |
-| `BRIGHTDATA_API_KEY` | [brightdata.com](https://brightdata.com) — account API token. The SERP API free tier is 5,000 requests/month, renewed monthly. |
-| `BRIGHTDATA_SERP_ZONE` | The **name** of the SERP zone you create in the Bright Data control panel (not the token). |
-| `SERP_API_KEY` | [serper.dev](https://serper.dev) — legacy provider, only used when `SEARCH_PROVIDER=serper`. Its free tier is a one-time 2,500 credits. |
+| `SERPAPI_KEY` | [serpapi.com](https://serpapi.com) — private API key. Free tier is 250 searches/month, renewed monthly. |
 | `RESEND_API_KEY` | [resend.com/api-keys](https://resend.com/api-keys) |
 | `JWT_SECRET` | Any long random string |
 

@@ -9,7 +9,6 @@ import Wordmark from './Wordmark';
 
 const LINKS = [
   { to: '/search', label: 'Search' },
-  { to: '/events', label: 'Deals' },
   { to: '/trends', label: 'Trends' },
 ];
 
@@ -134,26 +133,13 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [unread, setUnread] = useState(0);
   const [scrolled, setScrolled] = useState(false);
-  // The deployed version, shown next to the logo for admins only. Served from
-  // the admin-only /health/diagnostics endpoint, so a non-admin never even
-  // receives it.
-  const [version, setVersion] = useState(null);
 
   useEffect(() => {
     if (!user) return;
-    api.get('/social/notifications/unread-count')
+    api.get('/notifications/unread-count')
       .then(r => setUnread(r.data.count))
       .catch(() => {});
   }, [user, location.pathname]);
-
-  useEffect(() => {
-    if (!user?.isAdmin) { setVersion(null); return; }
-    let active = true;
-    api.get('/health/diagnostics')
-      .then(r => { if (active) setVersion(r.data?.version || null); })
-      .catch(() => { if (active) setVersion(null); });
-    return () => { active = false; };
-  }, [user]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -172,41 +158,15 @@ export default function Navbar() {
 
   const isActive = (path) => location.pathname === path;
 
-  // Wishlist/Analytics are always shown in the nav, even when logged
-  // out — clicking one routes through PrivateRoute, which sends anonymous
-  // visitors to /login. Admin stays role-gated since it's not a general
-  // user feature. Saved searches used to be a standalone page/nav item, but
-  // that's now folded into the Search page itself (the "Save search" button
-  // and Bookmarks popout there), so there's nothing left for a separate tab
-  // to do.
-  const userLinks = [
-    { to: '/wishlist', label: 'Wishlist' },
-    user?.isAdmin && { to: '/admin', label: 'Admin' },
-  ].filter(Boolean);
-
-  // Help always sits last in the nav, it's a fallback/reference destination
-  // rather than a core feature, so it shouldn't compete for the prime spots.
-  const allLinks = [...LINKS, ...userLinks, { to: '/help', label: 'Help' }];
+  // Wishlist is always shown; PrivateRoute sends anonymous visitors to /login.
+  const allLinks = [...LINKS, { to: '/wishlist', label: 'Wishlist' }];
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? 'surface-translucent backdrop-blur-md border-b border-app shadow-[var(--shadow-sm)]' : 'surface border-b border-transparent'}`}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between gap-4">
-        {/* Logo, with the running version pinned beside it for admins so the
-            first thing they see is which build they are looking at. */}
-        <div className="flex items-center gap-2 shrink-0">
-          <Link to="/" className="flex items-center">
-            <Wordmark />
-          </Link>
-          {user?.isAdmin && version && (
-            <Link
-              to="/admin"
-              title="Deployed version (visible to admins only)"
-              className="hidden sm:inline-block text-[10px] font-data font-semibold px-1.5 py-0.5 rounded-md bg-brand-soft text-brand leading-none hover:opacity-80 transition-opacity"
-            >
-              v{version}
-            </Link>
-          )}
-        </div>
+        <Link to="/" className="flex items-center shrink-0">
+          <Wordmark />
+        </Link>
 
         {/* Desktop Nav */}
         <div className="hidden lg:flex items-center gap-0.5">

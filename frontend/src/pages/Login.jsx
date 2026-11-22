@@ -2,20 +2,18 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import AuthLayout from '../components/AuthLayout';
-import AdminDiagnostic from '../components/AdminDiagnostic';
-import { describeApiError, apiDiagnostic } from '../api/errorMessage';
+import { describeApiError } from '../api/errorMessage';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ email: '', password: '' });
   const [error, setError] = useState(null);
-  const [diagnostic, setDiagnostic] = useState(null);
   const [loading, setLoading] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setLoading(true); setError(null); setDiagnostic(null);
+    setLoading(true); setError(null);
     try {
       await login(form.email, form.password);
       navigate('/wishlist');
@@ -26,7 +24,6 @@ export default function Login() {
       // Anything else — server unreachable, CORS, 404, 5xx — is named for
       // what it is instead of being blamed on the credentials.
       setError(describeApiError(err, 'Login failed. Check your credentials.'));
-      setDiagnostic(apiDiagnostic(err));
     } finally { setLoading(false); }
   }
 
@@ -53,7 +50,6 @@ export default function Login() {
         </div>
 
         {error && <p className="text-sm text-danger bg-danger-soft p-3 rounded-xl">{error}</p>}
-        <AdminDiagnostic diagnostic={diagnostic} />
 
         <button type="submit" disabled={loading} className="btn-primary py-3 w-full disabled:opacity-50">
           {loading ? 'Logging in…' : 'Log In'}

@@ -46,7 +46,7 @@ async function recordPrice(prisma, product, price, options = {}) {
   const past = await prisma.priceHistory.findMany({
     where: { productId: product.id },
     select: { price: true },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { recordedAt: 'desc' },
     take: 30,
   });
   const check = looksLikeUnlabelledPayment(price, past.map(r => r.price));

@@ -6,8 +6,7 @@ const LINK_COLUMNS = [
     title: 'Product',
     links: [
       { to: '/search', label: 'Search Products' },
-      { to: '/events', label: 'Deals & Events' },
-      { to: '/wishlist?tab=following', label: 'Following' },
+      { to: '/trends', label: 'Price Trends' },
     ],
   },
   {
@@ -24,7 +23,6 @@ const LINK_COLUMNS = [
     links: [
       { to: '/wishlist', label: 'My Wishlist' },
       { to: '/register', label: 'Create Account' },
-      { to: '/help', label: 'Help Center' },
       { to: '/privacy-policy', label: 'Privacy Policy' },
     ],
   },

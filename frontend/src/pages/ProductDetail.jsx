@@ -6,7 +6,6 @@ import api from '../api/axios';
 import PriceChart from '../components/PriceChart';
 import ProductImage from '../components/ProductImage';
 import ProductGallery from '../components/ProductGallery';
-import AdminDiagnostic from '../components/AdminDiagnostic';
 import DealScore, { getDealScore } from '../components/DealScore';
 import PricePrediction from '../components/PricePrediction';
 import PriceCompare from '../components/PriceCompare';
@@ -44,221 +43,6 @@ function exportCSV(product) {
 }
 
 // Sub-components
-
-// Community notes.
-//
-// Notes are public user-generated text, so posting is governed by rules the
-// server enforces (length, profanity, links, spam, flood control). Those
-// rules are fetched from /social/guidelines rather than duplicated here, so
-// the list a user reads can never drift from what's actually enforced. Notes
-// default to "Top" order — most-upvoted first — so the genuinely useful tips
-// surface instead of whatever was posted most recently.
-const NOTE_MAX_FALLBACK = 500;
-const NOTE_MIN_FALLBACK = 10;
-
-function CommentsSection({ productId }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [comments, setComments] = useState([]);
-  const [text, setText] = useState('');
-  const [loading, setLoading] = useState(true);
-  const [posting, setPosting] = useState(false);
-  const [error, setError] = useState('');
-  const [sort, setSort] = useState('top');
-  const [guidelines, setGuidelines] = useState(null);
-  const [showRules, setShowRules] = useState(false);
-
-  const maxLength = guidelines?.maxLength ?? NOTE_MAX_FALLBACK;
-  const minLength = guidelines?.minLength ?? NOTE_MIN_FALLBACK;
-  const trimmedLength = text.trim().length;
-  const tooShort = trimmedLength > 0 && trimmedLength < minLength;
-  const overLimit = trimmedLength > maxLength;
-
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    api.get(`/social/comments/${productId}`, { params: { sort } })
-      .then(r => { if (active) setComments(r.data); })
-      .finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [productId, sort]);
-
-  useEffect(() => {
-    api.get('/social/guidelines')
-      .then(r => setGuidelines(r.data))
-      .catch(() => {});
-  }, []);
-
-  async function post(e) {
-    e.preventDefault();
-    setError('');
-    if (!user) { navigate('/login'); return; }
-    if (!trimmedLength || tooShort || overLimit) return;
-    setPosting(true);
-    try {
-      const res = await api.post(`/social/comments/${productId}`, { text });
-      setComments(prev => [res.data, ...prev]);
-      setText('');
-    } catch (err) {
-      // The server returns a specific, user-facing reason (which rule was
-      // broken); show it rather than a generic failure message.
-      setError(describeApiError(err, 'Could not post your note. Please try again.'));
-    } finally { setPosting(false); }
-  }
-
-  async function deleteComment(id) {
-    await api.delete(`/social/comments/${id}`);
-    setComments(prev => prev.filter(c => c.id !== id));
-  }
-
-  async function toggleLike(comment) {
-    if (!user) { navigate('/login'); return; }
-    // Optimistic: the vote is a single counter, so showing it immediately and
-    // reconciling with the server's count keeps the button feeling instant.
-    const optimistic = comment.likedByMe ? -1 : 1;
-    setComments(prev => prev.map(c => c.id === comment.id
-      ? { ...c, likeCount: Math.max(0, (c.likeCount || 0) + optimistic), likedByMe: !c.likedByMe }
-      : c));
-    try {
-      const res = await api.post(`/social/comments/${comment.id}/like`);
-      setComments(prev => prev.map(c => c.id === comment.id
-        ? { ...c, likeCount: res.data.likeCount, likedByMe: res.data.likedByMe }
-        : c));
-    } catch (err) {
-      setComments(prev => prev.map(c => c.id === comment.id ? comment : c));
-      setError(describeApiError(err, 'Could not register your vote.'));
-    }
-  }
-
-  const counterColor = overLimit || tooShort ? 'var(--danger)' : 'var(--text-muted)';
-
-  return (
-    <div className="card p-6 mt-6">
-      <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
-        <h2 className="text-lg font-bold" style={{ color: 'var(--text)' }}>
-          Community Notes ({comments.length})
-        </h2>
-        {comments.length > 1 && (
-          <div className="flex items-center gap-1 p-1 rounded-lg" style={{ backgroundColor: 'var(--bg)' }}>
-            {[['top', 'Top'], ['new', 'Newest']].map(([key, label]) => (
-              <button
-                key={key}
-                onClick={() => setSort(key)}
-                aria-pressed={sort === key}
-                className={`text-xs font-semibold px-3 py-1 rounded-md transition-colors ${sort === key ? 'bg-brand text-on-brand' : 'text-muted hover:text-brand'}`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <form onSubmit={post} className="mb-5">
-        <div className="flex gap-2">
-          <input
-            value={text}
-            onChange={e => { setText(e.target.value); if (error) setError(''); }}
-            placeholder={user ? 'Share a tip, deal alert, or note…' : 'Login to leave a note'}
-            className="input flex-1 text-sm"
-            maxLength={maxLength + 50}
-            disabled={!user}
-            aria-describedby="note-rules"
-          />
-          {user ? (
-            <button type="submit" disabled={posting || !trimmedLength || tooShort || overLimit}
-              className="btn-primary text-sm px-4 shrink-0 disabled:opacity-50">
-              {posting ? '…' : 'Post'}
-            </button>
-          ) : (
-            <Link to="/login" className="btn-primary text-sm px-4 shrink-0">Login</Link>
-          )}
-        </div>
-
-        <div className="flex items-center justify-between gap-3 mt-2 flex-wrap">
-          <button
-            type="button"
-            onClick={() => setShowRules(v => !v)}
-            className="text-[11px] font-semibold text-brand hover:underline"
-            aria-expanded={showRules}
-          >
-            {showRules ? 'Hide posting guidelines' : 'Posting guidelines'}
-          </button>
-          {user && trimmedLength > 0 && (
-            <span className="text-[11px] font-data" style={{ color: counterColor }}>
-              {tooShort
-                ? `${minLength - trimmedLength} more character${minLength - trimmedLength === 1 ? '' : 's'} needed`
-                : `${trimmedLength} / ${maxLength}`}
-            </span>
-          )}
-        </div>
-
-        {showRules && (
-          <ul id="note-rules" className="mt-2 space-y-1 text-[11px] leading-relaxed pl-4 list-disc" style={{ color: 'var(--text-muted)' }}>
-            {(guidelines?.rules || [
-              `Between ${minLength} and ${maxLength} characters.`,
-              'Be helpful and civil, with no profanity, slurs or personal attacks.',
-              'No links, phone numbers or contact details.',
-              'No spam: no all-caps, repeated characters or repeated words.',
-            ]).map(rule => <li key={rule}>{rule}</li>)}
-          </ul>
-        )}
-
-        {error && (
-          <p role="alert" className="text-xs mt-2 font-medium" style={{ color: 'var(--danger)' }}>{error}</p>
-        )}
-      </form>
-
-      {loading ? (
-        <div className="space-y-3">
-          {[...Array(2)].map((_, i) => <div key={i} className="h-12 rounded-xl animate-pulse surface-3" />)}
-        </div>
-      ) : comments.length === 0 ? (
-        <p className="text-sm text-center py-6" style={{ color: 'var(--text-muted)' }}>No notes yet. Be the first to share a tip!</p>
-      ) : (
-        <div className="space-y-3">
-          {comments.map((c, i) => (
-            <div key={c.id} className="flex gap-3 p-3 rounded-xl" style={{ backgroundColor: 'var(--bg)' }}>
-              <div className="w-8 h-8 rounded-full bg-brand flex items-center justify-center text-on-brand text-xs font-bold shrink-0">
-                {c.user.name[0]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-bold" style={{ color: 'var(--text)' }}>{c.user.name}</span>
-                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                    {new Date(c.createdAt).toLocaleDateString()}
-                  </span>
-                  {/* Only meaningful in "Top" order, and only when the note
-                      actually has votes behind it. */}
-                  {sort === 'top' && i === 0 && c.likeCount > 0 && (
-                    <span className="badge badge-green text-[10px]">Top note</span>
-                  )}
-                </div>
-                <p className="text-sm mt-0.5 break-words" style={{ color: 'var(--text)' }}>{c.text}</p>
-                <button
-                  onClick={() => toggleLike(c)}
-                  disabled={user && user.id === c.user.id}
-                  aria-pressed={!!c.likedByMe}
-                  aria-label={c.likedByMe ? 'Remove your upvote' : 'Upvote this note'}
-                  title={user && user.id === c.user.id ? "You can't vote on your own note" : undefined}
-                  className={`mt-1.5 inline-flex items-center gap-1 text-[11px] font-semibold rounded-full px-2 py-0.5 transition-colors disabled:opacity-40 disabled:cursor-default ${c.likedByMe ? 'bg-brand-soft text-brand' : 'text-muted hover:text-brand'}`}
-                >
-                  <svg className="w-3 h-3" viewBox="0 0 24 24" fill={c.likedByMe ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M12 4l7 8h-4v8h-6v-8H5z" />
-                  </svg>
-                  {c.likeCount || 0}
-                </button>
-              </div>
-              {user && user.id === c.user.id && (
-                <button onClick={() => deleteComment(c.id)} className="text-faint hover:text-danger text-lg leading-none shrink-0" title="Delete note" aria-label="Delete note">×</button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // The signed-in user's own alerts for this product (price drops and target
 // hits), newest first. Answers "did it ever hit my target, and when?" without
@@ -359,45 +143,6 @@ function RelatedProducts({ productId }) {
   );
 }
 
-function LikeButton({ productId }) {
-  const { user } = useAuth();
-  const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [count, setCount] = useState(0);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    api.get(`/social/likes/${productId}`)
-      .then(r => { setLiked(r.data.liked); setCount(r.data.count); })
-      .catch(() => {});
-  }, [productId]);
-
-  async function toggle() {
-    if (!user) { navigate('/login'); return; }
-    setLoading(true);
-    try {
-      const method = liked ? 'delete' : 'post';
-      const res = await api[method](`/social/like/${productId}`);
-      setLiked(res.data.liked);
-      setCount(res.data.count);
-    } finally { setLoading(false); }
-  }
-
-  return (
-    <button
-      onClick={toggle}
-      disabled={loading}
-      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all border ${liked ? 'bg-danger-soft text-danger border-danger' : 'text-muted hover:text-danger'}`}
-      style={liked ? undefined : { borderColor: 'var(--border)', backgroundColor: 'var(--surface)' }}
-    >
-      <svg viewBox="0 0 24 24" className="w-4 h-4" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M12 21s-7.5-4.6-10-9.1C.5 8.2 2.4 5 6 5c2 0 3.5 1 6 3.5C14.5 6 16 5 18 5c3.6 0 5.5 3.2 4 6.9C19.5 16.4 12 21 12 21z" />
-      </svg>
-      <span>{count}</span>
-    </button>
-  );
-}
-
 // Main Page
 
 export default function ProductDetail() {
@@ -407,7 +152,6 @@ export default function ProductDetail() {
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [diagnostic, setDiagnostic] = useState(null);
   const [targetPrice, setTargetPrice] = useState('');
   const [added, setAdded] = useState(false);
   const [addLoading, setAddLoading] = useState(false);
@@ -440,14 +184,12 @@ export default function ProductDetail() {
     let active = true;
     setLoading(true);
     setError(null);
-    setDiagnostic(null);
     api.get(`/products/${id}`)
       .then(res => { if (active) setProduct(res.data); })
       .catch(err => {
         if (!active) return;
         setError(err.response?.status === 404 ? 'Product not found.' : 'Failed to load product.');
         // Only populated for admins; renders nothing for anyone else.
-        setDiagnostic(err.response?.data?.diagnostic || null);
       })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
@@ -517,7 +259,6 @@ export default function ProductDetail() {
     return (
       <div className="max-w-lg mx-auto py-20 px-4 text-center">
         <p className="text-danger">{error}</p>
-        <AdminDiagnostic diagnostic={diagnostic} />
       </div>
     );
   }
@@ -623,7 +364,6 @@ export default function ProductDetail() {
                 View on Store →
               </a>
             )}
-            <LikeButton productId={product.id} />
             <button
               onClick={handleShare}
               className="px-3 py-2 rounded-xl text-sm font-medium border transition-colors hover:border-brand hover:text-brand"
@@ -726,8 +466,6 @@ export default function ProductDetail() {
       {/* Alert history for the signed-in user */}
       <AlertHistory productId={product.id} />
 
-      {/* Comments */}
-      <CommentsSection productId={product.id} />
 
         </div>{/* /main column */}
 

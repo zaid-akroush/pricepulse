@@ -316,43 +316,6 @@ for (const u of SEED_USERS) {
 }
 
 
-// ── Community notes ───────────────────────────────────────────────────────
-// Seeded so the notes section, its "Top" ordering and the upvote counts have
-// something real to show. Every line below is written to pass the same rules
-// the API enforces (services/noteModeration): 10-500 characters, no links,
-// no phone numbers, no shouting, no repetition. The seed asserts that rather
-// than trusting it — a fixture that the live endpoint would have rejected is
-// a bug, not test data.
-const NOTE_TEXTS = [
-  'Picked this up last month and the price has already dropped twice, worth waiting if you can.',
-  'Been tracking this one since spring. It bottoms out around every major sale weekend.',
-  'Build quality is solid for the money. No complaints after a few weeks of daily use.',
-  'Watch out for the older generation being sold at a similar price, check the model year.',
-  'Battery life is noticeably better than the previous version, that alone sold me on it.',
-  'Was cheaper at a warehouse club last quarter, so this current price is not the floor.',
-  'Shipping took longer than advertised but the item arrived in perfect condition.',
-  'If you already own last year model, honestly not worth upgrading at this price.',
-  'The bundle version usually appears around the holidays and works out much better value.',
-  'Great value once it dips under the average. Setting my alert a little below that.',
-  'Reviews elsewhere mention a firmware update fixing the early connection issues.',
-  'Colour options seem to be priced differently, the darker one is consistently cheaper.',
-  'This has been steady for months, I would not expect a big drop before the next sale.',
-  'Bought two of these for the office and both have been completely reliable so far.',
-  'Keep an eye on the refurbished listings, they run quite a bit below this number.',
-  'The price jumped right before the sale and then came back down, classic pattern.',
-  'Compared this against two similar models and it wins clearly on ports and display.',
-  'Packaging was minimal but everything was well protected, no damage on arrival.',
-];
-
-const { validateNoteText } = require('../src/services/noteModeration');
-for (const text of NOTE_TEXTS) {
-  const verdict = validateNoteText(text);
-  if (!verdict.ok) {
-    throw new Error(`Seed note would be rejected by the API ("${verdict.error}"): ${text}`);
-  }
-}
-
-
 // Build a believable price series for a seeded product: one reading every few
 // days over the past ~3 months, wandering within the product's declared
 // low/high, and guaranteed to actually touch both bounds and to end at
@@ -387,7 +350,7 @@ function buildPriceHistory(p) {
 }
 
 async function main() {
-  console.log('Seeding community users and wishlists...');
+  console.log('Seeding demo users and wishlists...');
   // NOTE: every seed account below shares this one weak, publicly-known
   // password. This file is dev-only fixture data for local/demo databases —
   // it must NEVER be run against the production database.
@@ -435,74 +398,6 @@ async function main() {
   // Follows: each user follows a random 5-15 other users, so the
   // community/leaderboard pages and each account's "following" count have
   // real, varied data instead of everyone having an identical fixed count.
-  console.log('Seeding follows...');
-  const allUsers = await prisma.user.findMany({ select: { id: true }, orderBy: { id: 'asc' } });
-  const followData = [];
-  for (const u of allUsers) {
-    const others = allUsers.filter(o => o.id !== u.id).map(o => o.id);
-    const followCount = randInt(5, Math.min(15, others.length));
-    for (const targetId of sample(others, followCount)) {
-      followData.push({ followerId: u.id, followingId: targetId });
-    }
-  }
-  const followResult = await prisma.follow.createMany({ data: followData, skipDuplicates: true });
-  console.log(`  ✓ ${followResult.count} follow relationships`);
-
-  // Likes: each user likes a random 5-20 products from the catalog, so
-  // "Deal of the day" scoring and each product's like count have real,
-  // varied signal instead of an identical fixed count per user.
-  console.log('Seeding product likes...');
-  const allProducts = await prisma.product.findMany({ select: { id: true }, orderBy: { id: 'asc' } });
-  const likeData = [];
-  for (const u of allUsers) {
-    const likeCount = randInt(5, Math.min(20, allProducts.length));
-    for (const p of sample(allProducts, likeCount)) {
-      likeData.push({ userId: u.id, productId: p.id });
-    }
-  }
-  const likeResult = await prisma.productLike.createMany({ data: likeData, skipDuplicates: true });
-  console.log(`  ✓ ${likeResult.count} product likes`);
-
-  // Community notes: a random handful of products get notes from random
-  // users, so most product pages have discussion without every page carrying
-  // an identical block of text. One note per (user, product) pair keeps it
-  // looking like a real thread rather than one account talking to itself.
-  console.log('Seeding community notes...');
-  const noteData = [];
-  const usedPairs = new Set();
-  const productsWithNotes = sample(allProducts, Math.ceil(allProducts.length * 0.6));
-  for (const product of productsWithNotes) {
-    for (const u of sample(allUsers, randInt(1, 5))) {
-      const pair = `${u.id}:${product.id}`;
-      if (usedPairs.has(pair)) continue;
-      usedPairs.add(pair);
-      noteData.push({
-        userId: u.id,
-        productId: product.id,
-        text: NOTE_TEXTS[randInt(0, NOTE_TEXTS.length - 1)],
-        // Spread notes over the past three months so "Newest" ordering shows
-        // a real timeline instead of every note sharing one timestamp.
-        createdAt: new Date(Date.now() - randInt(1, 90) * 24 * 60 * 60 * 1000),
-      });
-    }
-  }
-  const noteResult = await prisma.comment.createMany({ data: noteData, skipDuplicates: true });
-  console.log(`  ✓ ${noteResult.count} community notes`);
-
-  // Upvotes on those notes, so the "Top" ordering has something to sort by.
-  // A user can't like their own note (the API rejects it), so those pairs are
-  // skipped here too.
-  console.log('Seeding note upvotes...');
-  const allNotes = await prisma.comment.findMany({ select: { id: true, userId: true } });
-  const noteLikeData = [];
-  for (const note of allNotes) {
-    const voters = sample(allUsers.filter(u => u.id !== note.userId), randInt(0, 8));
-    for (const voter of voters) {
-      noteLikeData.push({ userId: voter.id, commentId: note.id });
-    }
-  }
-  const noteLikeResult = await prisma.commentLike.createMany({ data: noteLikeData, skipDuplicates: true });
-  console.log(`  ✓ ${noteLikeResult.count} note upvotes`);
 
   console.log('Done!');
 }

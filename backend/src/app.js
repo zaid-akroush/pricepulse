@@ -1,19 +1,12 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
-const { diagnose, environmentReport } = require('./services/diagnostics');
-const attachDiagnostics = require('./middleware/attachDiagnostics');
-const { version: APP_VERSION } = require('../package.json');
-const authMiddleware = require('./middleware/auth');
-const adminOnly = require('./middleware/admin');
 const rateLimit = require('express-rate-limit');
 
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
 const wishlistRoutes = require('./routes/wishlist');
-const communityRoutes = require('./routes/community');
-const socialRoutes = require('./routes/social');
-const adminRoutes = require('./routes/admin');
+const notificationRoutes = require('./routes/notifications');
 const currencyRoutes = require('./routes/currency');
 
 const app = express();
@@ -98,83 +91,21 @@ app.use('/api/auth/password', authLimiter);
 // Health check
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
 
-// Routes
-// Flags admin requests so failures below can be answered with a full
-// diagnosis. Never blocks a request.
-app.use('/api/', attachDiagnostics);
-
-
-// What is actually deployed. Read from package.json rather than a duplicated
-// constant, so `npm version` is the single place a release is stamped. The
-// commit and build time are only present when the deploy pipeline provides
-// them (Render and most CI systems expose the commit SHA as an env var), and
-// are reported as null rather than guessed when it doesn't.
-function buildInfo() {
-  const commit = process.env.RENDER_GIT_COMMIT
-    || process.env.GIT_COMMIT
-    || process.env.SOURCE_VERSION
-    || process.env.VERCEL_GIT_COMMIT_SHA
-    || null;
-  return {
-    version: APP_VERSION,
-    commit: commit ? String(commit).slice(0, 7) : null,
-    builtAt: process.env.BUILD_TIME || null,
-    startedAt: new Date(Date.now() - process.uptime() * 1000).toISOString(),
-    uptimeSeconds: Math.round(process.uptime()),
-    nodeEnv: process.env.NODE_ENV || 'development',
-    nodeVersion: process.version,
-  };
-}
-
-// GET /api/health/diagnostics — admin-only environment self-check. Reports
-// which integrations are configured (never their values) and how to fix each
-// gap, so an admin can tell at a glance why something isn't loading.
-// NOTE: guarded by the real `authMiddleware` + `adminOnly` pair, NOT by
-// req.isAdmin. req.isAdmin comes from attachDiagnostics, which skips the
-// tokenVersion check — fine for deciding how much an error explains, but it
-// would let a token revoked by a password reset keep reading this.
-app.get('/api/health/diagnostics', authMiddleware, adminOnly, (req, res) => {
-  const checks = environmentReport();
-  res.json({
-    ok: checks.every(c => c.ok),
-    checks,
-    ...buildInfo(),
-  });
-});
-
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/wishlist', wishlistRoutes);
-app.use('/api/community', communityRoutes);
-app.use('/api/social', socialRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/currency', currencyRoutes);
 
-// Global error handler
-// Global error handler.
-//
-// Regular users get the short message only. Admins additionally get a
-// `diagnostic` block naming the likely cause and the steps that fix it, so
-// "something didn't load" is actionable from the UI instead of requiring a
-// trip to the server logs. See services/diagnostics.
-// Errors a route raised deliberately (4xx) carry a message written FOR the
-// user and are safe to pass through. A 5xx is an internal failure, and its
-// message is whatever the library threw — Prisma in particular embeds the
-// database host, port and column names. Those were being returned verbatim
-// to anonymous callers, so any request made while the DB was down disclosed
-// internal infrastructure. 5xx now gets a fixed generic message; the real
-// text still goes to the server log, and to the admin-only diagnostic block.
+// Global error handler. 4xx messages are written for the user; 5xx get a
+// generic message so library errors (e.g. Prisma's DB host) never leak.
 app.use((err, req, res, next) => {
   console.error(err.stack);
   const status = err.status || 500;
   const safeMessage = status < 500
     ? (err.message || 'Request failed')
     : 'Something went wrong on our side. Please try again.';
-  const body = { error: safeMessage };
-  if (req.isAdmin) {
-    body.diagnostic = diagnose(err, { method: req.method, path: req.originalUrl });
-  }
-  res.status(status).json(body);
+  res.status(status).json({ error: safeMessage });
 });
 
 module.exports = app;

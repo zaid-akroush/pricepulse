@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const { body, validationResult } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { sendPasswordResetEmail } = require('../services/mailer');
-const { isAdminEmail } = require('../utils/admin');
 const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
@@ -46,7 +45,7 @@ router.post('/register',
       expiresIn: '7d',
     });
 
-    res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdminEmail(user.email) } });
+    res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -78,7 +77,7 @@ router.post('/login',
       expiresIn: '7d',
     });
 
-    res.json({ token, user: { id: user.id, name: user.name, email: user.email, isAdmin: isAdminEmail(user.email) } });
+    res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -162,9 +161,9 @@ router.get('/me', authMiddleware, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.userId },
-      select: { id: true, name: true, email: true, createdAt: true, wishlistPublic: true, emailAlertsEnabled: true },
+      select: { id: true, name: true, email: true, createdAt: true, emailAlertsEnabled: true },
     });
-    res.json({ ...user, isAdmin: isAdminEmail(user.email) });
+    res.json({ ...user });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -180,31 +179,19 @@ router.patch('/profile',
   if (!errors.isEmpty()) return res.status(400).json({ error: errors.array()[0].msg });
 
   try {
-    const { name, email, wishlistPublic, emailAlertsEnabled } = req.body;
+    const { name, email, emailAlertsEnabled } = req.body;
 
     const currentUser = await prisma.user.findUnique({ where: { id: req.userId }, select: { email: true } });
     if (!currentUser) return res.status(404).json({ error: 'User not found' });
 
     // Only check for a conflicting email if it's actually changing. Toggles
-    // like wishlistPublic/emailAlertsEnabled resend the unchanged email on
+    // like emailAlertsEnabled resend the unchanged email on
     // every request, so checking unconditionally caused every save to fail
     // with a false "Email already in use" the moment the email happened to
     // collide with a stale/duplicate lookup instead of a real conflict.
     if (email !== currentUser.email) {
       const existing = await prisma.user.findFirst({ where: { email, NOT: { id: req.userId } } });
       if (existing) return res.status(409).json({ error: 'Email already in use' });
-
-      // Admin rights are derived purely from the address matching
-      // ADMIN_EMAILS, and there is no email verification anywhere in this
-      // app. So if an address in that list has no account yet — a
-      // not-yet-onboarded admin, an alias, a rotated address — any user
-      // could simply set their own email to it and become an admin. Claiming
-      // an admin address through a self-service profile edit is never
-      // legitimate: an admin account is created by registering with that
-      // address, not by renaming an existing one into it.
-      if (isAdminEmail(email) && !isAdminEmail(currentUser.email)) {
-        return res.status(403).json({ error: 'That email address cannot be used.' });
-      }
     }
 
     const updated = await prisma.user.update({
@@ -212,13 +199,10 @@ router.patch('/profile',
       data: {
         name,
         email,
-        // Optional: lets a user hide their wishlist from Community browsing
-        // and the Follow-by-name search without touching name/email.
-        ...(typeof wishlistPublic === 'boolean' ? { wishlistPublic } : {}),
         // Optional: opt out of price-drop emails without affecting in-app notifications.
         ...(typeof emailAlertsEnabled === 'boolean' ? { emailAlertsEnabled } : {}),
       },
-      select: { id: true, name: true, email: true, wishlistPublic: true, emailAlertsEnabled: true },
+      select: { id: true, name: true, email: true, emailAlertsEnabled: true },
     });
     res.json(updated);
   } catch (err) {

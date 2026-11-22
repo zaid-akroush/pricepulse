@@ -38,8 +38,3 @@ export function describeApiError(err, fallback = 'The request failed.') {
   if (status >= 500) return `The server failed with HTTP ${status}. This is a backend fault, not your credentials. Check the backend log.`;
   return fallback;
 }
-
-// The admin-only diagnosis block, when the backend attached one.
-export function apiDiagnostic(err) {
-  return err?.response?.data?.diagnostic || null;
-}

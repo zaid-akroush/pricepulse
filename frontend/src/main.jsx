@@ -21,9 +21,3 @@ ReactDOM.createRoot(document.getElementById('root')).render(
   </React.StrictMode>
 );
 
-// Register the service worker for PWA install + web push (production builds only)
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch((err) => console.warn('SW registration failed:', err));
-  });
-}

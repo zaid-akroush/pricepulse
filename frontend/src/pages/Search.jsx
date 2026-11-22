@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import AdminDiagnostic from '../components/AdminDiagnostic';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { MARKETS, getMarket, setMarket, marketInfo } from '../utils/market';
-import { useAuth } from '../context/AuthContext';
 import api from '../api/axios';
 import ProductCard from '../components/ProductCard';
 import { ProductCardSkeleton } from '../components/Skeleton';
@@ -56,15 +54,7 @@ const SORTS = [
   { label: 'Price: High to Low', value: 'price_desc' },
 ];
 
-// The admin diagnostic rides along as base64 JSON in a response header
-// (the success body is a plain array and has nowhere to put it).
-function decodeDiagnostic(header) {
-  if (!header) return null;
-  try { return JSON.parse(atob(header)); } catch { return null; }
-}
-
 export default function Search() {
-  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   // Which Google Shopping market to search. Remembered per browser so a
   // student in Debrecen sees Hungarian shops and forint prices by default
@@ -78,7 +68,6 @@ export default function Search() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   // Present only for admins — the backend attaches it to failure responses.
-  const [diagnostic, setDiagnostic] = useState(null);
   // Why the results are cached rather than live, when the backend says so.
   const [degraded, setDegraded] = useState(null);
   // Set when the query was a country name and we searched its tech brands.
@@ -91,38 +80,6 @@ export default function Search() {
   const [filtersOpen, setFiltersOpen] = useState(false); // mobile drawer
   const [maxPrice, setMaxPrice] = useState('');
   const [activeCategory, setActiveCategory] = useState('');
-  const [savedMsg, setSavedMsg] = useState('');
-  // Bumped once per successful save to refresh the bookmarks list.
-  const [bookmarksVersion, setBookmarksVersion] = useState(0);
-  const [bookmarks, setBookmarks] = useState([]);
-
-  // Bookmarks sidebar: reuses the existing saved-searches feature so past
-  // searches are one click away instead of retyping them.
-  useEffect(() => {
-    if (!user) { setBookmarks([]); return; }
-    api.get('/social/saved-searches').then(r => setBookmarks(r.data)).catch(() => {});
-    // `savedMsg` used to be a dependency, and it is set twice per save
-    // ('Saved!' then '' two seconds later), so every save fired three
-    // fetches. `bookmarksVersion` is bumped exactly once per save instead.
-  }, [user, bookmarksVersion]);
-
-  async function removeBookmark(id) {
-    setBookmarks(prev => prev.filter(b => b.id !== id));
-    try { await api.delete(`/social/saved-searches/${id}`); } catch {}
-  }
-
-  async function saveSearch() {
-    if (!user) { navigate('/login'); return; }
-    const q = searchParams.get('q');
-    if (!q) return;
-    try {
-      await api.post('/social/saved-searches', { query: q });
-      setBookmarksVersion(v => v + 1);
-      setSavedMsg('Saved!');
-      setTimeout(() => setSavedMsg(''), 2000);
-    } catch { setSavedMsg('Already saved'); setTimeout(() => setSavedMsg(''), 2000); }
-  }
-
   // Auto-search if ?q= param present
   useEffect(() => {
     const q = searchParams.get('q');
@@ -157,7 +114,7 @@ export default function Search() {
   async function doSearch(q) {
     if (!q?.trim()) return;
     const seq = ++searchSeq.current;
-    setLoading(true); setError(null); setDiagnostic(null); setDegraded(null); setCountry(null); setSearched(true);
+    setLoading(true); setError(null); setDegraded(null); setCountry(null); setSearched(true);
     setFilters(EMPTY_FILTERS); // facets describe the previous result set
     setResults([]); setFiltered([]);
     try {
@@ -171,13 +128,11 @@ export default function Search() {
       setCountry(res.headers['x-search-country']
         ? { country: res.headers['x-search-country'], brands: res.headers['x-search-brands'] || '' }
         : null);
-      setDiagnostic(decodeDiagnostic(res.headers['x-search-diagnostic']));
     } catch (err) {
       if (seq !== searchSeq.current) return;
       // A body with no `error` field means no response came back at all —
       // API down, wrong VITE_API_URL, or a CORS block — not a failed search.
       setError(describeApiError(err, 'Search failed. Please try again.'));
-      setDiagnostic(err.response?.data?.diagnostic || null);
     } finally {
       if (seq === searchSeq.current) setLoading(false);
     }
@@ -220,13 +175,6 @@ export default function Search() {
         <button type="submit" disabled={loading} className="btn-primary disabled:opacity-50 px-6">
           {loading ? 'Searching…' : 'Search'}
         </button>
-        {searched && searchParams.get('q') && (
-          <button type="button" onClick={saveSearch}
-            className="btn-ghost text-sm whitespace-nowrap"
-            title="Save this search">
-            {savedMsg || 'Save search'}
-          </button>
-        )}
       </form>
 
       {/* Category chips */}
@@ -259,9 +207,7 @@ export default function Search() {
         ))}
       </div>
 
-      {/* Filters row — bookmarks now live here as a popout instead of a full
-          side column, so the results grid gets the full page width and one
-          more column of products fits per row. */}
+      {/* Filters row */}
       {searched && results.length > 0 && (
         <div className="flex flex-wrap gap-3 items-center mb-6 card p-2.5">
           <span className="text-xs font-semibold text-muted uppercase tracking-wide">Filter & Sort</span>
@@ -287,11 +233,6 @@ export default function Search() {
               className="text-xs text-danger hover:underline">Clear filters</button>
           )}
           <span className="text-xs text-muted font-semibold">{filtered.length} results</span>
-          {user && (
-            <div className="ml-auto">
-              <BookmarksMenu bookmarks={bookmarks} onSelect={q => navigate(`/search?q=${encodeURIComponent(q)}`)} onRemove={removeBookmark} />
-            </div>
-          )}
         </div>
       )}
 
@@ -299,7 +240,6 @@ export default function Search() {
       {error && (
         <div className="mb-6">
           <p className="text-danger text-sm bg-danger-soft p-3 rounded-xl">{error}</p>
-          <AdminDiagnostic diagnostic={diagnostic} />
         </div>
       )}
 
@@ -328,7 +268,6 @@ export default function Search() {
               ? `${degraded} Showing last-known prices from products already tracked on PricePulse.`
               : 'Live search is unavailable right now, showing last-known prices from products already tracked on PricePulse.'}
           </p>
-          <AdminDiagnostic diagnostic={diagnostic} />
         </div>
       )}
 
@@ -409,61 +348,6 @@ export default function Search() {
           )}
         </div>
       </div>
-    </div>
-  );
-}
-
-/* Compact popout version of the bookmarks list — lives inline in the
-   Filter & Sort bar instead of taking up a whole side column, so the
-   results grid gets the full page width. */
-function BookmarksMenu({ bookmarks, onSelect, onRemove }) {
-  const [open, setOpen] = useState(false);
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen(o => !o)}
-        className="text-xs font-semibold text-muted hover:text-brand flex items-center gap-1.5 px-2 py-1"
-        aria-expanded={open}
-      >
-        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-4-7 4V5z" />
-        </svg>
-        Bookmarks{bookmarks.length > 0 ? ` (${bookmarks.length})` : ''}
-      </button>
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-9 z-50 w-64 card p-2 shadow-float">
-            {bookmarks.length === 0 ? (
-              <p className="text-xs text-muted p-2.5">
-                Save a search with the "Save search" button above to bookmark it here.
-              </p>
-            ) : (
-              <div className="space-y-1 max-h-64 overflow-y-auto">
-                {bookmarks.map(b => (
-                  <div key={b.id} className="group flex items-center gap-1.5">
-                    <button
-                      onClick={() => { onSelect(b.query); setOpen(false); }}
-                      className="flex-1 min-w-0 text-left text-sm text-muted hover:text-brand hover:bg-brand-soft font-medium py-1.5 px-2.5 rounded-xl transition-colors truncate"
-                      title={b.query}
-                    >
-                      {b.query}
-                    </button>
-                    <button
-                      onClick={() => onRemove(b.id)}
-                      className="opacity-0 group-hover:opacity-100 text-faint hover:text-danger text-xs px-1.5 shrink-0 transition-opacity"
-                      title="Remove bookmark"
-                      aria-label="Remove bookmark"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </>
-      )}
     </div>
   );
 }

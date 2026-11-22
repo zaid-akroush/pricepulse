@@ -638,7 +638,6 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-4 mt-2 text-xs text-muted justify-center md:justify-start">
                   <span className="flex items-center gap-1"><Icon.users className="w-3.5 h-3.5" />{dealOfDay.wishlistCount} tracking this</span>
-                  <span className="flex items-center gap-1"><Icon.heart className="w-3.5 h-3.5" />{dealOfDay.likeCount} likes</span>
                   <span>Lowest ever: <strong className="text-success"><Price amount={dealOfDay.lowestPrice} currency={dealOfDay.currency} /></strong></span>
                 </div>
               </div>
@@ -658,8 +657,8 @@ export default function Home() {
           icon={<Icon.users className="w-4 h-4" />}
           title="Most wishlisted"
           action={
-            <Link to="/wishlist?tab=following" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
-              Following <span>&rarr;</span>
+            <Link to="/trends" className="text-sm text-brand hover:text-[var(--brand-strong)] font-semibold flex items-center gap-1">
+              Trends <span>&rarr;</span>
             </Link>
           }
         >
