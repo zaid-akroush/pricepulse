@@ -590,6 +590,7 @@ export default function Home() {
       </section>
 
       {/* Deal of the Day */}
+{(loadingDeal || dealOfDay) && (<>
       <section className="max-w-7xl mx-auto px-4 pb-6">
         <FadeIn className="flex items-center gap-3 mb-4">
           <span className="w-9 h-9 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
@@ -648,10 +649,10 @@ export default function Home() {
             </FadeIn>
         )}
       </section>
+</>)}
 
-      {/* Most Wishlisted — set on a raised `surface` band (same technique as
-          "How it works" below) so this doesn't read as a third identical
-          section stacked on the same paper background as the two after it. */}
+      {/* Most wishlisted */}
+{(loadingWishlisted || mostWishlisted.length > 0) && (<>
       <div className="surface border-y border-app pt-8">
         <Section
           icon={<Icon.users className="w-4 h-4" />}
@@ -698,8 +699,10 @@ export default function Home() {
           )}
         </Section>
       </div>
+</>)}
 
       {/* Top Price Drops */}
+{(loadingDrops || topDrops.length > 0) && (<>
       <Section
         icon={<Icon.chart className="w-4 h-4" />}
         title="Top price drops"
@@ -732,8 +735,10 @@ export default function Home() {
           </>
         )}
       </Section>
+</>)}
 
       {/* Newest Added */}
+{(loadingNewest || newest.length > 0) && (<>
       <Section icon={<Icon.bell className="w-4 h-4" />} title="Newly tracked">
         {loadingNewest ? (
           <Stagger className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -758,218 +763,68 @@ export default function Home() {
           </>
         )}
       </Section>
+</>)}
 
-      {/* Capabilities: a wide illustrated banner (forecast) stacked over a
-          two-up duo (compare / share) — distinct from both the bento grid
-          above and the connected timeline below. Each mini panel is a hand-
-          built static illustration of the real component it represents
-          (PricePrediction.jsx, PriceCompare.jsx, the /shared/:token wishlist
-          link), not a stock graphic. */}
-      <section className="max-w-7xl mx-auto px-4 pb-8">
-        <FadeIn className="mb-6">
-          <h2 className="text-2xl font-bold text-app tracking-tight">More than a price tag</h2>
-        </FadeIn>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          {/* Forecast — wide banner, spans full width */}
-          <FadeIn className="lg:col-span-5 spotlight card card-hover p-6 md:p-8 flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1 min-w-0">
-              <span className="w-10 h-10 rounded-xl bg-brand-soft text-brand flex items-center justify-center mb-4">
-                <Icon.target className="w-5 h-5" />
-              </span>
-              <h3 className="text-xl font-bold text-app mb-2">Buy now, or wait?</h3>
-              <p className="text-sm text-muted leading-relaxed max-w-md">
-                Every tracked product gets a price forecast for 7 and 30 days out, built from its
-                own history, with a plain-language recommendation and a confidence score, so
-                you're not guessing whether a "deal" is really the bottom.
-              </p>
-            </div>
-            {/* mini illustration of PricePrediction's recommendation + meter */}
-            <div className="w-full md:w-80 shrink-0 rounded-2xl border border-app p-4 surface-2">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-bold text-app">Price Forecast</span>
-                <span className="badge badge-neutral text-[10px]">82% confidence</span>
-              </div>
-              <div className="rounded-xl border p-3 flex items-start gap-2.5 mb-3" style={{ borderColor: 'var(--success)', backgroundColor: 'var(--success-soft)' }}>
-                <span className="w-2.5 h-2.5 rounded-full mt-1 shrink-0" style={{ backgroundColor: 'var(--success)' }} />
-                <div>
-                  <p className="text-sm font-bold" style={{ color: 'var(--success)' }}>Buy now</p>
-                  <p className="text-[11px] text-muted mt-0.5">Trending up over the next 30 days</p>
-                </div>
-              </div>
-              <div className="h-2 rounded-full relative" style={{ backgroundImage: 'linear-gradient(to right, var(--success), var(--warning), var(--danger))' }}>
-                <div className="absolute -top-1 w-3.5 h-3.5 rounded-full border-2" style={{ left: 'calc(22% - 7px)', backgroundColor: 'var(--surface)', borderColor: 'var(--ink)' }} />
-              </div>
-              <div className="flex justify-between text-[10px] text-faint mt-1.5">
-                <span>Lowest ever</span><span>Highest ever</span>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* Compare — narrower duo panel */}
-          <FadeIn delay={0.08} className="lg:col-span-2 card card-hover p-6 flex flex-col">
-            <span className="w-10 h-10 rounded-xl bg-info-soft text-info flex items-center justify-center mb-4">
-              <Icon.scale className="w-5 h-5" />
-            </span>
-            <h3 className="text-lg font-bold text-app mb-2">One product, every price</h3>
-            <p className="text-sm text-muted leading-relaxed mb-4">
-              We check other retailers selling the same item and line the prices up next to the
-              one you're tracking, so you know if it's cheaper elsewhere before you buy.
-            </p>
-            <div className="mt-auto flex flex-col gap-1.5">
-              <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg border" style={{ borderColor: 'var(--brand)', backgroundColor: 'var(--brand-soft)' }}>
-                <span className="text-[11px] font-bold" style={{ color: 'var(--brand-strong)' }}>Tracked · Amazon</span>
-                <span className="text-xs font-bold font-data text-app">$799.00</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg surface-2">
-                <span className="text-[11px] text-muted">BestBuy</span>
-                <span className="text-xs font-bold font-data" style={{ color: 'var(--success)' }}>$749.00</span>
-              </div>
-              <div className="flex items-center justify-between gap-3 p-2.5 rounded-lg surface-2">
-                <span className="text-[11px] text-muted">Walmart</span>
-                <span className="text-xs font-bold font-data text-app">$812.50</span>
-              </div>
-            </div>
-          </FadeIn>
-
-          {/* Shareable wishlists — narrower duo panel */}
-          {/* items-stretch (not items-start) so the mock panel matches the
-              card's height instead of hugging the top and leaving a large
-              dead area underneath it. */}
-          <FadeIn delay={0.16} className="lg:col-span-3 card card-hover p-6 flex flex-col md:flex-row items-stretch gap-6">
-            <div className="flex-1 min-w-0 flex flex-col justify-center">
-              <span className="w-10 h-10 rounded-xl bg-purple-soft text-purple flex items-center justify-center mb-4">
-                <Icon.link className="w-5 h-5" />
-              </span>
-              <h3 className="text-lg font-bold text-app mb-2">Share your wishlist</h3>
-              <p className="text-sm text-muted leading-relaxed">
-                Turn your wishlist into a public, read-only link, handy for a gift registry, a group
-                chat, or just showing off what you're tracking. No account needed to view it.
-              </p>
-            </div>
-            {/* A miniature of what a shared list actually looks like. The
-                three generic picture-frame icons that used to sit here read
-                as broken images and said nothing about the feature. */}
-            <div className="w-full md:w-72 shrink-0 rounded-2xl border border-app p-4 surface-2 flex flex-col">
-              <div className="flex items-center gap-2 mb-3 px-2.5 py-2 rounded-lg surface border border-app">
-                <Icon.link className="w-3.5 h-3.5 text-faint shrink-0" />
-                <span className="text-[11px] text-muted truncate font-data">pricepulse.app/shared/a3f9…</span>
-              </div>
-              <div className="flex flex-col gap-1.5 flex-1">
-                {[
-                  ['Wireless earbuds', '$149.00'],
-                  ['27" 4K monitor', '$329.99'],
-                  ['Mechanical keyboard', '$89.50'],
-                ].map(([name, price]) => (
-                  <div key={name} className="flex items-center justify-between gap-3 px-2.5 py-2 rounded-lg surface border border-app">
-                    <span className="text-[11px] text-muted truncate">{name}</span>
-                    <span className="text-[11px] font-bold font-data text-app shrink-0">{price}</span>
-                  </div>
-                ))}
-              </div>
-              <span className="badge badge-purple mt-3 inline-flex w-fit">Public link</span>
-            </div>
-          </FadeIn>
-        </div>
-      </section>
-
-      {/* Stats strip: real aggregate counts from /products/public-stats, not fabricated */}
-      {stats && (
-        <section className="max-w-7xl mx-auto px-4 pb-4">
-          <FadeIn className="card p-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center md:text-left">
-            {[
-              [stats.productsTracked, 'products tracked'],
-              [stats.activeTrackers, 'people tracking prices'],
-              [stats.priceChecks, 'price checks logged'],
-              [stats.dropsRecorded, 'active price drops right now'],
-            ].map(([value, label]) => (
-              <div key={label}>
-                <p className="text-3xl font-bold font-data text-app">{value?.toLocaleString?.() ?? value}</p>
-                <p className="text-xs text-muted mt-1">{label}</p>
-              </div>
-            ))}
-          </FadeIn>
+      {/* Nothing tracked yet: one short note instead of four empty boxes. */}
+      {!loadingDeal && !loadingWishlisted && !loadingDrops && !loadingNewest
+        && !dealOfDay && !mostWishlisted.length && !topDrops.length && !newest.length && (
+        <section className="max-w-7xl mx-auto px-4 pb-8">
+          <p className="card p-6 text-sm text-muted">
+            Nobody is tracking anything yet, so there are no deals to show.{' '}
+            <Link to="/search" className="text-brand font-semibold">Search for a product</Link> and add it to your wishlist to start.
+          </p>
         </section>
       )}
 
-      {/* How it works: three steps laid out left-to-right, connected by a
-          single horizontal rule. Stacks back to a vertical list on mobile,
-          where three columns would be unreadably narrow. */}
-      <section className="surface border-y border-app py-12 px-4">
-        <div className="max-w-5xl mx-auto">
-          <FadeIn className="max-w-md mb-10">
-            <p className="eyebrow mb-2">How it works</p>
-            <h2 className="text-2xl md:text-3xl font-bold text-app tracking-tight">Three steps to smarter shopping</h2>
-          </FadeIn>
-          <div className="relative">
-            {/* Connector sits behind the step icons, aligned with their centre. */}
-            <div className="hidden md:block absolute left-5 right-5 top-5 h-px border-app border-t border-dashed" />
-            <Stagger className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-6" stagger={0.12}>
-              {[
-                {
-                  step: '01',
-                  title: 'Search Any Product',
-                  desc: 'Search millions of electronics from major retailers, powered by real-time Google Shopping data.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-                    </svg>
-                  ),
-                },
-                {
-                  step: '02',
-                  title: 'Set Your Target Price',
-                  desc: "Add items to your wishlist and enter the price you want to pay. We'll do the watching.",
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-                    </svg>
-                  ),
-                },
-                {
-                  step: '03',
-                  title: 'Get Notified Instantly',
-                  desc: 'We keep checking prices, more often when they move, and email you the moment your target price is reached.',
-                  icon: (
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
-                      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                    </svg>
-                  ),
-                },
-              ].map(f => (
-                <StaggerItem key={f.step} className="relative flex items-start gap-5 md:flex-col md:gap-4 md:pr-4">
-                  <div className="relative z-10 w-10 h-10 shrink-0 rounded-xl bg-brand text-on-brand flex items-center justify-center shadow-[var(--shadow-brand)]">
-                    {f.icon}
-                  </div>
-                  <div className="max-w-md md:max-w-none">
-                    <span className="text-[11px] font-bold text-faint tracking-widest font-data">{f.step}</span>
-                    <h3 className="font-bold text-app mb-1 text-lg mt-0.5">{f.title}</h3>
-                    <p className="text-sm text-muted leading-relaxed">{f.desc}</p>
-                  </div>
-                </StaggerItem>
-              ))}
-            </Stagger>
+      {/* How it works: plain facts about what the app actually does. */}
+      <section className="surface border-y border-app py-10 px-4">
+        <div className="max-w-7xl mx-auto grid md:grid-cols-[1fr_1.4fr] gap-8">
+          <div>
+            <h2 className="text-2xl font-bold text-app tracking-tight">How it works</h2>
+            <p className="text-sm text-muted mt-2 max-w-sm">
+              PricePulse looks up prices on Google Shopping, saves every price it sees,
+              and emails you when a product reaches the price you picked.
+            </p>
+            {!user && (
+              <Link to="/register" className="btn-primary inline-block mt-5">Create a free account</Link>
+            )}
           </div>
+          <ol className="grid sm:grid-cols-3 gap-6 text-sm">
+            <li>
+              <p className="font-data text-xs text-faint">1</p>
+              <h3 className="font-semibold text-app mt-1">Search</h3>
+              <p className="text-muted mt-1">Pick a country and search. Prices come back in that country's currency.</p>
+            </li>
+            <li>
+              <p className="font-data text-xs text-faint">2</p>
+              <h3 className="font-semibold text-app mt-1">Set a target</h3>
+              <p className="text-muted mt-1">Add the product to your wishlist with a target price or a percentage drop.</p>
+            </li>
+            <li>
+              <p className="font-data text-xs text-faint">3</p>
+              <h3 className="font-semibold text-app mt-1">Get an email</h3>
+              <p className="text-muted mt-1">Prices are re-checked every 3 to 48 hours. When yours is hit, you get an email and an in-app alert.</p>
+            </li>
+          </ol>
         </div>
       </section>
 
-      {/* CTA: asymmetric, not purely centered */}
-      {!user && (
-        <section className="max-w-7xl mx-auto px-4 py-4">
-          <FadeIn className="bg-brand text-on-brand rounded-[2rem] px-8 py-14 md:px-14 flex flex-col md:flex-row items-center gap-8">
-            <div className="flex-1 text-center md:text-left">
-              <h2 className="text-4xl font-bold mb-3 tracking-tight">Ready to save money?</h2>
-              <p className="text-lg max-w-md opacity-90">Join smart shoppers already tracking prices with PricePulse.</p>
-            </div>
-            <div className="flex gap-3 flex-wrap justify-center shrink-0">
-              <Link to="/register" className="bg-white text-black font-bold px-8 py-3.5 rounded-xl hover:opacity-90 transition-opacity active:scale-[0.98]">
-                Sign Up Now
-              </Link>
-              <Link to="/search" className="border border-current/30 text-white font-semibold px-8 py-3.5 rounded-xl hover:bg-black/10 transition-colors active:scale-[0.98]">
-                Browse Products
-              </Link>
-            </div>
-          </FadeIn>
+      {/* Stats strip: real aggregate counts from /products/public-stats */}
+      {stats && stats.productsTracked > 0 && (
+        <section className="max-w-7xl mx-auto px-4 py-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              [stats.productsTracked, 'products tracked'],
+              [stats.activeTrackers, 'people tracking prices'],
+              [stats.priceChecks, 'prices recorded'],
+              [stats.dropsRecorded, 'products below their peak'],
+            ].map(([value, label]) => (
+              <div key={label}>
+                <p className="text-2xl font-bold font-data text-app">{value?.toLocaleString?.() ?? value}</p>
+                <p className="text-xs text-muted mt-1">{label}</p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
     </div>

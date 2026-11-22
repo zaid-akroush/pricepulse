@@ -42,7 +42,7 @@ export default function Footer() {
               <Wordmark textClassName="text-lg" iconClassName="h-5" />
             </div>
             <p className="text-sm leading-relaxed">
-              Track electronics prices across the web and get notified the moment prices drop to your target. Free, no catch.
+              Tracks electronics prices on Google Shopping and emails you when one reaches your target.
             </p>
           </div>
 
