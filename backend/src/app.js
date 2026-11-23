@@ -88,7 +88,7 @@ app.use('/api/auth/forgot-password', authLimiter);
 app.use('/api/auth/reset-password', authLimiter);
 app.use('/api/auth/password', authLimiter);
 
-// Stricter limit on the endpoints that spend a real SerpApi/Bright Data
+// Stricter limit on the endpoints that spend a real SerpApi
 // request on a cache miss (or, for from-search, write a new Product row that
 // a follow-up request can then spend a provider call against). SerpApi's
 // free tier is 250 searches per MONTH, so the 300-per-15-minutes global
