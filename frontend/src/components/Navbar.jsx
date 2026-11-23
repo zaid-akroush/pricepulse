@@ -21,8 +21,8 @@ const THEME_OPTIONS = [
   { value: 'amoled', label: 'Midnight' },
 ];
 
-// Sun / full moon / crescent ("almost gone") moon icons for the three theme
-// states, so the toggle button itself always shows the CURRENT theme, and
+// Sun / crescent moon / full moon icons for the light, dark and midnight
+// themes, so the toggle button itself always shows the CURRENT theme, and
 // the popout menu below it lists all three by name.
 function ThemeIcon({ theme, className = 'w-4 h-4' }) {
   if (theme === 'light') {
@@ -33,17 +33,17 @@ function ThemeIcon({ theme, className = 'w-4 h-4' }) {
     );
   }
   if (theme === 'grey') {
-    // Full moon
+    // Crescent moon
     return (
-      <svg className={`${className} text-muted`} viewBox="0 0 20 20" fill="currentColor">
-        <circle cx="10" cy="10" r="7" />
+      <svg className={`${className} text-muted`} fill="currentColor" viewBox="0 0 20 20">
+        <path d="M15.5 13.5A7 7 0 018 3.06 7 7 0 1015.5 13.5z" />
       </svg>
     );
   }
-  // Midnight (true black): crescent ("almost gone") moon
+  // Midnight (true black): full moon
   return (
-    <svg className={`${className} text-muted`} fill="currentColor" viewBox="0 0 20 20">
-      <path d="M15.5 13.5A7 7 0 018 3.06 7 7 0 1015.5 13.5z" />
+    <svg className={`${className} text-muted`} viewBox="0 0 20 20" fill="currentColor">
+      <circle cx="10" cy="10" r="7" />
     </svg>
   );
 }
