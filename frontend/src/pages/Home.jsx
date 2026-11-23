@@ -91,15 +91,15 @@ const icons = {
 };
 
 const CATEGORIES = [
-  { label: 'Smartphones', q: 'smartphone', photo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&h=300&q=80',         note: 'Most tracked category this week' },
-  { label: 'Laptops',     q: 'laptop', photo: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&h=300&q=80',              note: 'Compare deals across brands' },
-  { label: 'Headphones',  q: 'headphones', photo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&h=300&q=80',          note: 'Wired, wireless & noise-cancelling' },
-  { label: 'Gaming',      q: 'gaming console', photo: 'https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&w=400&h=300&q=80',      note: 'Consoles, accessories & bundles' },
-  { label: 'Cameras',     q: 'digital camera', photo: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=400&h=300&q=80',      note: 'DSLR, mirrorless & point-and-shoot' },
-  { label: 'Tablets',     q: 'tablet', photo: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&h=300&q=80',              note: 'For work, school & streaming' },
-  { label: 'TVs',         q: '4K TV', photo: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=400&h=300&q=80',               note: '4K, OLED & smart TVs' },
-  { label: 'Smart Home',  q: 'smart home device', photo: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=400&h=300&q=80',   note: 'Speakers, cameras & automation' },
-  { label: 'PC Parts',    q: 'graphics card GPU', photo: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&h=300&q=80',   note: 'GPUs, CPUs & everything to build a PC' },
+  { label: 'Smartphones', q: 'smartphone', photo: 'https://images.unsplash.com/photo-1598965402089-897ce52e8355?auto=format&fit=crop&w=400&h=300&q=80',         note: 'Most tracked category this week' },
+  { label: 'Laptops',     q: 'laptop', photo: 'https://images.unsplash.com/photo-1541807084-5c52b6b3adef?auto=format&fit=crop&w=400&h=300&q=80',              note: 'Compare deals across brands' },
+  { label: 'Headphones',  q: 'headphones', photo: 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?auto=format&fit=crop&w=400&h=300&q=80',          note: 'Wired, wireless & noise-cancelling' },
+  { label: 'Gaming',      q: 'gaming console', photo: 'https://images.unsplash.com/photo-1578303512597-81e6cc155b3e?auto=format&fit=crop&w=400&h=300&q=80',      note: 'Consoles, accessories & bundles' },
+  { label: 'Cameras',     q: 'digital camera', photo: 'https://images.unsplash.com/photo-1580707221190-bd94d9087b7f?auto=format&fit=crop&w=400&h=300&q=80',      note: 'DSLR, mirrorless & point-and-shoot' },
+  { label: 'Tablets',     q: 'tablet', photo: 'https://images.unsplash.com/photo-1760708369071-e8a50a8979cb?auto=format&fit=crop&w=400&h=300&q=80',              note: 'For work, school & streaming' },
+  { label: 'TVs',         q: '4K TV', photo: 'https://images.unsplash.com/photo-1593784991251-92ded75ea290?auto=format&fit=crop&w=400&h=300&q=80',               note: '4K, OLED & smart TVs' },
+  { label: 'Smart Home',  q: 'smart home device', photo: 'https://images.unsplash.com/photo-1545259741-2ea3ebf61fa3?auto=format&fit=crop&w=400&h=300&q=80',   note: 'Speakers, cameras & automation' },
+  { label: 'PC Parts',    q: 'graphics card GPU', photo: 'https://images.unsplash.com/photo-1778621962156-f9b3d255fb5f?auto=format&fit=crop&w=400&h=300&q=80',   note: 'GPUs, CPUs & everything to build a PC' },
 ];
 
 /* Rotating hero banner slides */
@@ -201,27 +201,20 @@ const HERO_ART = {
 // background, so `logoColor` is a separate value chosen to actually be
 // visible against white, used to recolor the real logo image itself.
 const TOP_BRANDS = [
-  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', logoColor: '000000' },
-  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', logoColor: '1428a0' },
-  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', logoColor: '000000' },
-  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', logoColor: 'ff6900' },
+  { name: 'Apple', slug: 'apple', wordmark: false },
+  { name: 'Samsung', slug: 'samsung', wordmark: true },
+  { name: 'Sony', slug: 'sony', wordmark: true },
+  { name: 'Xiaomi', slug: 'xiaomi', wordmark: false },
 ];
 
 function BrandTile({ brand, onClick }) {
-  /* The logo is an inlined local SVG (see components/BrandLogo). It used to
-     be a remote CDN image, which rendered as an empty tile whenever that CDN
-     was unreachable. If a slug ever has no bundled glyph, BrandLogo returns
-     null and the styled wordmark below takes over. */
-  const logo = (
-    <BrandLogo slug={brand.slug} title={brand.name} className="h-10 w-10 shrink-0" />
-  );
+  // Logos are inlined Simple Icons glyphs (components/BrandLogo), drawn in ink
+  // on the plain card. Wordmarks (Samsung, Sony) are wide and thin inside the
+  // square viewBox, so they get a wider box to read at the same visual weight.
   return (
     <button onClick={onClick} className="w-full card card-hover p-5 flex flex-col items-center gap-3 text-center">
-      <span
-        className="w-24 h-14 rounded-lg flex items-center justify-center px-3 py-2 font-bold text-lg tracking-tight overflow-hidden"
-        style={{ backgroundColor: brand.bg, color: brand.color }}
-      >
-        {logo || brand.name}
+      <span className="h-14 flex items-center justify-center text-app">
+        <BrandLogo slug={brand.slug} title={brand.name} className={brand.wordmark ? 'h-24 w-24' : 'h-10 w-10'} />
       </span>
       <span className="text-sm font-semibold text-app">{brand.name}</span>
     </button>
