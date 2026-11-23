@@ -29,6 +29,8 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.user.deleteMany({ where: { email: 'wishlist@test.pricepulse' } });
+  // The product outlives the user and would be picked up by the cron sweep in later runs.
+  await prisma.product.deleteMany({ where: { serpApiQuery: testProduct.serpApiQuery } });
   await prisma.$disconnect();
 });
 

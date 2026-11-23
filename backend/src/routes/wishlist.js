@@ -27,7 +27,7 @@ router.use(authMiddleware);
 
 // GET /api/wishlist
 // Returns all wishlist items for the logged-in user
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const items = await prisma.wishlistItem.findMany({
       where: { userId: req.userId },
@@ -44,7 +44,7 @@ router.get('/', async (req, res) => {
 
 // POST /api/wishlist
 // Adds a product to the wishlist (creates product record if it doesn't exist)
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     const { title, url, imageUrl, serpApiQuery, targetPrice } = req.body;
     const currentPrice = Number(req.body.currentPrice);
@@ -162,7 +162,7 @@ router.post('/', async (req, res) => {
 
 // PATCH /api/wishlist/:id
 // Updates target price for a wishlist item
-router.patch('/:id', async (req, res) => {
+router.patch('/:id', async (req, res, next) => {
   try {
     const { targetPrice } = req.body;
     const item = await prisma.wishlistItem.findFirst({
@@ -187,7 +187,7 @@ router.patch('/:id', async (req, res) => {
 
 // DELETE /api/wishlist/:id
 // Removes a product from the wishlist
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const item = await prisma.wishlistItem.findFirst({
       where: { id: parseInt(req.params.id), userId: req.userId },
