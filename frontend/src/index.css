@@ -239,8 +239,7 @@
   .chip-active:hover { color: var(--on-action); border-color: transparent; }
 
   /* Prices and figures: same typeface, tabular digits so columns line up. */
-  .font-data { font-variant-numeric: tabular-nums; }
-  /* Big prices use proportional digits: tabular figures leave a wide gap around the decimal point. */
+  /* Proportional digits: this face's tabular figures leave a wide gap around the decimal point. */
   .price-tag { font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
 
   .eyebrow { color: var(--brand-strong); @apply text-xs font-bold uppercase tracking-[0.14em]; }
@@ -293,6 +292,5 @@
   .shadow-float { box-shadow: var(--shadow-lg); }
   .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
   .scrollbar-hide::-webkit-scrollbar { display: none; }
-  .font-data { font-feature-settings: "tnum" 1; }
 
 }
