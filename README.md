@@ -1,6 +1,8 @@
 # PricePulse
 
-An intelligent electronics price tracking and alert system. Search for products across Google Shopping, add them to your wishlist with a target price, and receive an email notification the moment the price drops.
+An electronics price tracker. Search Google Shopping in your country, add products to a wishlist with a target price, and get an email and an in-app alert when a product reaches it.
+
+Built as a BSc thesis project ("Tech Deal Tracker – A Full-Stack Price Monitoring Web Application", University of Debrecen, Faculty of Informatics). Live at https://pricepulse-cw6.pages.dev.
 
 ## Features
 
@@ -110,7 +112,7 @@ cd backend
 npm test
 ```
 
-Integration tests for authentication, wishlist and product routes, an integration test of the price sweep against a stubbed provider, and unit tests for the pure decision logic (price parsing, matching, classification, moderation, scheduling, trends, analytics).
+The tests need a PostgreSQL database (`DATABASE_URL` and `DIRECT_URL`). The suite has integration tests for the authentication, wishlist and product routes, an integration test of the price sweep against a stubbed search provider, and unit tests for the decision logic (price parsing, title matching, classification, instalment detection, scheduling, trends): 145 tests, 144 passing and 1 skipped (it needs a real network call).
 
 ## Hosting
 
@@ -139,7 +141,8 @@ and the backend, nothing needs to be started or run on a local machine.
 - Push this repository to GitHub.
 - In the [Render dashboard](https://dashboard.render.com): New -> Blueprint, and connect this repo.
 - Render finds `render.yaml` at the repo root and creates a `pricepulse-api` web service on the free plan.
-- Fill in the secret values it asks for: `DATABASE_URL` (from step 1), `JWT_SECRET` (any long random string), `ADMIN_EMAILS`, `SERP_API_KEY`, `RESEND_API_KEY`, `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `CLIENT_URL` (your Cloudflare Pages URL, e.g. `https://pricepulse-cw6.pages.dev`), and `INTERNAL_PROXY_SECRET` (any long random string — must match the same value set in step 3 on Cloudflare Pages).
+- Fill in the secret values it asks for: `DATABASE_URL` and `DIRECT_URL` (from step 1), `JWT_SECRET` (any long random string), `SERPAPI_KEY`, `RESEND_API_KEY`, `CLIENT_URL` (your Cloudflare Pages URL, e.g. `https://pricepulse-cw6.pages.dev`), and `INTERNAL_PROXY_SECRET` (any long random string, matching the value set in step 3 on Cloudflare Pages).
+- The service runs `prisma migrate deploy` on every start, so the database must be reachable or the deploy fails.
 - Deploy. Copy the resulting `https://pricepulse-api.onrender.com`-style URL.
 
 **3. Frontend (Cloudflare Pages)**
@@ -150,14 +153,11 @@ and the backend, nothing needs to be started or run on a local machine.
 - Also add a secret named `INTERNAL_PROXY_SECRET` (any long random string, matching the value entered on Render in step 2). The Pages Function forwards it on every proxied request so the backend's rate limiter can tell a genuine Cloudflare-routed request from someone hitting the Render URL directly and spoofing the client-IP header.
 - Every future `git push` to `main` now rebuilds and redeploys the frontend automatically.
 
-**4. Keep the free backend warm (optional but recommended)**
+**4. Keep the free database awake**
 
-Render's free web service spins down after about 15 minutes of no traffic,
-which adds a ~1 minute delay to the next request and can cause the hourly
-price-check tick to be skipped while asleep. To avoid this, add a free
-monitor at [cron-job.org](https://cron-job.org) that pings
-`https://pricepulse-api.onrender.com/api/health` every 10 minutes. This
-keeps the service (and the database connection) warm at no cost.
+Supabase pauses a free project after about a week without database activity, which takes the API down (Render deploys then fail because the migration step cannot connect). The workflow in `.github/workflows/keep-awake.yml` loads real data through the live site every 3 days so the database stays active. It can also be run by hand from the repository's Actions tab. If the project does get paused, resume it in the Supabase dashboard and redeploy on Render.
+
+Note on e-mail: the sender is Resend's shared test address (`onboarding@resend.dev`), which only delivers to the e-mail address of the Resend account owner. Sending to other users needs a verified domain in Resend.
 
 ### Local development
 
@@ -176,17 +176,18 @@ pricepulse/
 ├── backend/
 │   ├── prisma/schema.prisma
 │   └── src/
-│       ├── routes/        # auth, products, wishlist
+│       ├── routes/        # auth, products, wishlist, notifications
 │       ├── middleware/    # JWT verification
-│       ├── services/      # serpApi, mailer
+│       ├── services/      # search, matching, scheduling, trends, mailer
 │       ├── jobs/          # priceCron
 │       └── tests/         # Jest + Supertest
 ├── frontend/
 │   └── src/
-│       ├── pages/         # Home, Search, Wishlist, Login, Register
-│       ├── components/    # Navbar, ProductCard, WishlistItem
+│       ├── pages/         # Home, Search, Product, Wishlist, Trends, auth pages
+│       ├── components/    # Navbar, ProductCard, WishlistItem, PriceChart, ...
 │       ├── context/       # AuthContext
 │       └── api/           # Axios instance
+├── .github/workflows/  # keep-awake job
 ├── docker-compose.yml
 ├── render.yaml
 └── .env.example
