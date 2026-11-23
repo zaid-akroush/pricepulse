@@ -105,35 +105,35 @@ const CATEGORIES = [
 /* Rotating hero banner slides */
 const HERO_SLIDES = [
   {
-    eyebrow: 'Best deal online on wearables', title: 'SMART\nWEARABLES.', sub: 'Up to 60% off', q: 'smartwatch', art: 'watch', category: 'Smartphones',
+    eyebrow: 'Prices from Google Shopping', title: 'SMART\nWEARABLES.', sub: 'Compare smartwatch prices', q: 'smartwatch', art: 'watch', category: 'Smartphones',
     photo: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on smartphones', title: 'FLAGSHIP\nPHONES.', sub: 'Up to 40% off', q: 'smartphone', art: 'phone', category: 'Smartphones',
+    eyebrow: 'Prices from Google Shopping', title: 'FLAGSHIP\nPHONES.', sub: 'Track phone prices', q: 'smartphone', art: 'phone', category: 'Smartphones',
     photo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on audio', title: 'WIRELESS\nAUDIO.', sub: 'Up to 50% off', q: 'headphones', art: 'headphones', category: 'Headphones',
+    eyebrow: 'Prices from Google Shopping', title: 'WIRELESS\nAUDIO.', sub: 'Track headphone prices', q: 'headphones', art: 'headphones', category: 'Headphones',
     photo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on laptops', title: 'POWER\nLAPTOPS.', sub: 'Up to 35% off', q: 'laptop', category: 'Laptops',
+    eyebrow: 'Prices from Google Shopping', title: 'POWER\nLAPTOPS.', sub: 'Track laptop prices', q: 'laptop', category: 'Laptops',
     photo: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on gaming gear', title: 'LEVEL UP\nGAMING.', sub: 'Up to 45% off', q: 'gaming console', category: 'Gaming',
+    eyebrow: 'Prices from Google Shopping', title: 'LEVEL UP\nGAMING.', sub: 'Track console prices', q: 'gaming console', category: 'Gaming',
     photo: 'https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on cameras', title: 'CAPTURE\nMORE.', sub: 'Up to 30% off', q: 'digital camera', category: 'Cameras',
+    eyebrow: 'Prices from Google Shopping', title: 'CAPTURE\nMORE.', sub: 'Track camera prices', q: 'digital camera', category: 'Cameras',
     photo: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on smart TVs', title: 'BIGGER\nSCREENS.', sub: 'Up to 40% off', q: '4K TV', category: 'TVs',
+    eyebrow: 'Prices from Google Shopping', title: 'BIGGER\nSCREENS.', sub: 'Track TV prices', q: '4K TV', category: 'TVs',
     photo: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1400&q=85',
   },
   {
-    eyebrow: 'Best deal online on smart home', title: 'SMARTER\nHOME.', sub: 'Up to 50% off', q: 'smart home device', category: 'Smart Home',
+    eyebrow: 'Prices from Google Shopping', title: 'SMARTER\nHOME.', sub: 'Track smart home prices', q: 'smart home device', category: 'Smart Home',
     photo: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=85',
   },
 ];
@@ -201,10 +201,10 @@ const HERO_ART = {
 // background, so `logoColor` is a separate value chosen to actually be
 // visible against white, used to recolor the real logo image itself.
 const TOP_BRANDS = [
-  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', logoColor: '000000', tag: 'Up to 40% off' },
-  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', logoColor: '1428a0', tag: 'Up to 35% off' },
-  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', logoColor: '000000', tag: 'Up to 30% off' },
-  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', logoColor: 'ff6900', tag: 'Up to 50% off' },
+  { name: 'Apple',   slug: 'apple',   bg: '#111111', color: '#ffffff', logoColor: '000000' },
+  { name: 'Samsung', slug: 'samsung', bg: '#eef2ff', color: '#3730a3', logoColor: '1428a0' },
+  { name: 'Sony',    slug: 'sony',    bg: '#0f172a', color: '#ffffff', logoColor: '000000' },
+  { name: 'Xiaomi',  slug: 'xiaomi',  bg: '#fff2e5', color: '#eb6200', logoColor: 'ff6900' },
 ];
 
 function BrandTile({ brand, onClick }) {
@@ -223,7 +223,7 @@ function BrandTile({ brand, onClick }) {
       >
         {logo || brand.name}
       </span>
-      <span className="badge badge-orange text-[11px]">{brand.tag}</span>
+      <span className="text-sm font-semibold text-app">{brand.name}</span>
     </button>
   );
 }
@@ -247,7 +247,7 @@ function Pagination({ page, totalPages, onChange }) {
           key={i}
           onClick={() => onChange(i)}
           aria-label={`Page ${i + 1}`}
-          className={`w-8 h-8 rounded-full text-xs font-semibold transition-colors ${i === page ? 'bg-brand text-on-brand' : 'surface-2 text-muted hover:text-brand'}`}
+          className={`w-8 h-8 rounded-full text-xs font-semibold transition-colors ${i === page ? 'bg-[var(--action)] text-[var(--on-action)]' : 'surface-2 text-muted hover:text-brand'}`}
         >
           {i + 1}
         </button>
@@ -291,7 +291,7 @@ function ProductCard({ product, badge, badgeClass }) {
       to={`/product/${product.id}`}
       className="group card card-hover p-4 flex flex-col gap-3 hover:border-[var(--brand)]"
     >
-      <div className="w-full aspect-square surface-2 group-hover:bg-brand-soft rounded-xl overflow-hidden relative flex items-center justify-center p-4 transition-colors duration-300">
+      <div className="w-full aspect-square surface-2 rounded-xl overflow-hidden relative flex items-center justify-center p-4 transition-colors duration-300">
         {discountPercent > 0 && (
           <span className="absolute top-2 left-2 z-10 rounded-md bg-danger text-white text-[10px] font-bold px-1.5 py-1 leading-none">
             {discountPercent}% OFF
@@ -652,7 +652,7 @@ export default function Home() {
                   return (
                     <StaggerItem key={product.id} className="relative">
                       {idx < 3 && (
-                        <div className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-brand shadow-[var(--shadow-sm)] flex items-center justify-center text-on-brand text-[10px] font-bold">
+                        <div className="absolute -top-2 -right-2 z-10 w-6 h-6 rounded-full bg-[var(--action)] text-[var(--on-action)] flex items-center justify-center text-on-brand text-[10px] font-bold">
                           #{idx + 1}
                         </div>
                       )}
