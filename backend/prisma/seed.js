@@ -50,8 +50,8 @@ const IMAGES = {
 
 const SEED_USERS = [
   {
-    name: 'Raneem',
-    email: 'raneem@example.com',
+    name: 'Zaid Akroush',
+    email: 'zaid@example.com',
     products: [
       { title: 'Apple iPhone 15 Pro Max 256GB – Natural Titanium', url: 'https://www.apple.com/iphone-15-pro/', imageUrl: IMAGES.iphone, currentPrice: 1199.00, lowestPrice: 1099.00, highestPrice: 1299.00, currency: 'USD', serpApiQuery: 'iPhone 15 Pro Max' },
       { title: 'Apple MacBook Pro 16-inch M3 Pro – Space Black', url: 'https://www.apple.com/macbook-pro/', imageUrl: IMAGES.macbook, currentPrice: 2499.00, lowestPrice: 2299.00, highestPrice: 2699.00, currency: 'USD', serpApiQuery: 'MacBook Pro 16 M3' },
