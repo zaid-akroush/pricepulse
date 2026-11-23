@@ -4,9 +4,9 @@ import { spring } from './motion';
 import Logo from './Logo';
 
 const FEATURES = [
-  'Real-time prices from every major retailer',
-  'Set a target price, we watch it for you',
-  'Email the second a price drops',
+  'Prices from Google Shopping in 15 countries',
+  'Set a target price or a percentage drop',
+  'An email and an in-app alert when it is reached',
 ];
 
 /* Shared split-screen layout for Login / Register / Forgot / Reset. Replaces
@@ -24,7 +24,7 @@ export default function AuthLayout({ eyebrow, title, subtitle, children, footer 
 
         <div className="relative z-10 max-w-sm">
           <h2 className="text-4xl font-bold leading-tight tracking-tight mb-6">
-            Shop smarter. Never pay peak price again.
+            Pick a price. We tell you when it gets there.
           </h2>
           <div className="flex flex-col gap-3.5">
             {FEATURES.map((f, i) => (
@@ -46,20 +46,8 @@ export default function AuthLayout({ eyebrow, title, subtitle, children, footer 
           </div>
         </div>
 
-        <p className="relative z-10 text-xs text-white/40">Free to use. No card required.</p>
+        <p className="relative z-10 text-xs text-white/40">Free to use.</p>
 
-        {/* decorative floating price chip */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ ...spring, delay: 0.5 }}
-          className="animate-float absolute bottom-24 right-10 bg-white/10 border border-white/10 rounded-2xl px-4 py-3 backdrop-blur-sm"
-        >
-          <p className="text-[10px] text-white/50 uppercase tracking-widest mb-1">Price dropped</p>
-          <p className="text-lg font-bold font-data text-white">-24%</p>
-        </motion.div>
-
-        <div className="pointer-events-none absolute -top-24 -left-24 w-72 h-72 rounded-full bg-brand/10 blur-3xl" />
       </div>
 
       {/* Form panel */}

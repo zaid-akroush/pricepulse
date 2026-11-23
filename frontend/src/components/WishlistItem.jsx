@@ -105,7 +105,7 @@ export default function WishlistItem({ item, onRemove, onUpdate }) {
 
           {product.url && (
             <a href={product.url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-on-brand bg-brand hover:opacity-90 px-2.5 py-1 rounded-lg transition-opacity">
+              className="inline-flex items-center gap-1 mt-1.5 text-xs font-semibold text-app border border-app-strong hover:border-[var(--text)] px-2.5 py-1 rounded-md transition-colors">
               Buy for <Price amount={product.currentPrice} currency={product.currency} />{retailer ? ` at ${retailer}` : ''} &rarr;
             </a>
           )}

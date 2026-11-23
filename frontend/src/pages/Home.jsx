@@ -106,35 +106,35 @@ const CATEGORIES = [
 const HERO_SLIDES = [
   {
     eyebrow: 'Prices from Google Shopping', title: 'SMART\nWEARABLES.', sub: 'Compare smartwatch prices', q: 'smartwatch', art: 'watch', category: 'Smartphones',
-    photo: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1713056878930-c5604da9acfd?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'FLAGSHIP\nPHONES.', sub: 'Track phone prices', q: 'smartphone', art: 'phone', category: 'Smartphones',
-    photo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1709528922440-4fc4f05ef110?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'WIRELESS\nAUDIO.', sub: 'Track headphone prices', q: 'headphones', art: 'headphones', category: 'Headphones',
-    photo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1628116709703-c1c9ad550d36?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'POWER\nLAPTOPS.', sub: 'Track laptop prices', q: 'laptop', category: 'Laptops',
-    photo: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1717865499857-ec35ce6e65fa?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'LEVEL UP\nGAMING.', sub: 'Track console prices', q: 'gaming console', category: 'Gaming',
-    photo: 'https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'CAPTURE\nMORE.', sub: 'Track camera prices', q: 'digital camera', category: 'Cameras',
-    photo: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1614108830714-74f0e4c8cd7e?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'BIGGER\nSCREENS.', sub: 'Track TV prices', q: '4K TV', category: 'TVs',
-    photo: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1646861039459-fd9e3aabf3fb?auto=format&fit=crop&w=1400&q=85',
   },
   {
     eyebrow: 'Prices from Google Shopping', title: 'SMARTER\nHOME.', sub: 'Track smart home prices', q: 'smart home device', category: 'Smart Home',
-    photo: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=1400&q=85',
+    photo: 'https://images.unsplash.com/photo-1529359744902-86b2ab9edaea?auto=format&fit=crop&w=1400&q=85',
   },
 ];
 

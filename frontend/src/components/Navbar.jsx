@@ -70,7 +70,7 @@ function ThemeMenu({ theme, setTheme }) {
                 key={opt.value}
                 onClick={() => { setTheme(opt.value); setOpen(false); }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  theme === opt.value ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-app-subtle hover:text-app'
+                  theme === opt.value ? 'surface-3 text-app font-semibold' : 'text-muted hover:bg-app-subtle hover:text-app'
                 }`}
               >
                 <ThemeIcon theme={opt.value} className="w-4 h-4 shrink-0" />
@@ -110,7 +110,7 @@ function CurrencyMenu() {
                 key={c.code}
                 onClick={() => { setDisplayCurrency(c.code); setOpen(false); }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors ${
-                  displayCurrency === c.code ? 'bg-brand-soft text-brand' : 'text-muted hover:bg-app-subtle hover:text-app'
+                  displayCurrency === c.code ? 'surface-3 text-app font-semibold' : 'text-muted hover:bg-app-subtle hover:text-app'
                 }`}
               >
                 <span className="w-6 text-center font-bold shrink-0">{c.symbol}</span>
@@ -175,13 +175,13 @@ export default function Navbar() {
               key={link.to}
               to={link.to}
               className={`relative px-3.5 py-2 rounded-lg text-sm font-medium transition-colors ${
-                isActive(link.to) ? 'text-brand' : 'text-muted hover:text-app'
+                isActive(link.to) ? 'text-app font-semibold' : 'text-muted hover:text-app'
               }`}
             >
               {isActive(link.to) && (
                 <motion.span
                   layoutId="nav-active-pill"
-                  className="absolute inset-0 bg-brand-soft rounded-lg -z-10"
+                  className="absolute inset-0 surface-3 rounded-lg -z-10"
                   transition={{ type: 'spring', stiffness: 380, damping: 32 }}
                 />
               )}
@@ -286,7 +286,7 @@ export default function Navbar() {
           >
             <div className="px-4 py-3 grid grid-cols-3 gap-x-3 gap-y-2.5">
               {allLinks.map(l => (
-                <Link key={l.to} to={l.to} className={`text-sm py-1 truncate ${isActive(l.to) ? 'text-brand font-semibold' : 'text-app'}`}>{l.label}</Link>
+                <Link key={l.to} to={l.to} className={`text-sm py-1 truncate ${isActive(l.to) ? 'text-app font-semibold underline' : 'text-app'}`}>{l.label}</Link>
               ))}
               {!user && (
                 <>
