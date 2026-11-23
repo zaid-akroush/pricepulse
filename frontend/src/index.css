@@ -238,7 +238,6 @@
   }
   .chip-active:hover { color: var(--on-action); border-color: transparent; }
 
-  /* Prices and figures: same typeface, tabular digits so columns line up. */
   /* Proportional digits: this face's tabular figures leave a wide gap around the decimal point. */
   .price-tag { font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
 
