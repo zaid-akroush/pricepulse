@@ -11,6 +11,7 @@ const { recordPrice } = require('../services/productPrice');
 const { validateExternalUrl } = require('../utils/urlSafety');
 const { computeTrends } = require('../services/trends');
 const { observePrice } = require('../jobs/priceCron');
+const serverError = require('../utils/serverError');
 
 // Cooldown between paid-API price refreshes for the same product, prevents
 // looping this endpoint across all product IDs to burn SerpApi quota.
@@ -117,7 +118,7 @@ router.get('/search', async (req, res) => {
       // Surface it as 503 with a clean message instead of the raw axios text.
       return res.status(503).json({ error: err.message });
     }
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -135,7 +136,7 @@ router.get('/most-wishlisted', async (req, res) => {
     });
     res.json(products.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -149,7 +150,7 @@ router.get('/newest', async (req, res) => {
     });
     res.json(products);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -172,7 +173,7 @@ router.get('/best-value', async (req, res) => {
       .slice(0, 24);
     res.json(withDiscount);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -198,7 +199,7 @@ router.get('/top-drops', async (req, res) => {
 
     res.json(withDrops);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -230,7 +231,7 @@ router.get('/trends', async (req, res) => {
     cacheSet(trendsCache, days, { at: Date.now(), data });
     res.json(data);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -255,7 +256,7 @@ router.get('/deal-of-day', async (req, res) => {
       .sort((a, b) => b.score - a.score);
     res.json(scored[0] || null);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -273,7 +274,7 @@ router.get('/public-stats', async (req, res) => {
     const dropsRecorded = priceFields.filter(p => p.currentPrice < p.highestPrice).length;
     res.json({ productsTracked, activeTrackers, priceChecks, dropsRecorded });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -408,7 +409,7 @@ router.get('/:id/alerts', authMiddleware, async (req, res) => {
     });
     res.json(alerts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -452,7 +453,7 @@ router.get('/:id/compare', async (req, res) => {
     cacheSet(compareCache, id, { at: Date.now(), listings });
     res.json({ listings, cached: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -474,7 +475,7 @@ router.get('/:id/related', async (req, res) => {
     });
     res.json(related.map(p => ({ ...p, wishlistCount: p._count.wishlistItems })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -492,7 +493,7 @@ router.get('/:id/retailer-breakdown', async (req, res) => {
     try { retailer = new URL(product.url || '').hostname.replace('www.', ''); } catch (_) {}
     res.json([{ retailer, currentPrice: product.currentPrice, lowestPrice: product.lowestPrice, currency: product.currency }]);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -652,7 +653,7 @@ router.get('/:id/forecast', async (req, res) => {
       points: hist.length,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -731,7 +732,7 @@ router.get('/:id', async (req, res) => {
       releaseReason: release.reason,
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -984,7 +985,7 @@ router.get('/:id/images', async (req, res) => {
 
     res.json({ images: capped, cached: false });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -1050,7 +1051,7 @@ router.post('/:id/refresh', authMiddleware, async (req, res) => {
       },
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -1131,7 +1132,7 @@ router.post('/from-search', async (req, res) => {
     }
     res.status(201).json({ id: product.id });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 

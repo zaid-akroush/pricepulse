@@ -109,3 +109,13 @@ describe('GET /api/auth/me', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('POST /api/auth/forgot-password', () => {
+  it('answers the same for an unknown address, so accounts cannot be enumerated', async () => {
+    const res = await request(app)
+      .post('/api/auth/forgot-password')
+      .send({ email: 'nobody-here@test.pricepulse' });
+    expect(res.status).toBe(200);
+    expect(res.body.message).toMatch(/if an account exists/i);
+  });
+});

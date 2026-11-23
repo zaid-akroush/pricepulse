@@ -7,7 +7,6 @@ const {
 } = require('../services/scheduling');
 const { resolveMarket, isValidMarket, MARKETS } = require('../services/markets');
 const { computeTrends, sparkline, windowEndpoints } = require('../services/trends');
-const { savingsTimeline, toUsd } = require('../services/analytics');
 const { pickPriceFor, sameProduct, isAccessoryListing } = require('../services/serpApi');
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -180,32 +179,5 @@ describe('trends', () => {
     expect(sp[0]).toBe(0);
     expect(sp[9]).toBe(99);
     expect(sparkline(hist.slice(0, 3), 10)).toEqual([0, 1, 2]);
-  });
-});
-
-describe('savings timeline', () => {
-  test('saved is peak-so-far minus price, never using future observations', () => {
-    const items = [{ currency: 'USD', priceHistory: [at(4, 100), at(2, 80), at(1, 120)] }];
-    const s = savingsTimeline(items, 5, null, NOW);
-    expect(s).toHaveLength(5);
-    // day -4: first observation, price 100, peak 100, saved 0
-    expect(s[0]).toMatchObject({ value: 100, saved: 0, tracked: 1 });
-    // day -2: price 80, peak 100, saved 20
-    expect(s[2]).toMatchObject({ value: 80, saved: 20, tracked: 1 });
-    // day -1 and today: price 120 is the new peak, saved 0
-    expect(s[4]).toMatchObject({ value: 120, saved: 0, tracked: 1 });
-  });
-  test('products with no observation yet are not counted on that day', () => {
-    const items = [{ currency: 'USD', priceHistory: [at(1, 50)] }];
-    const s = savingsTimeline(items, 3, null, NOW);
-    expect(s[0].tracked).toBe(0);
-    expect(s[2].tracked).toBe(1);
-  });
-  test('converts other currencies into USD when rates are given', () => {
-    const rates = { USD: 1, HUF: 400 };
-    expect(toUsd(4000, 'HUF', rates)).toBe(10);
-    expect(toUsd(10, 'XXX', rates)).toBe(10);
-    const items = [{ currency: 'HUF', priceHistory: [at(1, 40000)] }];
-    expect(savingsTimeline(items, 1, rates, NOW)[0].value).toBe(100);
   });
 });

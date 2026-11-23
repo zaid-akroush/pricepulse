@@ -6,6 +6,7 @@ const { body, validationResult } = require('express-validator');
 const { PrismaClient } = require('@prisma/client');
 const { sendPasswordResetEmail } = require('../services/mailer');
 const authMiddleware = require('../middleware/auth');
+const serverError = require('../utils/serverError');
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -47,7 +48,7 @@ router.post('/register',
 
     res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -79,14 +80,13 @@ router.post('/login',
 
     res.json({ token, user: { id: user.id, name: user.name, email: user.email } });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
 // POST /api/auth/forgot-password, email a reset link if the account exists.
-// NOTE: this deliberately reveals whether an email is registered (404 if not
-// found) at the request of the project owner, trading the usual
-// anti-enumeration protection for clearer UX during development/demoing.
+// The answer is the same whether or not the address is registered, so this
+// endpoint cannot be used to find out who has an account.
 router.post('/forgot-password',
   body('email').isEmail().normalizeEmail().withMessage('Valid email is required'),
   async (req, res) => {
@@ -97,9 +97,8 @@ router.post('/forgot-password',
     const { email } = req.body;
     const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
-      return res.status(404).json({ error: 'No account found with that email address.' });
-    }
+    const generic = { message: 'If an account exists for that address, a reset link has been sent.' };
+    if (!user) return res.json(generic);
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
@@ -113,13 +112,13 @@ router.post('/forgot-password',
     try {
       await sendPasswordResetEmail(user.email, resetUrl);
     } catch (mailErr) {
+      // Logged only: a different response here would reveal that the account exists.
       console.error('[forgot-password] email send failed:', mailErr.message);
-      return res.status(502).json({ error: 'Could not send the reset email. Please try again later.' });
     }
 
-    res.json({ message: 'A reset link has been sent to your email.' });
+    res.json(generic);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -152,7 +151,7 @@ router.post('/reset-password',
 
     res.json({ message: 'Password has been reset. You can now log in.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -165,7 +164,7 @@ router.get('/me', authMiddleware, async (req, res) => {
     });
     res.json({ ...user });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -206,7 +205,7 @@ router.patch('/profile',
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -241,15 +240,14 @@ router.patch('/password', authMiddleware, async (req, res) => {
     });
     res.json({ message: 'Password updated successfully' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
 // DELETE /api/auth/account  (protected), permanently delete the caller's own
 // account. Requires the current password so a hijacked-but-not-fully-trusted
 // session (e.g. a stolen JWT) can't wipe an account without knowing it.
-// Prisma cascades the delete to the user's wishlist items, notifications,
-// etc. the same way the admin delete-user route does.
+// Prisma cascades the delete to the user's wishlist items and notifications.
 router.delete('/account', authMiddleware, async (req, res) => {
   try {
     const { password } = req.body;
@@ -262,7 +260,7 @@ router.delete('/account', authMiddleware, async (req, res) => {
     await prisma.user.delete({ where: { id: req.userId } });
     res.json({ message: 'Account deleted' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 

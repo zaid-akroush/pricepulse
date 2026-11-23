@@ -17,8 +17,8 @@ const OBSERVATION_MAX_AGE_MS = Number(process.env.OBSERVATION_MAX_AGE_MS || HOUR
 
 // Only one sweep may run at a time.
 //
-// node-cron does not prevent overlap by default, and the admin "Run price
-// check now" button calls checkPrices() directly without tracking it. Two
+// node-cron does not prevent overlap by default, and a sweep can also be
+// started directly (checkPrices({ all: true }) in tests and scripts). Two
 // concurrent sweeps both read `item.notified === false` before either writes
 // it, so a user received two identical emails and two duplicate in-app
 // notifications, two priceHistory rows for the same moment, and double the
@@ -54,7 +54,7 @@ function referencePrice(product, history) {
  * actually move rather than to how many products exist.
  *
  * @param {{all?: boolean}} [opts] all=true re-checks every product regardless
- *   of schedule (the admin "Run price check now" button).
+ *   of schedule (used by tests and manual runs).
  * @returns {Promise<{ran: boolean, checked: number, updated: number, alerts: number, due: number, queries: number, reason?: string}>}
  */
 async function checkPrices(opts = {}) {
@@ -287,7 +287,7 @@ function startPriceCron() {
   // a given tick is decided per product by nextCheckAt (services/scheduling).
   const schedule = process.env.CRON_SCHEDULE || '0 * * * *';
   // noOverlap is belt-and-braces on top of the sweepInProgress guard above,
-  // which also covers the admin-triggered run.
+  // which also covers manually started runs.
   cron.schedule(schedule, () => checkPrices().catch(err => console.error('[cron] sweep failed:', err.message)), { noOverlap: true });
   console.log(`[cron] Price monitoring scheduled: ${schedule}`);
 }

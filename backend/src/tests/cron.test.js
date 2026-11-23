@@ -23,8 +23,13 @@ const { checkPrices, rescheduleProduct, observePrice } = require('../jobs/priceC
 const { MAX_HOURS } = require('../services/scheduling');
 
 const prisma = new PrismaClient();
-const EMAIL = `cron-${Date.now()}@test.pricepulse`;
+// Own domain: auth.test.js deletes every *@test.pricepulse user when it starts and ends.
+const EMAIL = `cron-${Date.now()}@cron-suite.local`;
 let user, tracked, untracked, sharedA, sharedB;
+// Other suites share the database (wishlist.test.js tracks 'test headphones'),
+// so assertions only look at this file's own queries.
+const OWN_QUERIES = ['test phone cron', 'test tablet cron', 'test laptop cron'];
+const isOwn = (q) => OWN_QUERIES.includes(String(q).toLowerCase());
 
 beforeAll(async () => {
   user = await prisma.user.create({ data: { name: 'Cron Tester', email: EMAIL, password: 'x' } });
@@ -77,7 +82,7 @@ describe('checkPrices', () => {
     expect(result.due).toBeGreaterThanOrEqual(4);
 
     // Two products share one query: three distinct queries, four products.
-    const ourQueries = fetchShopping.mock.calls.map(c => c[0].toLowerCase()).filter(q => q.startsWith('test '));
+    const ourQueries = fetchShopping.mock.calls.map(c => c[0].toLowerCase()).filter(isOwn);
     expect(new Set(ourQueries).size).toBe(3);
     expect(ourQueries.filter(q => q === 'test laptop cron')).toHaveLength(1);
 
@@ -108,8 +113,7 @@ describe('checkPrices', () => {
   it('skips products that are not due yet', async () => {
     fetchShopping.mockImplementation(async (q) => listings(q));
     const result = await checkPrices();
-    expect(result.due).toBe(0);
-    expect(fetchShopping.mock.calls.filter(c => c[0].toLowerCase().startsWith('test '))).toHaveLength(0);
+    expect(fetchShopping.mock.calls.filter(c => isOwn(c[0]))).toHaveLength(0);
   });
 
   it('re-checks everything when asked to, and does not alert twice for the same move', async () => {

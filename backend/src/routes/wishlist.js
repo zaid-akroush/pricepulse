@@ -3,10 +3,10 @@ const { PrismaClient } = require('@prisma/client');
 const authMiddleware = require('../middleware/auth');
 const { searchProducts } = require('../services/serpApi');
 const { validateExternalUrl } = require('../utils/urlSafety');
-const { savingsTimeline, toUsd } = require('../services/analytics');
 const { getRates } = require('../services/currency');
 const { resolveMarket, isValidMarket } = require('../services/markets');
 const { rescheduleProduct } = require('../jobs/priceCron');
+const serverError = require('../utils/serverError');
 
 const router = express.Router();
 
@@ -25,93 +25,6 @@ const MAX_WISHLIST_ITEMS = 25; // per-user cap on tracked products
 router.use(authMiddleware);
 
 
-// GET /api/wishlist/analytics
-// Aggregate stats for the logged-in user's tracked products (dashboard).
-router.get('/analytics', async (req, res) => {
-  try {
-    const items = await prisma.wishlistItem.findMany({
-      where: { userId: req.userId },
-      include: { product: { include: { priceHistory: { orderBy: { recordedAt: 'asc' } } } } },
-    });
-    // Products can now live in different markets (USD, HUF, EUR...). Totals
-    // are summed in USD and reported as such; the client converts to the
-    // display currency like any other price. Per-item figures stay in the
-    // item's own currency.
-    let rates = null;
-    try { rates = (await getRates('USD')).rates; } catch (_) { /* sum unconverted */ }
-
-    // Mirrors getDealScore in frontend/src/components/DealScore.jsx — keep the
-    // two in step. Returns null (not a number) when there is no observed price
-    // range to score against: a brand-new product has high === low, and the
-    // old code asserted 50/100 for it, which is a made-up figure that also
-    // dragged the dashboard's average away from the real one. Nulls are
-    // excluded from the average below rather than counted as 50.
-    const dealScore = (p) => {
-      if (p.currentPrice == null || !p.highestPrice || p.highestPrice <= p.lowestPrice) return null;
-      const range = p.highestPrice - p.lowestPrice;
-      const saved = p.highestPrice - p.currentPrice;
-      return Math.max(0, Math.min(100, Math.round((saved / range) * 100)));
-    };
-
-    const detailed = items.map(i => {
-      const p = i.product;
-      const savedVsPeak = Math.max(0, p.highestPrice - p.currentPrice);
-      const toTarget = i.targetPrice != null ? p.currentPrice - i.targetPrice : null;
-      return {
-        id: i.id,
-        productId: p.id,
-        title: p.title,
-        imageUrl: p.imageUrl,
-        currency: p.currency,
-        currentPrice: p.currentPrice,
-        lowestPrice: p.lowestPrice,
-        highestPrice: p.highestPrice,
-        targetPrice: i.targetPrice,
-        dropPercent: p.highestPrice > 0 ? Math.round(((p.highestPrice - p.currentPrice) / p.highestPrice) * 100) : 0,
-        savedVsPeak: parseFloat(savedVsPeak.toFixed(2)),
-        toTarget: toTarget != null ? parseFloat(toTarget.toFixed(2)) : null,
-        dealScore: dealScore(p),
-        targetMet: i.targetPrice != null && p.currentPrice <= i.targetPrice,
-        priceHistory: p.priceHistory.map(h => ({ price: h.price, recordedAt: h.recordedAt })),
-      };
-    });
-
-    const totalCurrentValue = detailed.reduce((s, d) => s + toUsd(d.currentPrice, d.currency, rates), 0);
-    const totalSavedVsPeak = detailed.reduce((s, d) => s + toUsd(d.savedVsPeak, d.currency, rates), 0);
-    const savings = savingsTimeline(items.map(i => i.product), 90, rates);
-    const alertsSet = detailed.filter(d => d.targetPrice != null).length;
-    const targetsMet = detailed.filter(d => d.targetMet).length;
-    // Average only over products that HAVE a score. Including the nulls (or,
-    // as before, counting an unscoreable product as 50) reports a number that
-    // no product actually has.
-    const scored = detailed.filter(d => d.dealScore != null);
-    const avgDealScore = scored.length
-      ? Math.round(scored.reduce((s, d) => s + d.dealScore, 0) / scored.length)
-      : 0;
-    const biggest = detailed.slice().sort((a, b) => b.dropPercent - a.dropPercent)[0] || null;
-
-    const targetsHit = await prisma.notification.count({
-      where: { userId: req.userId, type: { in: ['target_hit', 'price_drop'] } },
-    });
-
-    res.json({
-      totalTracked: detailed.length,
-      totalsCurrency: 'USD',
-      totalCurrentValue: parseFloat(totalCurrentValue.toFixed(2)),
-      totalSavedVsPeak: parseFloat(totalSavedVsPeak.toFixed(2)),
-      savingsTimeline: savings,
-      alertsSet,
-      targetsMet,
-      targetsHit,
-      avgDealScore,
-      biggestDrop: biggest,
-      items: detailed,
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // GET /api/wishlist
 // Returns all wishlist items for the logged-in user
 router.get('/', async (req, res) => {
@@ -125,7 +38,7 @@ router.get('/', async (req, res) => {
     });
     res.json(items);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -243,7 +156,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json(item);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -268,7 +181,7 @@ router.patch('/:id', async (req, res) => {
     });
     res.json(updated);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
@@ -286,7 +199,7 @@ router.delete('/:id', async (req, res) => {
     await rescheduleProduct(item.productId).catch(() => {});
     res.json({ message: 'Removed from wishlist' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    serverError(res, err);
   }
 });
 
