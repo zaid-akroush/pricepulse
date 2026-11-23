@@ -13,3 +13,4 @@ thesis-docs/
 # AI skill-manager lockfile, not app code
 skills-lock.json
 .*/
+!.github/
