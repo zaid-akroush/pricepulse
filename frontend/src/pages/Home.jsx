@@ -482,7 +482,6 @@ export default function Home() {
   const [loadingWishlisted, setLoadingWishlisted] = useState(true);
   const [loadingNewest, setLoadingNewest] = useState(true);
   const [loadingDeal, setLoadingDeal] = useState(true);
-  const [stats, setStats] = useState(null);
   const PER_PAGE = 4;
   const [wishlistPage, setWishlistPage] = useState(0);
   const [dropsPage, setDropsPage] = useState(0);
@@ -493,7 +492,6 @@ export default function Home() {
     api.get('/products/most-wishlisted').then(r => setMostWishlisted(r.data)).catch(() => {}).finally(() => setLoadingWishlisted(false));
     api.get('/products/newest').then(r => setNewest(r.data)).catch(() => {}).finally(() => setLoadingNewest(false));
     api.get('/products/deal-of-day').then(r => setDealOfDay(r.data)).catch(() => {}).finally(() => setLoadingDeal(false));
-    api.get('/products/public-stats').then(r => setStats(r.data)).catch(() => {});
   }, []);
 
   function handleSearch(e) {
@@ -740,57 +738,6 @@ export default function Home() {
         </section>
       )}
 
-      {/* How it works: plain facts about what the app actually does. */}
-      <section className="surface border-y border-app py-10 px-4">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-[1fr_1.4fr] gap-8">
-          <div>
-            <h2 className="text-2xl font-bold text-app tracking-tight">How it works</h2>
-            <p className="text-sm text-muted mt-2 max-w-sm">
-              PricePulse looks up prices on Google Shopping, saves every price it sees,
-              and emails you when a product reaches the price you picked.
-            </p>
-            {!user && (
-              <Link to="/register" className="btn-primary inline-block mt-5">Create a free account</Link>
-            )}
-          </div>
-          <ol className="grid sm:grid-cols-3 gap-6 text-sm">
-            <li>
-              <p className="font-data text-xs text-faint">1</p>
-              <h3 className="font-semibold text-app mt-1">Search</h3>
-              <p className="text-muted mt-1">Pick a country and search. Prices come back in that country's currency.</p>
-            </li>
-            <li>
-              <p className="font-data text-xs text-faint">2</p>
-              <h3 className="font-semibold text-app mt-1">Set a target</h3>
-              <p className="text-muted mt-1">Add the product to your wishlist with a target price or a percentage drop.</p>
-            </li>
-            <li>
-              <p className="font-data text-xs text-faint">3</p>
-              <h3 className="font-semibold text-app mt-1">Get an email</h3>
-              <p className="text-muted mt-1">Prices are re-checked every 3 to 48 hours. When yours is hit, you get an email and an in-app alert.</p>
-            </li>
-          </ol>
-        </div>
-      </section>
-
-      {/* Stats strip: real aggregate counts from /products/public-stats */}
-      {stats && stats.productsTracked > 0 && (
-        <section className="max-w-7xl mx-auto px-4 py-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              [stats.productsTracked, 'products tracked'],
-              [stats.activeTrackers, 'people tracking prices'],
-              [stats.priceChecks, 'prices recorded'],
-              [stats.dropsRecorded, 'products below their peak'],
-            ].map(([value, label]) => (
-              <div key={label}>
-                <p className="text-2xl font-bold font-data text-app">{value?.toLocaleString?.() ?? value}</p>
-                <p className="text-xs text-muted mt-1">{label}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }

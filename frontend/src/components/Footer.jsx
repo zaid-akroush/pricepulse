@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import api from '../api/axios';
 import Wordmark from './Wordmark';
 
 const LINK_COLUMNS = [
@@ -29,26 +31,49 @@ const LINK_COLUMNS = [
 ];
 
 export default function Footer() {
+  // Real aggregate counts; hidden until there is something to show.
+  const [stats, setStats] = useState(null);
+  useEffect(() => {
+    api.get('/products/public-stats').then(r => setStats(r.data)).catch(() => {});
+  }, []);
+
   return (
     <footer className="bg-app-subtle border-t border-app text-muted mt-auto">
       <div className="max-w-7xl mx-auto px-4 pt-10 pb-6">
-        {/* Brand on the left, link columns grouped on the right. The brand
-            column is capped in width, so with only two link columns the row
-            left a wide band of nothing in the middle — a third column of
-            category shortcuts both fills it and is useful. */}
+        {/* Brand, how it works and live counts on the left; links on the right. */}
         <div className="flex flex-col lg:flex-row lg:justify-between gap-6 mb-6">
-          <div className="lg:max-w-sm">
+          <div className="lg:max-w-md">
             <div className="mb-2.5">
               <Wordmark textClassName="text-lg" iconClassName="h-5" />
             </div>
             <p className="text-sm leading-relaxed">
               Tracks electronics prices on Google Shopping and emails you when one reaches your target.
             </p>
+            <ol className="text-sm leading-relaxed mt-4 space-y-1 list-decimal pl-5">
+              <li>Search in your country. Prices come in its currency.</li>
+              <li>Add a product with a target price or a percentage drop.</li>
+              <li>Prices are re-checked every 3 to 48 hours. When yours is hit, you get an email and an in-app alert.</li>
+            </ol>
+            {stats?.productsTracked > 0 && (
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3 mt-5">
+                {[
+                  [stats.productsTracked, 'products tracked'],
+                  [stats.activeTrackers, 'people tracking'],
+                  [stats.priceChecks, 'prices recorded'],
+                  [stats.dropsRecorded, 'below their peak'],
+                ].map(([value, label]) => (
+                  <div key={label}>
+                    <p className="text-lg font-bold text-app leading-none">{value?.toLocaleString?.() ?? value}</p>
+                    <p className="text-xs mt-1">{label}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Product + Account grouped into one bordered box, with a divider
               between the two columns instead of just a bare gap. */}
-          <div className="card p-4 flex flex-col sm:flex-row gap-4 sm:gap-0 shrink-0">
+          <div className="card p-4 flex flex-col sm:flex-row gap-4 sm:gap-0 shrink-0 lg:self-start">
             {LINK_COLUMNS.map((col, i) => (
               <div key={col.title} className={`sm:px-6 ${i > 0 ? 'sm:border-l border-app' : 'sm:pl-0'}`}>
                 <h4 className="text-app font-semibold mb-2.5 text-xs uppercase tracking-widest">{col.title}</h4>
