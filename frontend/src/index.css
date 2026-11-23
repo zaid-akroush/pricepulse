@@ -37,89 +37,89 @@
   }
 }
 
-/* Design tokens — OKLCH.
-   Strategy: Committed. A vivid, saturated orange primary carries the brand
-   and doubles as the "price dropped" signal. Text sitting on the brand
-   fill is always white ink (never black) — this keeps every button, badge,
-   and icon chip on an orange fill readable without relying on dark text
-   over orange. The page surface is a soft warm paper tone (not stark
-   white) with true-white cards lifted on top of it for depth.
-   No gradients, no glass/blur, no glow blobs. */
 :root {
-  --bg:            #f7f2ef;
-  --bg-subtle:     #ebe5e0;
+  /* Neutral retail palette: white shelves, ink text, one orange for the
+     brand mark and deal highlights, green for "cheaper", red for "dearer". */
+  --bg:            #f3f3f1;
+  --bg-subtle:     #e9e9e6;
   --surface:       #ffffff;
-  --surface-2:     #f7f2ef;
-  --surface-3:     #e4dcd6;
-  --border:        #d4ccc6;
-  --border-strong: #aba39c;
-  --text:          #100f0e;
-  --text-muted:    #5c5753;
-  --text-faint:    #8b8580;
+  --surface-2:     #f3f3f1;
+  --surface-3:     #e6e6e3;
+  --border:        #dcdcd8;
+  --border-strong: #b9b9b4;
+  --text:          #141414;
+  --text-muted:    #575754;
+  --text-faint:    #85857f;
 
-  --ink:           #100f0e;
-  --ink-2:         #1c1a19;
+  --ink:           #141414;
+  --ink-2:         #262626;
 
-  --brand:         #eb6200;
-  --brand-strong:  #c22e00;
-  --brand-soft:    #ffe0c8;
+  --brand:         #e85d04;
+  --brand-strong:  #b84500;
+  --brand-soft:    #fde6d6;
   --on-brand:      #ffffff;
 
-  --success:       #006d21;
-  --success-soft:  #d5f5d9;
-  --danger:        #c52a35;
-  --danger-soft:   #ffe3e0;
-  --warning:       #996700;
-  --warning-soft:  #fbe9c6;
-  --info:          #0f74c5;
-  --info-soft:     #ddedff;
-  --purple:        #8156c0;
-  --purple-soft:   #eee7fc;
+  --action:        #141414;
+  --on-action:     #ffffff;
 
-  --radius:    0.75rem;
-  --radius-lg: 0.875rem;
-  --radius-xl: 1.125rem;
+  --success:       #0b7a35;
+  --success-soft:  #dcf2e3;
+  --danger:        #c0262f;
+  --danger-soft:   #fbe2e1;
+  --warning:       #8a5d00;
+  --warning-soft:  #f8ecc9;
+  --info:          #1d63b8;
+  --info-soft:     #e0ebf8;
+  --purple:        #6d48b0;
+  --purple-soft:   #ece6f7;
 
-  --shadow-sm:    0 1px 2px rgba(16, 15, 14, 0.07);
-  --shadow-md:    0 4px 14px rgba(16, 15, 14, 0.1);
-  --shadow-lg:    0 18px 34px -14px rgba(16, 15, 14, 0.22);
-  --shadow-brand: 0 8px 18px -6px rgba(235, 98, 0, 0.4);
+  --radius:    0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+
+  --shadow-sm:    none;
+  --shadow-md:    0 6px 16px rgba(20, 20, 20, 0.08);
+  --shadow-lg:    0 16px 32px -12px rgba(20, 20, 20, 0.2);
+  --shadow-brand: none;
 }
 .dark {
-  --bg:            #1e1d1c;
-  --bg-subtle:     #191817;
-  --surface:       #2a2827;
-  --surface-2:     #322f2d;
-  --surface-3:     #3d3937;
-  --border:        #4a4543;
-  --border-strong: #5c5653;
-  --text:          #faf9f8;
-  --text-muted:    #bcb8b5;
-  --text-faint:    #8b8783;
+  --bg:            #161616;
+  --bg-subtle:     #111111;
+  --surface:       #1f1f1f;
+  --surface-2:     #262626;
+  --surface-3:     #303030;
+  --border:        #363636;
+  --border-strong: #4d4d4d;
+  --text:          #f2f2f0;
+  --text-muted:    #b4b4af;
+  --text-faint:    #85857f;
 
-  --ink:           #080706;
-  --ink-2:         #0f0d0c;
+  --ink:           #0a0a0a;
+  --ink-2:         #111111;
 
-  --brand:         #f57323;
-  --brand-strong:  #e75f00;
-  --brand-soft:    #411904;
-  --on-brand:      #ffffff;
+  --brand:         #ff7a1f;
+  --brand-strong:  #ff8d3d;
+  --brand-soft:    #3a1d08;
+  --on-brand:      #141414;
 
-  --success:       #48b162;
-  --success-soft:  #16301d;
-  --danger:        #f36162;
-  --danger-soft:   #341413;
-  --warning:       #ddb049;
-  --warning-soft:  #2f2408;
-  --info:          #4c9deb;
-  --info-soft:     #10233a;
-  --purple:        #ad87ed;
-  --purple-soft:   #251c3a;
+  --action:        #f2f2f0;
+  --on-action:     #141414;
 
-  --shadow-sm:    0 1px 2px rgba(0, 0, 0, 0.45);
-  --shadow-md:    0 4px 14px rgba(0, 0, 0, 0.5);
-  --shadow-lg:    0 18px 34px -14px rgba(0, 0, 0, 0.65);
-  --shadow-brand: 0 8px 20px -6px rgba(245, 115, 35, 0.32);
+  --success:       #4cc274;
+  --success-soft:  #15301f;
+  --danger:        #f2696f;
+  --danger-soft:   #3a1517;
+  --warning:       #e0b44f;
+  --warning-soft:  #30260b;
+  --info:          #6aa8ee;
+  --info-soft:     #13253b;
+  --purple:        #b195ee;
+  --purple-soft:   #261e3a;
+
+  --shadow-sm:    none;
+  --shadow-md:    0 6px 16px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 16px 32px -12px rgba(0, 0, 0, 0.6);
+  --shadow-brand: none;
 }
 /* AMOLED: true-black variant of dark mode, for users who find the default
    charcoal ('grey') too dark to be actually black, or who want max battery
@@ -144,16 +144,16 @@
     background-color: var(--bg);
     color: var(--text);
     @apply antialiased;
-    font-family: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+    font-family: "Schibsted Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
   }
   h1, h2, h3, h4 { text-wrap: balance; }
   p { text-wrap: pretty; }
   *:focus-visible {
-    outline: 2px solid var(--brand);
+    outline: 2px solid var(--text);
     outline-offset: 2px;
     border-radius: 4px;
   }
-  ::selection { background: rgba(192, 73, 9, 0.18); }
+  ::selection { background: rgba(232, 93, 4, 0.2); }
   .dark ::selection { background: rgba(240, 131, 78, 0.24); }
   * { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
   *::-webkit-scrollbar { width: 10px; height: 10px; }
@@ -163,58 +163,44 @@
 @layer components {
   /* Buttons */
   .btn-primary {
-    background-color: var(--brand);
-    color: var(--on-brand);
-    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-xl transition-opacity active:scale-[0.98];
+    background-color: var(--action);
+    color: var(--on-action);
+    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-lg transition-opacity;
   }
-  /* Hover darkens via opacity, not a color swap — --brand-strong is tuned
-     for use as TEXT (price-tag, links) against light backgrounds, not as a
-     fill under the near-black --on-brand ink text, so swapping to it here
-     would tank the button label's contrast. */
   .btn-primary:hover { opacity: 0.9; }
   .btn-secondary {
     background-color: var(--surface);
     color: var(--text);
     border-color: var(--border-strong);
-    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-xl border transition-colors;
+    @apply inline-flex items-center justify-center gap-2 font-semibold px-5 py-2.5 rounded-lg border transition-colors;
   }
-  .btn-secondary:hover { border-color: var(--brand); color: var(--brand); }
+  .btn-secondary:hover { border-color: var(--text); }
   .btn-ghost {
     color: var(--text-muted);
     background-color: transparent;
-    @apply inline-flex items-center justify-center gap-2 font-medium px-4 py-2 rounded-xl transition-colors;
+    @apply inline-flex items-center justify-center gap-2 font-medium px-4 py-2 rounded-lg transition-colors;
   }
-  .btn-ghost:hover { color: var(--brand); background-color: var(--brand-soft); }
+  .btn-ghost:hover { color: var(--text); background-color: var(--surface-3); }
 
   /* Surfaces */
   .card {
     background-color: var(--surface);
     border-color: var(--border);
-    box-shadow: var(--shadow-sm);
-    @apply rounded-2xl border transition-shadow duration-200;
+    @apply rounded-[10px] border;
   }
-  .card-hover {
-    @apply transition-[box-shadow,border-color,transform] duration-200;
-  }
-  .card-hover:hover {
-    box-shadow: var(--shadow-md);
-    border-color: var(--border-strong);
-    transform: translateY(-2px);
-  }
-  .card-hover:active {
-    transform: translateY(-2px) scale(0.99);
-  }
+.card-hover { @apply transition-colors duration-150; }
+  .card-hover:hover { border-color: var(--text); }
 
   /* Inputs */
   .input {
     background-color: var(--surface);
     color: var(--text);
     border-color: var(--border-strong);
-    @apply w-full rounded-xl px-4 py-2.5 text-sm border transition-colors focus:outline-none;
+    @apply w-full rounded-lg px-4 py-2.5 text-sm border transition-colors focus:outline-none;
   }
   .input:focus {
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(192, 73, 9, 0.15);
+    border-color: var(--text);
+    box-shadow: 0 0 0 3px rgba(20, 20, 20, 0.12);
   }
   .dark .input:focus {
     box-shadow: 0 0 0 3px rgba(240, 131, 78, 0.18);
@@ -244,26 +230,17 @@
        here to keep chip rows from wrapping awkwardly on narrower cards. */
     @apply px-3.5 py-1.5 rounded-full text-sm font-semibold cursor-pointer transition-colors whitespace-nowrap border;
   }
-  .chip:hover { color: var(--brand); border-color: var(--brand); }
+  .chip:hover { color: var(--text); border-color: var(--text); }
   .chip-active {
-    background-color: var(--brand);
-    color: var(--on-brand);
+    background-color: var(--action);
+    color: var(--on-action);
     @apply border-transparent;
   }
-  /* Higher specificity than .chip:hover alone, so an already-active chip
-     (solid brand-orange background) keeps its light on-brand text on hover
-     instead of the plain hover rule's orange text disappearing into it. */
-  .chip-active:hover { color: var(--on-brand); border-color: transparent; }
+  .chip-active:hover { color: var(--on-action); border-color: transparent; }
 
-  /* Numeric data: prices, chart axes, timestamps, table figures. Monospace
-     with tabular figures so digits line up column to column — that
-     alignment is what makes a price ledger read as accurate at a glance. */
-  .price-tag, .font-data {
-    font-family: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-    font-variant-numeric: tabular-nums;
-  }
-  .price-tag { font-weight: 600; color: var(--brand-strong); letter-spacing: -0.01em; }
-  .dark .price-tag { color: var(--brand); }
+  /* Prices and figures: same typeface, tabular digits so columns line up. */
+  .price-tag, .font-data { font-variant-numeric: tabular-nums; }
+  .price-tag { font-weight: 700; color: var(--text); letter-spacing: -0.01em; }
 
   .eyebrow { color: var(--brand-strong); @apply text-xs font-bold uppercase tracking-[0.14em]; }
   .dark .eyebrow { color: var(--brand); }
@@ -317,23 +294,4 @@
   .scrollbar-hide::-webkit-scrollbar { display: none; }
   .font-data { font-feature-settings: "tnum" 1; }
 
-  /* Cursor-tracked border glow for feature/bento tiles. Set --mx/--my via
-     onMouseMove (in %) from the consuming component. */
-  .spotlight { position: relative; isolation: isolate; }
-  .spotlight::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1px;
-    background: radial-gradient(240px circle at var(--mx, 50%) var(--my, 0%), var(--brand) 0%, transparent 70%);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    z-index: 1;
-  }
-  .spotlight:hover::before { opacity: 0.5; }
 }

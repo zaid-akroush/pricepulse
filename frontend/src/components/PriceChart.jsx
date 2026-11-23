@@ -225,7 +225,7 @@ export default function PriceChart({ history, currency = 'USD' }) {
               <line key={i} x1={PAD.left} x2={W - PAD.right} y1={yAt(t)} y2={yAt(t)} />
             ))}
           </g>
-          <g fill="var(--text-faint)" fontFamily="'IBM Plex Mono', monospace">
+          <g fill="var(--text-faint)" fontFamily="'Schibsted Grotesk', sans-serif" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {yTicks.map((t, i) => (
               <text key={i} x={PAD.left - 8} y={yAt(t)} dy="3" fontSize="9" textAnchor="end">
                 {formatPrice(t)}
@@ -243,7 +243,7 @@ export default function PriceChart({ history, currency = 'USD' }) {
               edges, so a centered anchor would push half the text past the
               SVG's viewBox and get clipped by the browser's default SVG
               overflow:hidden — anchor those two to start/end instead. */}
-          <g fill="var(--text-faint)" fontFamily="'IBM Plex Mono', monospace">
+          <g fill="var(--text-faint)" fontFamily="'Schibsted Grotesk', sans-serif" style={{ fontVariantNumeric: 'tabular-nums' }}>
             {xTickIdx.map((i, idx) => {
               const anchor = idx === 0 ? 'start' : idx === xTickIdx.length - 1 ? 'end' : 'middle';
               return (

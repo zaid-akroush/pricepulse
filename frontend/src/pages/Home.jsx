@@ -90,33 +90,16 @@ const icons = {
   'PC Parts': <Cpu className={ICON_CLS} weight="duotone" />,
 };
 
-/* Each category badge gets its own accent from the app's existing semantic
-   palette (already defined for success/danger/warning/info states in
-   index.css, reused here rather than inventing new brand-unrelated colors)
-   instead of every tile sharing one flat brand-color circle — makes the
-   row read as distinct categories at a glance, not a repeated stamp. */
-const CATEGORY_COLOR = {
-  Smartphones: 'bg-brand-soft text-brand',
-  Laptops: 'bg-info-soft text-info',
-  Headphones: 'bg-warning-soft text-warning',
-  Gaming: 'bg-danger-soft text-danger',
-  Cameras: 'bg-success-soft text-success',
-  Tablets: 'bg-brand-soft text-brand',
-  TVs: 'bg-info-soft text-info',
-  'Smart Home': 'bg-warning-soft text-warning',
-  'PC Parts': 'bg-danger-soft text-danger',
-};
-
 const CATEGORIES = [
-  { label: 'Smartphones', q: 'smartphone',         note: 'Most tracked category this week' },
-  { label: 'Laptops',     q: 'laptop',              note: 'Compare deals across brands' },
-  { label: 'Headphones',  q: 'headphones',          note: 'Wired, wireless & noise-cancelling' },
-  { label: 'Gaming',      q: 'gaming console',      note: 'Consoles, accessories & bundles' },
-  { label: 'Cameras',     q: 'digital camera',      note: 'DSLR, mirrorless & point-and-shoot' },
-  { label: 'Tablets',     q: 'tablet',              note: 'For work, school & streaming' },
-  { label: 'TVs',         q: '4K TV',               note: '4K, OLED & smart TVs' },
-  { label: 'Smart Home',  q: 'smart home device',   note: 'Speakers, cameras & automation' },
-  { label: 'PC Parts',    q: 'graphics card GPU',   note: 'GPUs, CPUs & everything to build a PC' },
+  { label: 'Smartphones', q: 'smartphone', photo: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&h=300&q=80',         note: 'Most tracked category this week' },
+  { label: 'Laptops',     q: 'laptop', photo: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?auto=format&fit=crop&w=400&h=300&q=80',              note: 'Compare deals across brands' },
+  { label: 'Headphones',  q: 'headphones', photo: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=400&h=300&q=80',          note: 'Wired, wireless & noise-cancelling' },
+  { label: 'Gaming',      q: 'gaming console', photo: 'https://images.unsplash.com/photo-1580327344181-c1163234e5a0?auto=format&fit=crop&w=400&h=300&q=80',      note: 'Consoles, accessories & bundles' },
+  { label: 'Cameras',     q: 'digital camera', photo: 'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?auto=format&fit=crop&w=400&h=300&q=80',      note: 'DSLR, mirrorless & point-and-shoot' },
+  { label: 'Tablets',     q: 'tablet', photo: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?auto=format&fit=crop&w=400&h=300&q=80',              note: 'For work, school & streaming' },
+  { label: 'TVs',         q: '4K TV', photo: 'https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&w=400&h=300&q=80',               note: '4K, OLED & smart TVs' },
+  { label: 'Smart Home',  q: 'smart home device', photo: 'https://images.unsplash.com/photo-1558002038-1055907df827?auto=format&fit=crop&w=400&h=300&q=80',   note: 'Speakers, cameras & automation' },
+  { label: 'PC Parts',    q: 'graphics card GPU', photo: 'https://images.unsplash.com/photo-1591488320449-011701bb6704?auto=format&fit=crop&w=400&h=300&q=80',   note: 'GPUs, CPUs & everything to build a PC' },
 ];
 
 /* Rotating hero banner slides */
@@ -480,11 +463,6 @@ function Section({ eyebrow, icon, title, subtitle, action, children }) {
     <section className="max-w-7xl mx-auto px-4 pb-8">
       <FadeIn className="flex items-end justify-between mb-6 gap-4 flex-wrap">
         <div className="flex items-center gap-3">
-          {icon && (
-            <span className="w-9 h-9 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
-              {icon}
-            </span>
-          )}
           <div>
             {eyebrow && <p className="eyebrow mb-2">{eyebrow}</p>}
             <h2 className="text-2xl font-bold text-app tracking-tight">{title}</h2>
@@ -562,19 +540,15 @@ export default function Home() {
             <h2 className="text-2xl font-bold text-app tracking-tight">Shop from top categories</h2>
           </div>
         </FadeIn>
-        <Stagger className="grid grid-cols-3 sm:grid-cols-5 lg:grid-cols-9 gap-x-4 sm:gap-x-5 gap-y-7 mb-8" stagger={0.05}>
+        <Stagger className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 xl:grid-cols-9 gap-3 mb-8">
           {CATEGORIES.map(cat => (
             <StaggerItem key={cat.label}>
               <button
                 onClick={() => navigate(`/search?q=${encodeURIComponent(cat.q)}`)}
-                className="flex flex-col items-center gap-3 group w-full"
+                className="card card-hover overflow-hidden w-full text-left group"
               >
-                <span className={`w-20 h-20 sm:w-24 sm:h-24 rounded-2xl ${CATEGORY_COLOR[cat.label]} flex items-center justify-center shadow-[var(--shadow-sm)] group-hover:scale-105 group-hover:shadow-[var(--shadow-md)] transition-all shrink-0`}>
-                  {icons[cat.label]}
-                </span>
-                <span className="text-xs sm:text-sm font-semibold text-app group-hover:text-brand transition-colors text-center leading-snug break-words w-full">
-                  {cat.label}
-                </span>
+                <img src={cat.photo} alt="" loading="lazy" className="w-full aspect-[4/3] object-cover surface-3" />
+                <span className="block px-3 py-2.5 text-sm font-semibold text-app">{cat.label}</span>
               </button>
             </StaggerItem>
           ))}
@@ -593,9 +567,6 @@ export default function Home() {
 {(loadingDeal || dealOfDay) && (<>
       <section className="max-w-7xl mx-auto px-4 pb-6">
         <FadeIn className="flex items-center gap-3 mb-4">
-          <span className="w-9 h-9 rounded-lg bg-brand-soft text-brand flex items-center justify-center shrink-0">
-            <Icon.bolt className="w-4 h-4" />
-          </span>
           <div>
             <h2 className="text-2xl font-bold text-app tracking-tight">Deal of the day</h2>
           </div>
