@@ -74,7 +74,7 @@ export default function Profile() {
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
-      <PageHeader eyebrow="Account" title="My Profile" className="mb-8" />
+      <PageHeader title="My Profile" className="mb-8" />
 
       {/* Avatar */}
       <FadeIn className="card p-6 mb-6 flex items-center gap-4">

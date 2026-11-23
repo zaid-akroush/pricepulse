@@ -153,7 +153,6 @@ export default function Search() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <p className="eyebrow mb-2">Discover</p>
       {/* Search bar */}
       <form onSubmit={handleSubmit} className="flex gap-3 mb-6">
         <div className="relative flex-1">

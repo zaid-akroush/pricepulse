@@ -611,15 +611,20 @@ router.get('/:id/forecast', async (req, res) => {
       tone = position < 0.4 ? 'buy' : 'neutral';
     } else if (slope < 0 && position > 0.35) {
       action = 'Wait';
-      reason = `Price has been trending down recently (~${Math.abs(dailyPct).toFixed(1)}%/day). It may fall further.${volatilityNote}`;
+      reason = `Price has been falling recently (about ${Math.abs(dailyPct).toFixed(1)}% a day). It may fall further.${volatilityNote}`;
       tone = 'wait';
     } else if (slope > 0 && position < 0.55) {
       action = 'Buy soon';
-      reason = `Price is low but has started rising recently (~${dailyPct.toFixed(1)}%/day). A good window may be closing.${volatilityNote}`;
+      reason = `Price is low but has started rising (about ${dailyPct.toFixed(1)}% a day). A good window may be closing.${volatilityNote}`;
+      tone = 'buy';
+    } else if (slope < 0) {
+      // Falling, but already in the low part of its range.
+      action = 'Good time';
+      reason = `Price is already low and still falling slowly (about ${Math.abs(dailyPct).toFixed(1)}% a day). Waiting may save a little more.${volatilityNote}`;
       tone = 'buy';
     } else {
       action = 'Wait';
-      reason = `Current price sits above its recent average and is trending up (~${dailyPct.toFixed(1)}%/day).${volatilityNote}`;
+      reason = `Price is in the upper part of its range and rising (about ${dailyPct.toFixed(1)}% a day).${volatilityNote}`;
       tone = 'wait';
     }
 

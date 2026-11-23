@@ -32,7 +32,6 @@ export default function ResetPassword() {
 
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title="Choose a new password"
       subtitle="Enter a new password for your account"
       footer={<Link to="/login" className="text-brand font-semibold hover:underline">Back to login</Link>}

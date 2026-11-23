@@ -52,7 +52,6 @@ export default function Notifications() {
   return (
     <div className="max-w-2xl mx-auto px-4 py-8">
       <PageHeader
-        eyebrow="Inbox"
         title="Notifications"
         subtitle={unread > 0 ? `${unread} unread` : undefined}
         action={unread > 0 && (

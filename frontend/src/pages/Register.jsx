@@ -26,7 +26,6 @@ export default function Register() {
 
   return (
     <AuthLayout
-      eyebrow="Get started"
       title="Create your account"
       subtitle="Start tracking prices for free"
       footer={<>Already have an account? <Link to="/login" className="text-brand font-semibold hover:underline">Log in</Link></>}

@@ -11,7 +11,6 @@ export default function PrivacyPolicy() {
   return (
     <div className="bg-app min-h-screen">
       <div className="bg-app-subtle border-b border-app py-14 px-4 text-center">
-        <p className="eyebrow mb-3">Legal</p>
         <h1 className="text-4xl font-bold tracking-tight text-app">Privacy Policy</h1>
         <p className="text-muted mt-2 text-sm">Last updated: {updated}</p>
       </div>

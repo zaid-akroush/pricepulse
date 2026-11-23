@@ -23,7 +23,6 @@ export default function ForgotPassword() {
 
   return (
     <AuthLayout
-      eyebrow="Account recovery"
       title="Forgot password?"
       subtitle="Enter your email and we'll send you a reset link"
       footer={<>Remembered it? <Link to="/login" className="text-brand font-semibold hover:underline">Back to login</Link></>}

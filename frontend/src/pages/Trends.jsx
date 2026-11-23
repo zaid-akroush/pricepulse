@@ -91,7 +91,6 @@ export default function Trends() {
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
       <PageHeader
-        eyebrow="Market"
         title="Price Trends"
         subtitle="What the products tracked on PricePulse have been doing, computed from every price observation we record. No account needed."
         className="mb-6"

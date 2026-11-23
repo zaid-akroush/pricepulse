@@ -5,7 +5,6 @@ import api from '../api/axios';
 import ProductImage from './ProductImage';
 import Price from './Price';
 import { detectBrand, brandLogoUrl } from '../utils/brand';
-import { getRepairabilityGrade, getEuEnergyGrade, repairabilityTier, euEnergyTier } from './ProductSpecs';
 import { describeApiError } from '../api/errorMessage';
 
 export default function ProductCard({ product }) {
@@ -54,8 +53,6 @@ export default function ProductCard({ product }) {
     : null;
 
   const brand = detectBrand(product.title);
-  const repairability = getRepairabilityGrade(product.title);
-  const euEnergy = getEuEnergyGrade(product.title);
 
   return (
     <div className="card card-hover flex flex-col overflow-hidden group cursor-pointer relative" onClick={openDetail}>
@@ -125,15 +122,6 @@ export default function ProductCard({ product }) {
               ★ {product.rating}{product.reviews ? <span className="text-faint font-normal"> ({product.reviews.toLocaleString()})</span> : null}
             </span>
           )}
-        </div>
-
-        <div className="flex items-center gap-1.5 flex-wrap">
-          <span className={`badge badge-${repairabilityTier(repairability)} !text-[10px]`} title="Repairability score (iFixit, 0-10)">
-            Repair: {repairability != null ? `${repairability}/10` : 'N/A'}
-          </span>
-          <span className={`badge badge-${euEnergyTier(euEnergy)} !text-[10px]`} title="EU energy efficiency class (A-G)">
-            EU Energy: {euEnergy || 'N/A'}
-          </span>
         </div>
 
         {!added ? (

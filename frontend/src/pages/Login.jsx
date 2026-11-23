@@ -29,7 +29,6 @@ export default function Login() {
 
   return (
     <AuthLayout
-      eyebrow="Welcome back"
       title="Log in"
       subtitle="Log in to your PricePulse account"
       footer={<>Don't have an account? <Link to="/register" className="text-brand font-semibold hover:underline">Sign up free</Link></>}

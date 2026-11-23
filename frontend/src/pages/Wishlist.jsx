@@ -44,9 +44,9 @@ export default function Wishlist() {
     else steady.push(item);
   }
   const segments = [
-    { key: 'atTarget', title: 'Hit Your Target', items: atTarget },
-    { key: 'dropped', title: 'Price Dropped', items: dropped },
-    { key: 'steady', title: 'Steady', items: steady },
+    { key: 'atTarget', title: 'Reached your target', items: atTarget },
+    { key: 'dropped', title: 'Below its highest price', items: dropped },
+    { key: 'steady', title: 'At its highest price', items: steady },
   ].filter(s => s.items.length > 0);
 
   if (loading) return (
@@ -75,7 +75,6 @@ export default function Wishlist() {
 
         {/* Header */}
         <PageHeader
-          eyebrow="Tracking"
           title="Wishlist"
           subtitle="The products you track and the prices you're waiting for"
           className="mb-6"
